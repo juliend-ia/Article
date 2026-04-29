@@ -124,7 +124,19 @@ function renderList(q) {
       busrow += '</div>';
     }
     var minmax = (a.min || a.max) ? '<div class="dp"><div class="dl">Min/Max</div><div class="dv">' + (a.min||0) + '/' + (a.max||0) + '</div></div>' : '';
-    var photoRow = a.photo ? '<div style="width:100%;margin-top:6px"><img src="' + a.photo + '" class="photo-preview" data-num="' + esc(a.num) + '"/></div>' : '';
+    var photoRow = '';
+    if (a.photo) {
+      var photos = a.photo.split(',').filter(function(u){return u.trim();});
+      if (photos.length === 1) {
+        photoRow = '<div style="width:100%;margin-top:6px"><img src="' + photos[0] + '" class="photo-preview" data-num="' + esc(a.num) + '"/></div>';
+      } else if (photos.length > 1) {
+        photoRow = '<div style="width:100%;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">';
+        for (var pi = 0; pi < photos.length; pi++) {
+          photoRow += '<img src="' + photos[pi] + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;background:#fff;" onclick="event.stopPropagation();document.getElementById('photoFull').src=this.src;document.getElementById('photoOverlay').classList.remove('hidden')"/>';
+        }
+        photoRow += '</div>';
+      }
+    }
     var snum = esc(a.num);
     h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + busrow + photoRow + '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div><div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
@@ -176,8 +188,10 @@ function openEdit(num) {
       setBusBtn('editBusStd','editBusStdBtn',a.bus_std||false);
       setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
       setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
-      var prev = document.getElementById('editPhotoPreview'), remBtn = document.getElementById('editPhotoRemove');
-      if (a.photo) { prev.src = a.photo; prev.style.display = 'block'; remBtn.style.display = 'block'; _editPhoto = a.photo; } else { prev.src = ''; prev.style.display = 'none'; remBtn.style.display = 'none'; _editPhoto = null; }
+      _editPhotos = a.photo ? a.photo.split(',').filter(function(u){return u.trim();}) : [];
+      _editPhoto = a.photo || null;
+      document.getElementById('editPhotoPreview').style.display = 'none';
+      renderEditPhotos();
       document.getElementById('mo').classList.remove('hidden'); return;
     }
   }
@@ -198,13 +212,81 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
 });
 
 document.getElementById('editPhotoBtn').addEventListener('click', function() { document.getElementById('editPhotoInput').click(); });
-document.getElementById('editPhotoInput').addEventListener('change', function(event) {
+document.getElementById('editPhotoInput').addEventListener('change', async function(event) {
   var file = event.target.files[0]; if (!file) return;
-  var reader = new FileReader();
-  reader.onload = function(e) { var img = new Image(); img.onload = function() { var canvas = document.createElement('canvas'), ms = 800, w = img.width, h = img.height; if (w > ms) { h = h*ms/w; w = ms; } if (h > ms) { w = w*ms/h; h = ms; } canvas.width = w; canvas.height = h; canvas.getContext('2d').drawImage(img,0,0,w,h); var data = canvas.toDataURL('image/jpeg', 0.7); document.getElementById('editPhotoPreview').src = data; document.getElementById('editPhotoPreview').style.display = 'block'; document.getElementById('editPhotoRemove').style.display = 'block'; _editPhoto = data; }; img.src = e.target.result; };
-  reader.readAsDataURL(file);
+  if (!editingNum) { showToast('Erreur: pas d article selectionne', 'err'); return; }
+  showToast('Upload en cours...', 'success');
+  try {
+    // Compresser l image
+    var compressed = await compressImage(file);
+    // Generer un nom unique
+    var ext = file.name.split('.').pop() || 'jpg';
+    var timestamp = Date.now();
+    var path = editingNum + '/' + timestamp + '.' + ext;
+    // Uploader dans Supabase Storage
+    var res = await fetch(SURL + '/storage/v1/object/photos-articles/' + path, {
+      method: 'POST',
+      headers: { 'apikey': SKEY, 'Authorization': 'Bearer ' + SKEY, 'Content-Type': compressed.type || 'image/jpeg' },
+      body: compressed
+    });
+    if (!res.ok) throw new Error('Upload failed');
+    var url = SURL + '/storage/v1/object/public/photos-articles/' + path;
+    // Ajouter a la liste des photos
+    if (!_editPhotos) _editPhotos = [];
+    _editPhotos.push(url);
+    _editPhoto = _editPhotos.join(',');
+    renderEditPhotos();
+    showToast('Photo ajoutee!', 'success');
+  } catch(e) { showToast('Erreur upload photo', 'err'); console.error(e); }
+  document.getElementById('editPhotoInput').value = '';
 });
-document.getElementById('editPhotoRemove').addEventListener('click', function() { _editPhoto = null; document.getElementById('editPhotoPreview').src = ''; document.getElementById('editPhotoPreview').style.display = 'none'; document.getElementById('editPhotoRemove').style.display = 'none'; document.getElementById('editPhotoInput').value = ''; });
+document.getElementById('editPhotoRemove').addEventListener('click', function() { _editPhoto = null; _editPhotos = []; document.getElementById('editPhotoPreview').src = ''; document.getElementById('editPhotoPreview').style.display = 'none'; document.getElementById('editPhotoRemove').style.display = 'none'; document.getElementById('editPhotoInput').value = ''; });
+
+async function compressImage(file) {
+  return new Promise(function(resolve) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      var img = new Image();
+      img.onload = function() {
+        var canvas = document.createElement('canvas');
+        var ms = 1200, w = img.width, h = img.height;
+        if (w > ms) { h = h*ms/w; w = ms; }
+        if (h > ms) { w = w*ms/h; h = ms; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        canvas.toBlob(function(blob) { resolve(blob); }, 'image/jpeg', 0.8);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function renderEditPhotos() {
+  var container = document.getElementById('editPhotoContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  if (!_editPhotos || !_editPhotos.length) {
+    document.getElementById('editPhotoRemove').style.display = 'none';
+    return;
+  }
+  document.getElementById('editPhotoRemove').style.display = 'block';
+  for (var i = 0; i < _editPhotos.length; i++) {
+    var url = _editPhotos[i];
+    var div = document.createElement('div');
+    div.style.cssText = 'position:relative;display:inline-block;margin:4px;';
+    var img = document.createElement('img');
+    img.src = url;
+    img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;';
+    img.onclick = (function(u) { return function() { document.getElementById('photoFull').src = u; document.getElementById('photoOverlay').classList.remove('hidden'); }; })(url);
+    var del = document.createElement('div');
+    del.style.cssText = 'position:absolute;top:-4px;right:-4px;background:var(--rd);color:#fff;border-radius:50%;width:18px;height:18px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:bold;';
+    del.textContent = 'x';
+    del.onclick = (function(idx) { return function() { _editPhotos.splice(idx,1); _editPhoto = _editPhotos.join(','); renderEditPhotos(); }; })(i);
+    div.appendChild(img); div.appendChild(del);
+    container.appendChild(div);
+  }
+}
 
 function ajouterPanier(num) {
   var a = articles.filter(function(x) { return x.num === num; })[0]; if (!a) return;
