@@ -110,7 +110,7 @@ function renderList(q) {
   for (var i = 0; i < n; i++) {
     var a = filtered[i], exp = (expandedNum === a.num) ? ' exp' : '';
     var loc = a.location ? esc(a.location) : '<span class="nl">Non renseigne</span>';
-    var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t !== 'bus articule' && t !== 'bus standard' && t !== 'produit chimique' && t !== 'piece interne' && t !== 'piece interne, bus articule, bus standard' && t.indexOf('bus ') < 0 && t.indexOf('produit ') < 0 && t.indexOf('piece ') < 0;}).join(', ');
+        var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')<0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
     var busrow = '';
@@ -163,7 +163,18 @@ function openEdit(num) {
   for (var i = 0; i < articles.length; i++) {
     if (articles[i].num === num) {
       var a = articles[i]; editingNum = num;
-      document.getElementById('editNum').value = a.num; document.getElementById('editNom').value = a.nom; document.getElementById('editCat').value = a.categorie||''; document.getElementById('editTags').value = a.tags||''; document.getElementById('editLoc').value = a.location||''; document.getElementById('editMin').value = a.min||0; document.getElementById('editMax').value = a.max||0;
+      document.getElementById('editNum').value = a.num;
+      document.getElementById('editNom').value = a.nom;
+      document.getElementById('editCat').value = a.categorie||'';
+      var cleanEditTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')< 0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
+      document.getElementById('editTags').value = cleanEditTags;
+      document.getElementById('editLoc').value = a.location||'';
+      document.getElementById('editMin').value = a.min||0;
+      document.getElementById('editMax').value = a.max||0;
+      if(document.getElementById('editNpf')) document.getElementById('editNpf').value = a.npf||'';
+      setBusBtn('editBusStd','editBusStdBtn',a.bus_std||false);
+      setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
+      setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
       var prev = document.getElementById('editPhotoPreview'), remBtn = document.getElementById('editPhotoRemove');
       if (a.photo) { prev.src = a.photo; prev.style.display = 'block'; remBtn.style.display = 'block'; _editPhoto = a.photo; } else { prev.src = ''; prev.style.display = 'none'; remBtn.style.display = 'none'; _editPhoto = null; }
       document.getElementById('mo').classList.remove('hidden'); return;
