@@ -339,10 +339,10 @@ async function loadHistorique() {
       var detailRows = '';
       for (var j = 0; j < arts.length; j++) {
         var art = arts[j];
-        detailRows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--br);">'
-          + '<div><div style="font-size:13px;font-weight:600;color:var(--ac);">' + esc(art.num) + '</div>'
-          + '<div style="font-size:12px;color:var(--tx);">' + esc(art.nom) + '</div>'
-          + (art.location ? '<div style="font-size:10px;color:var(--mu);">📍 ' + esc(art.location) + '</div>' : '')
+        detailRows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--br);">'
+          + '<div><div style="font-size:16px;font-weight:700;color:var(--ac);">' + esc(art.num) + '</div>'
+          + '<div style="font-size:14px;font-weight:500;color:var(--tx);margin-top:2px;">' + esc(art.nom) + '</div>'
+          + (art.location ? '<div style="font-size:13px;color:var(--mu);margin-top:2px;">📍 ' + esc(art.location) + '</div>' : '')
           + '</div>'
           + '<div style="font-size:16px;font-weight:700;color:var(--gn);background:rgba(46,204,113,0.1);border:1px solid var(--gn);border-radius:6px;padding:4px 10px;">x' + art.qty + '</div>'
           + '</div>';
