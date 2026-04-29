@@ -233,10 +233,11 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     </div>
     <div class="field">
       <label>Photo</label>
-      <img id="editPhotoPreview" class="edit-photo-preview" src="" style="display:none"/>
-      <div class="edit-photo-btn" id="editPhotoBtn">Prendre / Choisir photo</div>
+      <img id="editPhotoPreview" src="" style="display:none"/>
+      <div id="editPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+      <div class="edit-photo-btn" id="editPhotoBtn">📷 Ajouter une photo</div>
       <input type="file" id="editPhotoInput" accept="image/*" capture="environment" style="display:none"/>
-      <button id="editPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:13px;cursor:pointer;">Supprimer photo</button>
+      <button id="editPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:13px;cursor:pointer;">🗑 Supprimer toutes les photos</button>
     </div>
     <div class="ma">
       <button class="bmc" id="cancelEditBtn">Annuler</button>
