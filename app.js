@@ -132,7 +132,7 @@ function renderList(q) {
       } else if (photos.length > 1) {
         photoRow = '<div style="width:100%;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">';
         for (var pi = 0; pi < photos.length; pi++) {
-          photoRow += '<img src="' + photos[pi] + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;background:#fff;" onclick="event.stopPropagation();document.getElementById('photoFull').src=this.src;document.getElementById('photoOverlay').classList.remove('hidden')"/>';
+          photoRow += '<img src="' + photos[pi] + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;background:#fff;" onclick="event.stopPropagation();document.getElementById(&quot;photoFull&quot;).src=this.src;document.getElementById(&quot;photoOverlay&quot;).classList.remove(&quot;hidden&quot;)"/>';
         }
         photoRow += '</div>';
       }
