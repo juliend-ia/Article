@@ -213,6 +213,18 @@ function ajouterPanier(num) {
   updateBadge();
 }
 
+function toggleBon(el) {
+  var detail = el.parentElement.querySelector('.bon-detail');
+  var arrow = el.querySelector('div[style*="font-size:18px"]');
+  if (detail.style.display === 'none') {
+    detail.style.display = 'block';
+    if (arrow) arrow.textContent = '▲';
+  } else {
+    detail.style.display = 'none';
+    if (arrow) arrow.textContent = '▼';
+  }
+}
+
 function updateBadge() { var badge = document.getElementById('panierBadge'), total = panier.reduce(function(s,x) { return s+x.qty; }, 0); if (total > 0) { badge.style.display = 'flex'; badge.textContent = total; } else badge.style.display = 'none'; }
 
 function renderPanier() {
@@ -240,7 +252,37 @@ async function loadHistorique() {
     var list = document.getElementById('historiqueList');
     if (!data || !data.length) { list.innerHTML = '<div class="panier-empty" style="padding:20px">Aucun bon</div>'; return; }
     var h = '';
-    for (var i = 0; i < data.length; i++) { var b = data[i], arts = b.articles||[], date = new Date(b.date_creation).toLocaleDateString('fr-FR'); h += '<div class="histo-item"><div style="display:flex;justify-content:space-between;align-items:start"><div><div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div><div class="histo-date">' + date + '</div><div class="histo-count">' + arts.length + ' article(s)</div></div><div style="display:flex;gap:6px"><div class="btn-dl" data-id="' + b.id + '">Excel</div><div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div></div></div></div>'; }
+    for (var i = 0; i < data.length; i++) {
+      var b = data[i], arts = b.articles||[], date = new Date(b.date_creation).toLocaleDateString('fr-FR');
+      var detailRows = '';
+      for (var j = 0; j < arts.length; j++) {
+        var art = arts[j];
+        detailRows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;border-bottom:1px solid var(--br);">'
+          + '<div><div style="font-size:13px;font-weight:600;color:var(--ac);">' + esc(art.num) + '</div>'
+          + '<div style="font-size:12px;color:var(--tx);">' + esc(art.nom) + '</div>'
+          + (art.location ? '<div style="font-size:10px;color:var(--mu);">📍 ' + esc(art.location) + '</div>' : '')
+          + '</div>'
+          + '<div style="font-size:16px;font-weight:700;color:var(--gn);background:rgba(46,204,113,0.1);border:1px solid var(--gn);border-radius:6px;padding:4px 10px;">x' + art.qty + '</div>'
+          + '</div>';
+      }
+      h += '<div class="histo-item">'
+        + '<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
+          + '<div>'
+            + '<div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div>'
+            + '<div class="histo-date">' + date + '</div>'
+            + '<div class="histo-count">' + arts.length + ' article(s)</div>'
+          + '</div>'
+          + '<div style="display:flex;gap:6px;align-items:center">'
+            + '<div style="color:var(--mu);font-size:18px;">▼</div>'
+            + '<div class="btn-dl" data-id="' + b.id + '">Excel</div>'
+            + '<div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
+          + '</div>'
+        + '</div>'
+        + '<div class="bon-detail" style="display:none;margin-top:8px;border-top:1px solid var(--br);border-radius:0 0 8px 8px;overflow:hidden;">'
+          + detailRows
+        + '</div>'
+      + '</div>';
+    }
     list.innerHTML = h;
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
