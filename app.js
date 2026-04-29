@@ -110,7 +110,8 @@ function renderList(q) {
   for (var i = 0; i < n; i++) {
     var a = filtered[i], exp = (expandedNum === a.num) ? ' exp' : '';
     var loc = a.location ? esc(a.location) : '<span class="nl">Non renseigne</span>';
-    var trow = a.tags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(a.tags) + '</div></div>' : '';
+    var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t !== 'bus articule' && t !== 'bus standard' && t !== 'produit chimique' && t !== 'piece interne';}).join(', ');
+    var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
     var busrow = '';
     if (a.bus_art || a.bus_std || a.chimique || a.interne) {
@@ -142,8 +143,14 @@ document.getElementById('addBtn').addEventListener('click', async function() {
   var num = document.getElementById('addNum').value.trim(), nom = document.getElementById('addNom').value.trim();
   if (!num || !nom) { showToast('Numero et designation obligatoires', 'err'); return; }
   for (var i = 0; i < articles.length; i++) { if (articles[i].num === num) { showToast('Article deja existant', 'err'); return; } }
-  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null};
-  try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax'].forEach(function(id) { document.getElementById(id).value = ''; }); document.getElementById('totalCount').textContent = articles.length; showToast('Article enregistre!', 'success'); buildPills(); switchTab('search'); doSearch(); } catch(e) { showToast('Erreur sauvegarde', 'err'); console.error(e); }
+  var busStd = document.getElementById('addBusStd').checked;
+  var busArt = document.getElementById('addBusArt').checked;
+  var chimique = document.getElementById('addChimique').checked;
+  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,npf:'',stock_securite:0};
+  try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('addBusStd').checked = false;
+  document.getElementById('addBusArt').checked = false;
+  document.getElementById('addChimique').checked = false; document.getElementById('totalCount').textContent = articles.length; showToast('Article enregistre!', 'success'); buildPills(); switchTab('search'); doSearch(); } catch(e) { showToast('Erreur sauvegarde', 'err'); console.error(e); }
 });
 
 async function delArticle(num) {
@@ -168,7 +175,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
   if (!editingNum) return;
   var newNum = document.getElementById('editNum').value.trim(), nom = document.getElementById('editNom').value.trim();
   if (!nom) { showToast('Designation obligatoire', 'err'); return; }
-  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null};
+  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null,bus_std:document.getElementById('editBusStd').checked,bus_art:document.getElementById('editBusArt').checked,chimique:document.getElementById('editChimique').checked,interne:false,npf:'',stock_securite:0};
   try {
     if (newNum !== editingNum) { await supa('DELETE', 'articles?num=eq.' + encodeURIComponent(editingNum)); await supa('POST', 'articles', [updated]); }
     else { await supa('PATCH', 'articles?num=eq.' + encodeURIComponent(editingNum), updated); }
