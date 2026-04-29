@@ -433,4 +433,79 @@ function setBusBtn(checkId, btnId, checked) {
   }
 }
 
+
+// ── REALTIME SUPABASE ──
+function initRealtime() {
+  try {
+    var ws = new WebSocket(
+      SURL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SKEY + '&vsn=1.0.0'
+    );
+
+    ws.onopen = function() {
+      // S'abonner aux changements de la table bons_commande
+      ws.send(JSON.stringify({
+        topic: 'realtime:public:bons_commande',
+        event: 'phx_join',
+        payload: {},
+        ref: '1'
+      }));
+      // S'abonner aux changements des articles
+      ws.send(JSON.stringify({
+        topic: 'realtime:public:articles',
+        event: 'phx_join',
+        payload: {},
+        ref: '2'
+      }));
+    };
+
+    ws.onmessage = function(e) {
+      try {
+        var msg = JSON.parse(e.data);
+        if (msg.event === 'phx_reply') return;
+        if (msg.topic && msg.topic.indexOf('bons_commande') >= 0) {
+          // Nouveau bon de commande ou modification
+          if (document.getElementById('p3').style.display !== 'none') {
+            loadHistorique();
+          }
+        }
+        if (msg.topic && msg.topic.indexOf('articles') >= 0) {
+          // Article modifie - recharger silencieusement
+          loadArticlesSilent();
+        }
+      } catch(err) {}
+    };
+
+    ws.onclose = function() {
+      // Reconnexion automatique apres 3 secondes
+      setTimeout(initRealtime, 3000);
+    };
+
+    ws.onerror = function() {
+      ws.close();
+    };
+  } catch(e) {
+    console.log('Realtime non disponible');
+  }
+}
+
+async function loadArticlesSilent() {
+  try {
+    var all = [], page = 0;
+    while (true) {
+      var data = await supa('GET', 'articles?select=*&order=nom.asc&limit=1000&offset=' + (page * 1000));
+      if (!data || !data.length) break;
+      all = all.concat(data);
+      if (data.length < 1000) break;
+      page++;
+    }
+    if (all.length > 0) {
+      articles = all;
+      document.getElementById('totalCount').textContent = articles.length;
+      buildPills();
+      doSearch();
+    }
+  } catch(e) {}
+}
+
+initRealtime();
 checkAuth();
