@@ -113,6 +113,7 @@ function renderList(q) {
         var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')<0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
+    var fourrow = a.fournisseur ? '<div class="dp"><div class="dl">Fournisseur</div><div class="dv">' + esc(a.fournisseur) + '</div></div>' : '';
     var busrow = '';
     if (a.bus_art || a.bus_std || a.chimique || a.interne) {
       busrow = '<div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">';
@@ -125,7 +126,7 @@ function renderList(q) {
     var minmax = (a.min || a.max) ? '<div class="dp"><div class="dl">Min/Max</div><div class="dv">' + (a.min||0) + '/' + (a.max||0) + '</div></div>' : '';
     var photoRow = a.photo ? '<div style="width:100%;margin-top:6px"><img src="' + a.photo + '" class="photo-preview" data-num="' + esc(a.num) + '"/></div>' : '';
     var snum = esc(a.num);
-    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + busrow + photoRow + '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div><div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
+    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + busrow + photoRow + '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div><div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
   con.innerHTML = h;
   con.querySelectorAll('.card').forEach(function(el) { el.addEventListener('click', function(e) { if (e.target.classList.contains('bedit')||e.target.classList.contains('bdel')||e.target.classList.contains('btn-panier')||e.target.classList.contains('photo-preview')) return; var n = this.getAttribute('data-num'); expandedNum = (expandedNum === n) ? null : n; renderList(document.getElementById('si').value.trim().toLowerCase()); }); });
