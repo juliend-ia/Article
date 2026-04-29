@@ -217,6 +217,7 @@ document.getElementById('viderBtn').addEventListener('click', function() { if (!
 document.getElementById('validerBtn').addEventListener('click', async function() {
   var num = document.getElementById('numeroOrdre').value.trim();
   if (!num) { showToast('Saisis un numero ordre', 'err'); return; }
+  if (!/^\d{8}$/.test(num)) { showToast('Le numero ordre doit avoir 8 chiffres', 'err'); return; }
   if (!panier.length) { showToast('Panier vide', 'err'); return; }
   try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 });
@@ -227,7 +228,7 @@ async function loadHistorique() {
     var list = document.getElementById('historiqueList');
     if (!data || !data.length) { list.innerHTML = '<div class="panier-empty" style="padding:20px">Aucun bon</div>'; return; }
     var h = '';
-    for (var i = 0; i < data.length; i++) { var b = data[i], arts = b.articles||[], date = new Date(b.date_creation).toLocaleDateString('fr-FR'); h += '<div class="histo-item"><div style="display:flex;justify-content:space-between;align-items:start"><div><div class="histo-num">N ' + esc(b.numero_ordre) + '</div><div class="histo-date">' + date + '</div><div class="histo-count">' + arts.length + ' article(s)</div></div><div style="display:flex;gap:6px"><div class="btn-dl" data-id="' + b.id + '">Excel</div><div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div></div></div></div>'; }
+    for (var i = 0; i < data.length; i++) { var b = data[i], arts = b.articles||[], date = new Date(b.date_creation).toLocaleDateString('fr-FR'); h += '<div class="histo-item"><div style="display:flex;justify-content:space-between;align-items:start"><div><div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div><div class="histo-date">' + date + '</div><div class="histo-count">' + arts.length + ' article(s)</div></div><div style="display:flex;gap:6px"><div class="btn-dl" data-id="' + b.id + '">Excel</div><div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div></div></div></div>'; }
     list.innerHTML = h;
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
