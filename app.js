@@ -110,7 +110,7 @@ function renderList(q) {
   for (var i = 0; i < n; i++) {
     var a = filtered[i], exp = (expandedNum === a.num) ? ' exp' : '';
     var loc = a.location ? esc(a.location) : '<span class="nl">Non renseigne</span>';
-    var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t !== 'bus articule' && t !== 'bus standard' && t !== 'produit chimique' && t !== 'piece interne';}).join(', ');
+    var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t !== 'bus articule' && t !== 'bus standard' && t !== 'produit chimique' && t !== 'piece interne' && t !== 'piece interne, bus articule, bus standard' && t.indexOf('bus ') < 0 && t.indexOf('produit ') < 0 && t.indexOf('piece ') < 0;}).join(', ');
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
     var busrow = '';
