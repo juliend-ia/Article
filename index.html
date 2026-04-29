@@ -212,6 +212,26 @@ main{padding:14px;max-width:800px;margin:0 auto;}
       <div class="field"><label>Max</label><input type="number" id="editMax" inputmode="numeric"/></div>
     </div>
     <div class="field">
+      <label>Compatibilite bus</label>
+      <div style="display:flex;gap:10px;margin-top:6px;">
+        <input type="checkbox" id="editBusStd" style="display:none"/>
+        <div id="editBusStdBtn" onclick="toggleBusBtn('editBusStd','editBusStdBtn','#2ecc71')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(46,204,113,0.08);border:2px solid #2ecc71;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
+          <span id="editBusStdCheck" style="color:#2ecc71;font-size:16px;display:none;">✕</span>
+          <span style="color:#2ecc71;font-size:13px;font-weight:700;">STD</span>
+        </div>
+        <input type="checkbox" id="editBusArt" style="display:none"/>
+        <div id="editBusArtBtn" onclick="toggleBusBtn('editBusArt','editBusArtBtn','#f0a500')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(240,165,0,0.08);border:2px solid #f0a500;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
+          <span id="editBusArtCheck" style="color:#f0a500;font-size:16px;display:none;">✕</span>
+          <span style="color:#f0a500;font-size:13px;font-weight:700;">ART</span>
+        </div>
+        <input type="checkbox" id="editChimique" style="display:none"/>
+        <div id="editChimiqueBtn" onclick="toggleBusBtn('editChimique','editChimiqueBtn','#e74c3c')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(231,76,60,0.08);border:2px solid #e74c3c;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
+          <span id="editChimiqueCheck" style="color:#e74c3c;font-size:16px;display:none;">✕</span>
+          <span style="color:#e74c3c;font-size:13px;font-weight:700;">Chimique</span>
+        </div>
+      </div>
+    </div>
+    <div class="field">
       <label>Photo</label>
       <img id="editPhotoPreview" class="edit-photo-preview" src="" style="display:none"/>
       <div class="edit-photo-btn" id="editPhotoBtn">Prendre / Choisir photo</div>
