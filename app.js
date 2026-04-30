@@ -390,7 +390,8 @@ async function loadHistorique() {
         + '<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
           + '<div>'
             + '<div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div>'
-            + '<div class="histo-date">' + date + (b.login ? ' — ' + esc(b.login) : '') + '</div>'
+            + '<div class="histo-date">' + date + '</div>'
+            + (b.login ? '<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 ' + esc(b.login) + '</div>' : '')
             + '<div class="histo-count">' + arts.length + ' article(s)</div>'
           + '</div>'
           + '<div style="display:flex;gap:6px;align-items:center">'
@@ -429,13 +430,20 @@ async function exportBon(id) {
 document.getElementById('t1').addEventListener('click', function() { switchTab('search'); });
 document.getElementById('t2').addEventListener('click', function() { switchTab('add'); });
 document.getElementById('t3').addEventListener('click', function() { switchTab('panier'); });
+if (document.getElementById('t4')) document.getElementById('t4').addEventListener('click', function() { switchTab('admin'); });
 
 function switchTab(tab) {
-  ['t1','t2','t3'].forEach(function(id,i) { document.getElementById(id).classList.toggle('active', tab === ['search','add','panier'][i]); });
+  ['t1','t2','t3','t4'].forEach(function(id,i) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('active', tab === ['search','add','panier','admin'][i]);
+  });
   document.getElementById('p1').style.display = tab === 'search' ? 'block' : 'none';
   document.getElementById('p2').style.display = tab === 'add' ? 'block' : 'none';
   document.getElementById('p3').style.display = tab === 'panier' ? 'block' : 'none';
+  var p4 = document.getElementById('p4');
+  if (p4) p4.style.display = tab === 'admin' ? 'block' : 'none';
   if (tab === 'panier') { renderPanier(); loadHistorique(); }
+  if (tab === 'admin' && currentUser.role === 'admin') { loadAdminPage(); }
 }
 
 
