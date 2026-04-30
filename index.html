@@ -276,6 +276,31 @@ main{padding:14px;max-width:800px;margin:0 auto;}
   <button class="photo-close" id="photoCloseBtn">X</button>
   <img id="photoFull" src="" alt="Photo"/>
 </div>
+<div class="mo hidden" id="editUserModal">
+  <div class="modal">
+    <h2 style="color:var(--ac);font-size:19px;margin-bottom:16px;">✏️ Modifier utilisateur</h2>
+    <input type="hidden" id="editUserId"/>
+    <div class="field"><label>Prénom</label><input type="text" id="editUserPrenom"/></div>
+    <div class="field"><label>Login</label><input type="text" id="editUserLogin" autocorrect="off" autocapitalize="none"/></div>
+    <div class="field"><label>Nouveau mot de passe (laisser vide pour ne pas changer)</label><input type="password" id="editUserPwd" placeholder="••••••"/></div>
+    <div class="field">
+      <label>Rôle</label>
+      <select id="editUserRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
+        <option value="agent">👷 Agent maintenance</option>
+        <option value="magasinier">🔧 Magasinier</option>
+        <option value="admin">👑 Administrateur</option>
+      </select>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="editUserActif" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;"/>
+      <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="editUserActif">Compte actif</label>
+    </div>
+    <div class="ma">
+      <button class="bmc" onclick="closeEditUser()">Annuler</button>
+      <button class="bms" onclick="saveEditUser()">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
