@@ -213,7 +213,7 @@ function renderList(q) {
       }
     }
     var snum = esc(a.num);
-    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + busrow + photoRow + '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div><div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
+    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + busrow + photoRow + '+ (window._canEdit ? '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div>' : '') + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
   con.innerHTML = h;
   con.querySelectorAll('.card').forEach(function(el) { el.addEventListener('click', function(e) { if (e.target.classList.contains('bedit')||e.target.classList.contains('bdel')||e.target.classList.contains('btn-panier')||e.target.classList.contains('photo-preview')) return; var n = this.getAttribute('data-num'); expandedNum = (expandedNum === n) ? null : n; renderList(document.getElementById('si').value.trim().toLowerCase()); }); });
@@ -400,7 +400,7 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   if (!num) { showToast('Saisis un numero ordre', 'err'); return; }
   if (!/^\d{8}$/.test(num)) { showToast('Le numero ordre doit avoir 8 chiffres', 'err'); return; }
   if (!panier.length) { showToast('Panier vide', 'err'); return; }
-  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
+  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||''}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 });
 
 async function loadHistorique() {
