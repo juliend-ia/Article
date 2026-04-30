@@ -50,24 +50,34 @@ async function checkAuth() {
 }
 
 document.getElementById('loginBtn').addEventListener('click', async function() {
-  var u = document.getElementById('loginUser').value.trim();
+  var u = document.getElementById('loginUser').value.trim().toLowerCase();
   var p = document.getElementById('loginPwd').value.trim();
   var err = document.getElementById('loginErr');
   if (!u || !p) { err.textContent = 'Remplis tous les champs.'; return; }
   var h = await hashStr(u + ':' + p);
+  // Verifier D'ABORD dans la table utilisateurs
+  try {
+    var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(u) + '&select=login,prenom,role,actif,password_hash');
+    if (udata && udata.length) {
+      var dbUser = udata[0];
+      if (dbUser.password_hash !== h) { err.textContent = 'Mot de passe incorrect.'; document.getElementById('loginPwd').value = ''; return; }
+      if (!dbUser.actif) { err.textContent = 'Compte desactive.'; return; }
+      currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:dbUser.role, token:h};
+      if (ATOKENS.indexOf(h) < 0) ATOKENS.push(h);
+      localStorage.setItem(SKEY2, h);
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      document.getElementById('loginOverlay').classList.add('hidden');
+      initUI();
+      loadArticles();
+      return;
+    }
+  } catch(e) { console.error('Erreur login table:', e); }
+  // Fallback: verifier ATOKENS (Djulien et magasin2k par defaut)
   if (ATOKENS.indexOf(h) >= 0) {
-    localStorage.setItem(SKEY2, h);
     currentUser = h === ADMIN_TOKEN ? 
       {login:'Djulien', prenom:'Djulien', role:'admin', token:h} :
       {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:h};
-    // Chercher dans la table utilisateurs
-    try {
-      var udata = await supa('GET', 'utilisateurs?password_hash=eq.' + h + '&select=login,prenom,role,actif');
-      if (udata && udata.length) {
-        currentUser = {login:udata[0].login, prenom:udata[0].prenom, role:udata[0].role, token:h};
-        if (!udata[0].actif) { err.textContent = 'Compte desactive.'; return; }
-      }
-    } catch(e) {}
+    localStorage.setItem(SKEY2, h);
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     document.getElementById('loginOverlay').classList.add('hidden');
     initUI();
@@ -616,10 +626,11 @@ async function loadUtilisateurs() {
 
 async function createUser() {
   var prenom = document.getElementById('newPrenom').value.trim();
-  var login = document.getElementById('newLogin').value.trim();
+  var login = document.getElementById('newLogin').value.trim().toLowerCase();
   var pwd = document.getElementById('newPwd').value.trim();
   var role = document.getElementById('newRole').value;
   if (!prenom || !login || !pwd) { showToast('Tous les champs sont obligatoires', 'err'); return; }
+  if (pwd.length < 4) { showToast('Mot de passe trop court (min 4 caracteres)', 'err'); return; }
   
   var hash = await hashStr(login + ':' + pwd);
   try {
@@ -665,7 +676,7 @@ async function editUser(el) {
 async function saveEditUser() {
   var id = document.getElementById('editUserId').value;
   var prenom = document.getElementById('editUserPrenom').value.trim();
-  var login = document.getElementById('editUserLogin').value.trim();
+  var login = document.getElementById('editUserLogin').value.trim().toLowerCase();
   var pwd = document.getElementById('editUserPwd').value.trim();
   var role = document.getElementById('editUserRole').value;
   var actif = document.getElementById('editUserActif').checked;
