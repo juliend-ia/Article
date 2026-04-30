@@ -1,6 +1,8 @@
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
 var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5ZmxxdHlzcXB5d2lreGd6eGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNzYxOTQsImV4cCI6MjA5Mjc1MjE5NH0.OUjtRRrKIHqLeWFiw1-CEZS3AAJrMTAeiQ8dNd21IP8';
 var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0','35a85085a9ccd1440acb20cca15b78b0353f4f354bfcf8dd5d2f3d36734ca7be'];
+var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
+var currentUser = {login:'', prenom:'', role:'user', token:''};
 var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _cats = [];
 
@@ -21,7 +23,21 @@ async function hashStr(s) {
 function showLoading(show, msg) { var el = document.getElementById('loadingOverlay'); if (show) el.classList.remove('hidden'); else el.classList.add('hidden'); if (msg) document.getElementById('loadingText').textContent = msg; }
 function showToast(msg, type) { var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type + ' show'; setTimeout(function() { t.classList.remove('show'); }, 2500); }
 
-function checkAuth() { if (ATOKENS.indexOf(localStorage.getItem(SKEY2)) >= 0) { document.getElementById('loginOverlay').classList.add('hidden'); loadArticles(); } }
+function checkAuth() {
+  var stored = localStorage.getItem(SKEY2);
+  if (ATOKENS.indexOf(stored) >= 0) {
+    var cu = localStorage.getItem('currentUser');
+    if (cu) { try { currentUser = JSON.parse(cu); } catch(e) {} }
+    if (!currentUser.login) {
+      currentUser = stored === ADMIN_TOKEN ? 
+        {login:'Djulien', prenom:'Djulien', role:'admin', token:stored} :
+        {login:'magasin2k', prenom:'Magasin', role:'user', token:stored};
+    }
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initUI();
+    loadArticles();
+  }
+}
 
 document.getElementById('loginBtn').addEventListener('click', async function() {
   var u = document.getElementById('loginUser').value.trim();
@@ -29,12 +45,24 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
   var err = document.getElementById('loginErr');
   if (!u || !p) { err.textContent = 'Remplis tous les champs.'; return; }
   var h = await hashStr(u + ':' + p);
-  if (ATOKENS.indexOf(h) >= 0) { localStorage.setItem(SKEY2, h); document.getElementById('loginOverlay').classList.add('hidden'); loadArticles(); }
+  if (ATOKENS.indexOf(h) >= 0) {
+    localStorage.setItem(SKEY2, h);
+    // Identifier le user
+    if (h === ADMIN_TOKEN) {
+      currentUser = {login:'Djulien', prenom:'Djulien', role:'admin', token:h};
+    } else {
+      currentUser = {login:'magasin2k', prenom:'Magasin', role:'user', token:h};
+    }
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    document.getElementById('loginOverlay').classList.add('hidden');
+    initUI();
+    loadArticles();
+  }
   else { err.textContent = 'Identifiants incorrects.'; document.getElementById('loginPwd').value = ''; }
 });
 
 document.getElementById('loginPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
-document.getElementById('logoutBtn').addEventListener('click', function() { localStorage.removeItem(SKEY2); location.reload(); });
+document.getElementById('logoutBtn').addEventListener('click', function() { localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser'); currentUser = {login:'',prenom:'',role:'user',token:''}; location.reload(); });
 
 async function loadArticles() {
   showLoading(true, 'Chargement...');
@@ -52,6 +80,17 @@ async function loadArticles() {
     buildPills(); doSearch();
   } catch(e) { console.error('Erreur:', e); showToast('Erreur connexion', 'err'); }
   finally { showLoading(false); }
+}
+
+function initUI() {
+  // Afficher onglet admin seulement pour Djulien
+  var tabAdmin = document.getElementById('t4');
+  if (tabAdmin) {
+    tabAdmin.style.display = currentUser.role === 'admin' ? 'flex' : 'none';
+  }
+  // Afficher le prenom dans le header
+  var userInfo = document.getElementById('userInfo');
+  if (userInfo) userInfo.textContent = currentUser.prenom;
 }
 
 function getCats() { var c = {}; for (var i = 0; i < articles.length; i++) { var x = articles[i].categorie || ''; if (x) c[x] = true; } return Object.keys(c).sort(); }
@@ -351,7 +390,7 @@ async function loadHistorique() {
         + '<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
           + '<div>'
             + '<div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div>'
-            + '<div class="histo-date">' + date + '</div>'
+            + '<div class="histo-date">' + date + (b.login ? ' — ' + esc(b.login) : '') + '</div>'
             + '<div class="histo-count">' + arts.length + ' article(s)</div>'
           + '</div>'
           + '<div style="display:flex;gap:6px;align-items:center">'
@@ -504,6 +543,128 @@ async function loadArticlesSilent() {
       buildPills();
       doSearch();
     }
+  } catch(e) {}
+}
+
+
+// ── PAGE ADMIN ──
+async function loadAdminPage() {
+  await loadUtilisateurs();
+  await loadHistoriqueActions();
+}
+
+async function loadUtilisateurs() {
+  try {
+    var data = await supa('GET', 'utilisateurs?select=*&order=prenom.asc');
+    var list = document.getElementById('usersList');
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucun utilisateur</div>';
+      return;
+    }
+    var h = '';
+    for (var i = 0; i < data.length; i++) {
+      var u = data[i];
+      h += '<div style="background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
+        + '<div>'
+          + '<div style="font-size:15px;font-weight:600;color:var(--tx);">' + esc(u.prenom) + '</div>'
+          + '<div style="font-size:12px;color:var(--mu);">Login: ' + esc(u.login) + '</div>'
+          + '<div style="font-size:11px;color:' + (u.role==='admin'?'var(--ac)':'var(--gn)') + ';margin-top:2px;">' + (u.role==='admin'?'👑 Admin':'👤 User') + (u.actif?'':' — Inactif') + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;">'
+          + '<div style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="' + u.id + '" onclick="editUser(this)">✏️</div>'
+          + (u.login !== 'Djulien' ? '<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="' + u.id + '" onclick="deleteUser(this)">🗑</div>' : '')
+        + '</div>'
+      + '</div>';
+    }
+    list.innerHTML = h;
+  } catch(e) { console.error(e); }
+}
+
+async function createUser() {
+  var prenom = document.getElementById('newPrenom').value.trim();
+  var login = document.getElementById('newLogin').value.trim();
+  var pwd = document.getElementById('newPwd').value.trim();
+  var role = document.getElementById('newRole').value;
+  if (!prenom || !login || !pwd) { showToast('Tous les champs sont obligatoires', 'err'); return; }
+  
+  var hash = await hashStr(login + ':' + pwd);
+  try {
+    await supa('POST', 'utilisateurs', [{prenom:prenom, login:login, password_hash:hash, role:role, actif:true}]);
+    // Ajouter dans ATOKENS dynamiquement
+    ATOKENS.push(hash);
+    document.getElementById('newPrenom').value = '';
+    document.getElementById('newLogin').value = '';
+    document.getElementById('newPwd').value = '';
+    showToast('Utilisateur cree!', 'success');
+    loadUtilisateurs();
+    logAction('Cree utilisateur: ' + login);
+  } catch(e) { showToast('Erreur creation', 'err'); console.error(e); }
+}
+
+async function deleteUser(el) {
+  var id = el.getAttribute('data-id');
+  if (!confirm('Supprimer cet utilisateur?')) return;
+  try {
+    await supa('DELETE', 'utilisateurs?id=eq.' + id);
+    showToast('Utilisateur supprime', 'success');
+    loadUtilisateurs();
+  } catch(e) { showToast('Erreur suppression', 'err'); }
+}
+
+function editUser(el) {
+  var id = el.getAttribute('data-id');
+  var newPwd = prompt('Nouveau mot de passe (laisser vide pour ne pas changer):');
+  if (newPwd === null) return;
+  if (!newPwd) { showToast('Mot de passe inchange', 'success'); return; }
+  hashStr(id + ':' + newPwd).then(function(hash) {
+    // On a besoin du login pour hasher correctement
+    supa('GET', 'utilisateurs?id=eq.' + id + '&select=login').then(function(data) {
+      if (!data || !data.length) return;
+      var login = data[0].login;
+      return hashStr(login + ':' + newPwd);
+    }).then(function(h) {
+      return supa('PATCH', 'utilisateurs?id=eq.' + id, {password_hash: h});
+    }).then(function() {
+      showToast('Mot de passe modifie!', 'success');
+      logAction('Modifie mdp utilisateur id:' + id);
+    }).catch(function(e) { showToast('Erreur', 'err'); });
+  });
+}
+
+async function loadHistoriqueActions() {
+  try {
+    var data = await supa('GET', 'historique_actions?select=*&order=created_at.desc&limit=50');
+    var list = document.getElementById('actionsList');
+    if (!data || !data.length) {
+      list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucune action</div>';
+      return;
+    }
+    var h = '';
+    for (var i = 0; i < data.length; i++) {
+      var a = data[i];
+      var date = new Date(a.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      h += '<div style="background:var(--cd);border:1px solid var(--br);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+        + '<div>'
+          + '<div style="font-size:13px;font-weight:600;color:var(--ac);">' + esc(a.prenom) + '</div>'
+          + '<div style="font-size:12px;color:var(--tx);">' + esc(a.action) + '</div>'
+          + (a.details ? '<div style="font-size:11px;color:var(--mu);">' + esc(a.details) + '</div>' : '')
+        + '</div>'
+        + '<div style="font-size:11px;color:var(--mu);white-space:nowrap;">' + date + '</div>'
+      + '</div>';
+    }
+    list.innerHTML = h;
+  } catch(e) { console.error(e); }
+}
+
+async function logAction(action, details) {
+  if (!currentUser.login) return;
+  try {
+    await supa('POST', 'historique_actions', [{
+      login: currentUser.login,
+      prenom: currentUser.prenom,
+      action: action,
+      details: details || ''
+    }]);
   } catch(e) {}
 }
 
