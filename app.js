@@ -23,7 +23,7 @@ async function hashStr(s) {
 function showLoading(show, msg) { var el = document.getElementById('loadingOverlay'); if (show) el.classList.remove('hidden'); else el.classList.add('hidden'); if (msg) document.getElementById('loadingText').textContent = msg; }
 function showToast(msg, type) { var t = document.getElementById('toast'); t.textContent = msg; t.className = 'toast ' + type + ' show'; setTimeout(function() { t.classList.remove('show'); }, 2500); }
 
-function checkAuth() {
+async function checkAuth() {
   var stored = localStorage.getItem(SKEY2);
   if (ATOKENS.indexOf(stored) >= 0) {
     var cu = localStorage.getItem('currentUser');
@@ -31,8 +31,18 @@ function checkAuth() {
     if (!currentUser.login) {
       currentUser = stored === ADMIN_TOKEN ? 
         {login:'Djulien', prenom:'Djulien', role:'admin', token:stored} :
-        {login:'magasin2k', prenom:'Magasin', role:'user', token:stored};
+        {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:stored};
     }
+    // Recharger le role depuis la base
+    try {
+      var data = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(currentUser.login) + '&select=prenom,role,actif');
+      if (data && data.length) {
+        currentUser.prenom = data[0].prenom;
+        currentUser.role = data[0].role;
+        if (!data[0].actif) { localStorage.removeItem(SKEY2); location.reload(); return; }
+        localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      }
+    } catch(e) {}
     document.getElementById('loginOverlay').classList.add('hidden');
     initUI();
     loadArticles();
@@ -47,12 +57,17 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
   var h = await hashStr(u + ':' + p);
   if (ATOKENS.indexOf(h) >= 0) {
     localStorage.setItem(SKEY2, h);
-    // Identifier le user
-    if (h === ADMIN_TOKEN) {
-      currentUser = {login:'Djulien', prenom:'Djulien', role:'admin', token:h};
-    } else {
-      currentUser = {login:'magasin2k', prenom:'Magasin', role:'user', token:h};
-    }
+    currentUser = h === ADMIN_TOKEN ? 
+      {login:'Djulien', prenom:'Djulien', role:'admin', token:h} :
+      {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:h};
+    // Chercher dans la table utilisateurs
+    try {
+      var udata = await supa('GET', 'utilisateurs?password_hash=eq.' + h + '&select=login,prenom,role,actif');
+      if (udata && udata.length) {
+        currentUser = {login:udata[0].login, prenom:udata[0].prenom, role:udata[0].role, token:h};
+        if (!udata[0].actif) { err.textContent = 'Compte desactive.'; return; }
+      }
+    } catch(e) {}
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     document.getElementById('loginOverlay').classList.add('hidden');
     initUI();
@@ -83,14 +98,25 @@ async function loadArticles() {
 }
 
 function initUI() {
-  // Afficher onglet admin seulement pour Djulien
-  var tabAdmin = document.getElementById('t4');
-  if (tabAdmin) {
-    tabAdmin.style.display = currentUser.role === 'admin' ? 'flex' : 'none';
-  }
-  // Afficher le prenom dans le header
+  var role = currentUser.role;
+  
+  // Onglet Admin - admin seulement
+  var t4 = document.getElementById('t4');
+  if (t4) t4.style.display = role === 'admin' ? 'flex' : 'none';
+  
+  // Onglet Ajouter - admin + magasinier
+  var t2 = document.getElementById('t2');
+  if (t2) t2.style.display = (role === 'admin' || role === 'magasinier') ? 'flex' : 'none';
+  
+  // Boutons Modifier/Supprimer - caches pour agent
+  window._canEdit = (role === 'admin' || role === 'magasinier');
+  
+  // Prenom dans le header
   var userInfo = document.getElementById('userInfo');
-  if (userInfo) userInfo.textContent = currentUser.prenom;
+  if (userInfo) {
+    var badge = role === 'admin' ? '👑' : (role === 'magasinier' ? '🔧' : '👷');
+    userInfo.textContent = badge + ' ' + currentUser.prenom;
+  }
 }
 
 function getCats() { var c = {}; for (var i = 0; i < articles.length; i++) { var x = articles[i].categorie || ''; if (x) c[x] = true; } return Object.keys(c).sort(); }
