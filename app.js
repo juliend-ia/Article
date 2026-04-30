@@ -645,24 +645,58 @@ async function deleteUser(el) {
   } catch(e) { showToast('Erreur suppression', 'err'); }
 }
 
-function editUser(el) {
+async function editUser(el) {
   var id = el.getAttribute('data-id');
-  var newPwd = prompt('Nouveau mot de passe (laisser vide pour ne pas changer):');
-  if (newPwd === null) return;
-  if (!newPwd) { showToast('Mot de passe inchange', 'success'); return; }
-  hashStr(id + ':' + newPwd).then(function(hash) {
-    // On a besoin du login pour hasher correctement
-    supa('GET', 'utilisateurs?id=eq.' + id + '&select=login').then(function(data) {
-      if (!data || !data.length) return;
-      var login = data[0].login;
-      return hashStr(login + ':' + newPwd);
-    }).then(function(h) {
-      return supa('PATCH', 'utilisateurs?id=eq.' + id, {password_hash: h});
-    }).then(function() {
-      showToast('Mot de passe modifie!', 'success');
-      logAction('Modifie mdp utilisateur id:' + id);
-    }).catch(function(e) { showToast('Erreur', 'err'); });
-  });
+  try {
+    var data = await supa('GET', 'utilisateurs?id=eq.' + id + '&select=*');
+    if (!data || !data.length) return;
+    var u = data[0];
+    // Remplir le formulaire de modif
+    document.getElementById('editUserId').value = u.id;
+    document.getElementById('editUserPrenom').value = u.prenom;
+    document.getElementById('editUserLogin').value = u.login;
+    document.getElementById('editUserPwd').value = '';
+    document.getElementById('editUserRole').value = u.role;
+    document.getElementById('editUserActif').checked = u.actif;
+    document.getElementById('editUserModal').classList.remove('hidden');
+  } catch(e) { showToast('Erreur', 'err'); console.error(e); }
+}
+
+async function saveEditUser() {
+  var id = document.getElementById('editUserId').value;
+  var prenom = document.getElementById('editUserPrenom').value.trim();
+  var login = document.getElementById('editUserLogin').value.trim();
+  var pwd = document.getElementById('editUserPwd').value.trim();
+  var role = document.getElementById('editUserRole').value;
+  var actif = document.getElementById('editUserActif').checked;
+  
+  if (!prenom || !login) { showToast('Prenom et login obligatoires', 'err'); return; }
+  
+  var updates = {prenom:prenom, login:login, role:role, actif:actif};
+  
+  if (pwd) {
+    updates.password_hash = await hashStr(login + ':' + pwd);
+    // Mettre a jour ATOKENS
+    var oldData = await supa('GET', 'utilisateurs?id=eq.' + id + '&select=password_hash');
+    if (oldData && oldData.length) {
+      var oldHash = oldData[0].password_hash;
+      var idx = ATOKENS.indexOf(oldHash);
+      if (idx >= 0) ATOKENS[idx] = updates.password_hash;
+      else ATOKENS.push(updates.password_hash);
+    }
+  }
+  
+  try {
+    await supa('PATCH', 'utilisateurs?id=eq.' + id, updates);
+    document.getElementById('editUserModal').classList.add('hidden');
+    showToast('Utilisateur modifie!', 'success');
+    logAction('Modifie utilisateur: ' + login);
+    loadUtilisateurs();
+  } catch(e) { showToast('Erreur modification', 'err'); console.error(e); }
+}
+
+function closeEditUser() {
+  document.getElementById('editUserModal').classList.add('hidden');
 }
 
 async function loadHistoriqueActions() {
