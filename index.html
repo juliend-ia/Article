@@ -134,6 +134,7 @@ main{padding:14px;max-width:800px;margin:0 auto;}
 <header>
   <div class="logo">MAGASIN 2K<small>Depot Bus Citaro</small></div>
   <div class="stats"><strong id="totalCount">--</strong>articles</div>
+  <div id="userInfo" style="font-size:12px;color:var(--mu);margin-right:8px;"></div>
   <button class="btn-logout" id="logoutBtn">Deco</button>
 </header>
 <main>
@@ -141,6 +142,7 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     <div class="tab active" id="t1">Recherche</div>
     <div class="tab" id="t2">Ajouter</div>
     <div class="tab" id="t3">Panier<span class="badge" id="panierBadge">0</span></div>
+    <div class="tab" id="t4" style="display:none;" onclick="switchTab('admin')">👑 Admin</div>
   </div>
   <div id="p1">
     <div class="sb"><input type="text" id="si" placeholder="Rechercher..." autocomplete="off"/><span id="clearSearch" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;display:none;">&#x2715;</span></div>
@@ -183,6 +185,30 @@ main{padding:14px;max-width:800px;margin:0 auto;}
         </div>
       </div>
       <button class="bsave" id="addBtn">ENREGISTRER</button>
+    </div>
+  </div>
+  <div id="p4" style="display:none">
+    <div style="background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:18px;margin-bottom:16px;">
+      <h2 style="font-size:19px;color:var(--ac);margin-bottom:14px;">👑 Gestion Utilisateurs</h2>
+      <div class="field"><label>Prénom</label><input type="text" id="newPrenom" placeholder="ex: Marc"/></div>
+      <div class="field"><label>Login</label><input type="text" id="newLogin" placeholder="ex: marc123" autocorrect="off" autocapitalize="none"/></div>
+      <div class="field"><label>Mot de passe</label><input type="password" id="newPwd" placeholder="••••••"/></div>
+      <div class="field">
+        <label>Rôle</label>
+        <select id="newRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
+          <option value="user">👤 Utilisateur</option>
+          <option value="admin">👑 Administrateur</option>
+        </select>
+      </div>
+      <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
+    </div>
+    <div style="margin-bottom:16px;">
+      <div style="font-size:16px;color:var(--mu);margin-bottom:10px;font-weight:600;">UTILISATEURS</div>
+      <div id="usersList"></div>
+    </div>
+    <div>
+      <div style="font-size:16px;color:var(--mu);margin-bottom:10px;font-weight:600;">HISTORIQUE DES ACTIONS</div>
+      <div id="actionsList"></div>
     </div>
   </div>
   <div id="p3" style="display:none">
