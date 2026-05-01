@@ -433,14 +433,48 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||''}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 });
 
+var _histoFiltre = 'today';
+
 async function loadHistorique() {
   try {
-    var data = await supa('GET', 'bons_commande?select=*&order=date_creation.desc&limit=20');
+    var data = await supa('GET', 'bons_commande?select=*&order=date_creation.desc&limit=200');
     var list = document.getElementById('historiqueList');
-    if (!data || !data.length) { list.innerHTML = '<div class="panier-empty" style="padding:20px">Aucun bon</div>'; return; }
-    var h = '';
-    for (var i = 0; i < data.length; i++) {
-      var b = data[i], arts = b.articles||[], date = new Date(b.date_creation).toLocaleDateString('fr-FR');
+
+    // Filtres par date
+    var now = new Date();
+    var debutAujourdhui = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var debutSemaine = new Date(debutAujourdhui);
+    debutSemaine.setDate(debutAujourdhui.getDate() - debutAujourdhui.getDay() + (debutAujourdhui.getDay() === 0 ? -6 : 1));
+
+    var filtered = (data || []).filter(function(b) {
+      var d = new Date(b.date_creation);
+      if (_histoFiltre === 'today') return d >= debutAujourdhui;
+      if (_histoFiltre === 'week') return d >= debutSemaine;
+      return true;
+    });
+
+    // Onglets filtre
+    var tabs = '<div style="display:flex;gap:6px;margin-bottom:12px;">'
+      + ['today','week','all'].map(function(f, i) {
+          var label = f === 'today' ? "Aujourd'hui" : f === 'week' ? 'Cette semaine' : 'Tout';
+          var active = _histoFiltre === f;
+          return '<div class="histo-tab" data-f="' + f + '" style="flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ' + (active ? 'var(--ac)' : 'var(--br)') + ';color:' + (active ? 'var(--ac)' : 'var(--mu)') + ';background:' + (active ? 'rgba(240,165,0,0.08)' : 'var(--sf)') + ';">' + label + '</div>';
+        }).join('')
+      + '</div>';
+
+    if (!filtered.length) {
+      list.innerHTML = tabs + '<div class="panier-empty" style="padding:20px">Aucun bon</div>';
+      list.querySelectorAll('.histo-tab').forEach(function(el) { el.addEventListener('click', function() { _histoFiltre = this.getAttribute('data-f'); loadHistorique(); }); });
+      return;
+    }
+
+    var h = tabs;
+    for (var i = 0; i < filtered.length; i++) {
+      var b = filtered[i], arts = b.articles||[];
+      var dt = new Date(b.date_creation);
+      var dateStr = dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      var sapDone = b.sap_effectue || false;
+
       var detailRows = '';
       for (var j = 0; j < arts.length; j++) {
         var art = arts[j];
@@ -452,15 +486,20 @@ async function loadHistorique() {
           + '<div style="font-size:16px;font-weight:700;color:var(--gn);background:rgba(46,204,113,0.1);border:1px solid var(--gn);border-radius:6px;padding:4px 10px;">x' + art.qty + '</div>'
           + '</div>';
       }
-      h += '<div class="histo-item">'
+
+      h += '<div class="histo-item" style="' + (sapDone ? 'opacity:0.6;' : '') + '">'
         + '<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
           + '<div>'
             + '<div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div>'
-            + '<div class="histo-date">' + date + '</div>'
+            + '<div class="histo-date">' + dateStr + '</div>'
             + (b.login ? '<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 ' + esc(b.login) + '</div>' : '')
             + '<div class="histo-count">' + arts.length + ' article(s)</div>'
           + '</div>'
-          + '<div style="display:flex;gap:6px;align-items:center">'
+          + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">'
+            + '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:' + (sapDone ? 'var(--gn)' : 'var(--mu)') + ';cursor:pointer;white-space:nowrap;" onclick="event.stopPropagation()">'
+              + '<input type="checkbox" class="chk-sap" data-id="' + b.id + '" ' + (sapDone ? 'checked' : '') + ' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
+              + 'SAP fait'
+            + '</label>'
             + '<div style="color:var(--mu);font-size:18px;">▼</div>'
             + '<div class="btn-dl" data-id="' + b.id + '">Excel</div>'
             + '<div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
@@ -478,10 +517,13 @@ async function loadHistorique() {
         + '</div>'
       + '</div>';
     }
+
     list.innerHTML = h;
+    list.querySelectorAll('.histo-tab').forEach(function(el) { el.addEventListener('click', function() { _histoFiltre = this.getAttribute('data-f'); loadHistorique(); }); });
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
     list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
+    list.querySelectorAll('.chk-sap').forEach(function(el) { el.addEventListener('change', async function() { var id = this.getAttribute('data-id'), val = this.checked; try { await supa('PATCH', 'bons_commande?id=eq.' + id, {sap_effectue:val}); showToast(val ? 'SAP marque fait ✓' : 'SAP marque non fait', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); } }); });
   } catch(e) { console.error(e); }
 }
 
