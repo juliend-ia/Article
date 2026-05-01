@@ -476,7 +476,7 @@ async function loadHistorique() {
     for (var i = 0; i < filtered.length; i++) {
       var b = filtered[i], arts = b.articles||[];
       var dt = new Date(b.date_creation);
-      var dateStr = dt.toLocaleDateString('fr-FR') + ' ' + dt.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+      var dateStr = dt.toLocaleString('fr-FR', {timeZone:'Europe/Brussels', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
       var sapDone = b.sap_effectue || false;
 
       var detailRows = '';
