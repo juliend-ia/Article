@@ -149,6 +149,10 @@ function initUI() {
   
   // Boutons Modifier/Supprimer - caches pour agent
   window._canEdit = (role === 'admin' || role === 'magasinier');
+
+  // Historique bons - cache pour agent
+  var histoSection = document.getElementById('histoSection');
+  if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
   
   // Prenom dans le header
   var userInfo = document.getElementById('userInfo');
@@ -599,7 +603,7 @@ function switchTab(tab) {
   document.getElementById('p3').style.display = tab === 'panier' ? 'block' : 'none';
   var p4 = document.getElementById('p4');
   if (p4) p4.style.display = tab === 'admin' ? 'block' : 'none';
-  if (tab === 'panier') { renderPanier(); loadHistorique(); }
+  if (tab === 'panier') { renderPanier(); if (currentUser.role !== 'agent') loadHistorique(); }
   if (tab === 'admin' && currentUser.role === 'admin') { loadAdminPage(); }
 }
 
