@@ -4,7 +4,7 @@ var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'', prenom:'', role:'user', token:''};
 var SKEY2 = 'bus-auth-v1';
-var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _cats = [];
+var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _editPhotos = [], _cats = [];
 
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -236,7 +236,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
   var busArt = document.getElementById('addBusArt').checked;
   var chimique = document.getElementById('addChimique').checked;
   var npf = document.getElementById('addNpf').value.trim();
-  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,npf:'',stock_securite:0};
+  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,stock_securite:0};
   try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf'].forEach(function(id) { document.getElementById(id).value = ''; });
   setBusBtn('addBusStd','addBusStdBtn',false);
   setBusBtn('addBusArt','addBusArtBtn',false);
@@ -439,13 +439,62 @@ async function loadHistorique() {
         + '</div>'
         + '<div class="bon-detail" style="display:none;margin-top:8px;border-top:1px solid var(--br);border-radius:0 0 8px 8px;overflow:hidden;">'
           + detailRows
+          + '<div style="background:var(--sf);border-top:1px solid var(--br);padding:10px 12px;">'
+            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+              + '<div style="font-size:11px;color:var(--mu);font-weight:600;letter-spacing:0.5px;">FORMAT SAP — pret a coller</div>'
+              + '<div class="btn-copy-sap" data-id="' + b.id + '" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">📋 Copier</div>'
+            + '</div>'
+            + '<pre id="sap-' + b.id + '" style="background:var(--bg);border:1px solid var(--br);border-radius:6px;padding:8px;font-family:monospace;font-size:12px;color:var(--tx);white-space:pre;overflow-x:auto;margin:0;">' + buildSapText(b.numero_ordre, arts) + '</pre>'
+          + '</div>'
         + '</div>'
       + '</div>';
     }
     list.innerHTML = h;
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
+    list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
   } catch(e) { console.error(e); }
+}
+
+function buildSapText(numeroOrdre, arts) {
+  // Format SAP: article TAB quantite TAB (uqs vide) TAB magasin TAB (centre cts vide) TAB ordre TAB op
+  // 7 colonnes, separateur TAB, sans en-tete
+  var lines = [];
+  for (var i = 0; i < arts.length; i++) {
+    var a = arts[i];
+    lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + numeroOrdre + '\t' + '10');
+  }
+  return esc(lines.join('\n'));
+}
+
+async function copySAP(id) {
+  try {
+    var data = await supa('GET', 'bons_commande?id=eq.' + id + '&select=*');
+    if (!data || !data.length) return;
+    var bon = data[0], arts = bon.articles||[];
+    var lines = [];
+    for (var i = 0; i < arts.length; i++) {
+      var a = arts[i];
+      lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + bon.numero_ordre + '\t' + '10');
+    }
+    var txt = lines.join('\n');
+    // Methode moderne (HTTPS requis - GitHub Pages OK)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(txt);
+      showToast('Copie! Colle dans SAP', 'success');
+    } else {
+      // Fallback ancien
+      var ta = document.createElement('textarea');
+      ta.value = txt;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Copie! Colle dans SAP', 'success');
+    }
+  } catch(e) { showToast('Erreur copie', 'err'); console.error(e); }
 }
 
 async function exportBon(id) {
