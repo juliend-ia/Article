@@ -112,11 +112,11 @@ function initUI() {
   
   // Onglet Admin - admin seulement
   var t4 = document.getElementById('t4');
-  if (t4) t4.style.display = role === 'admin' ? 'flex' : 'none';
+  if (t4) { t4.style.display = role === 'admin' ? 'flex' : 'none'; t4.style.justifyContent = 'center'; t4.style.alignItems = 'center'; }
   
   // Onglet Ajouter - admin + magasinier
   var t2 = document.getElementById('t2');
-  if (t2) t2.style.display = (role === 'admin' || role === 'magasinier') ? 'flex' : 'none';
+  if (t2) { t2.style.display = (role === 'admin' || role === 'magasinier') ? 'flex' : 'none'; t2.style.justifyContent = 'center'; t2.style.alignItems = 'center'; }
   
   // Boutons Modifier/Supprimer - caches pour agent
   window._canEdit = (role === 'admin' || role === 'magasinier');
