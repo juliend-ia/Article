@@ -444,16 +444,25 @@ async function loadHistorique() {
     var data = await supa('GET', 'bons_commande?select=*&order=date_creation.desc&limit=200');
     var list = document.getElementById('historiqueList');
 
-    // Filtres par date
+    // Debut de journee/semaine EN HEURE LOCALE (Brussels)
+    function debutJourLocal(d) {
+      // Retourne minuit heure locale pour la date donnée
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+    }
     var now = new Date();
-    var debutAujourdhui = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var debutAujourdhui = debutJourLocal(now);
     var debutSemaine = new Date(debutAujourdhui);
-    debutSemaine.setDate(debutAujourdhui.getDate() - debutAujourdhui.getDay() + (debutAujourdhui.getDay() === 0 ? -6 : 1));
+    var jourSemaine = debutAujourdhui.getDay(); // 0=dim
+    var offsetLundi = jourSemaine === 0 ? -6 : 1 - jourSemaine;
+    debutSemaine.setDate(debutAujourdhui.getDate() + offsetLundi);
 
     var filtered = (data || []).filter(function(b) {
+      // Convertir la date UTC en heure locale pour comparer
       var d = new Date(b.date_creation);
-      if (_histoFiltre === 'today') return d >= debutAujourdhui;
-      if (_histoFiltre === 'week') return d >= debutSemaine;
+      var dLocal = debutJourLocal(d);
+      // On compare les debuts de jour locaux
+      if (_histoFiltre === 'today') return dLocal >= debutAujourdhui;
+      if (_histoFiltre === 'week')  return dLocal >= debutSemaine;
       return true;
     });
 
