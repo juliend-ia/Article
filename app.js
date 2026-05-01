@@ -89,6 +89,35 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
 document.getElementById('loginPwd').addEventListener('keydown', function(e) { if (e.key === 'Enter') document.getElementById('loginBtn').click(); });
 document.getElementById('logoutBtn').addEventListener('click', function() { localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser'); currentUser = {login:'',prenom:'',role:'user',token:''}; location.reload(); });
 
+// ── MOT DE PASSE OUBLIE ──
+document.getElementById('forgotLink').addEventListener('click', function() {
+  var panel = document.getElementById('resetPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+  document.getElementById('resetErr').textContent = '';
+  document.getElementById('resetLogin').value = '';
+});
+
+document.getElementById('resetBtn').addEventListener('click', async function() {
+  var login = document.getElementById('resetLogin').value.trim().toLowerCase();
+  var err = document.getElementById('resetErr');
+  if (!login) { err.textContent = 'Saisis ton login.'; return; }
+  // Verifier que le login existe
+  try {
+    var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(login) + '&select=login,actif');
+    if (!udata || !udata.length) { err.textContent = 'Login inconnu.'; return; }
+    if (!udata[0].actif) { err.textContent = 'Compte desactive.'; return; }
+    // Verifier pas de demande deja en attente
+    var existing = await supa('GET', 'demandes_reset?login=eq.' + encodeURIComponent(login) + '&traitee=eq.false&select=id');
+    if (existing && existing.length) { err.textContent = 'Demande deja envoyee, patiente.'; return; }
+    // Creer la demande
+    await supa('POST', 'demandes_reset', [{login:login, traitee:false}]);
+    err.style.color = '#2ecc71';
+    err.textContent = 'Demande envoyee ! L\'admin va te recontacter.';
+    document.getElementById('resetLogin').value = '';
+    setTimeout(function() { err.textContent = ''; err.style.color = '#e74c3c'; document.getElementById('resetPanel').style.display = 'none'; }, 3000);
+  } catch(e) { err.textContent = 'Erreur, reessaie.'; console.error(e); }
+});
+
 async function loadArticles() {
   showLoading(true, 'Chargement...');
   try {
@@ -643,8 +672,80 @@ async function loadArticlesSilent() {
 
 // ── PAGE ADMIN ──
 async function loadAdminPage() {
+  await loadDemandes();
   await loadUtilisateurs();
   await loadHistoriqueActions();
+}
+
+async function loadDemandes() {
+  try {
+    var data = await supa('GET', 'demandes_reset?traitee=eq.false&order=created_at.asc&select=*');
+    var section = document.getElementById('resetDemandesSection');
+    var badge = document.getElementById('badgeDemandes');
+    var list = document.getElementById('demandesList');
+    if (!data || !data.length) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'block';
+    badge.style.display = 'inline-flex';
+    badge.textContent = data.length;
+    var h = '';
+    for (var i = 0; i < data.length; i++) {
+      var d = data[i];
+      var date = new Date(d.created_at).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
+        + '<div>'
+          + '<div style="font-size:15px;font-weight:700;color:var(--tx);">👤 ' + esc(d.login) + '</div>'
+          + '<div style="font-size:11px;color:var(--mu);margin-top:2px;">Demande le ' + date + '</div>'
+        + '</div>'
+        + '<div style="display:flex;gap:6px;align-items:center;">'
+          + '<div style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;" onclick="ouvrirResetModal(\'' + esc(d.id) + '\',\'' + esc(d.login) + '\')">🔑 Reinit</div>'
+          + '<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" onclick="ignorerDemande(\'' + esc(d.id) + '\')">Ignorer</div>'
+        + '</div>'
+      + '</div>';
+    }
+    list.innerHTML = h;
+  } catch(e) { console.error(e); }
+}
+
+function ouvrirResetModal(id, login) {
+  document.getElementById('resetUserId').value = id;
+  document.getElementById('resetUserLogin').value = login;
+  document.getElementById('resetUserLoginLabel').textContent = login;
+  document.getElementById('resetNouveauPwd').value = '';
+  document.getElementById('resetPwdErr').textContent = '';
+  document.getElementById('resetPwdModal').classList.remove('hidden');
+}
+
+async function ignorerDemande(id) {
+  try {
+    await supa('PATCH', 'demandes_reset?id=eq.' + id, {traitee:true});
+    loadDemandes();
+  } catch(e) { showToast('Erreur', 'err'); }
+}
+
+async function validerResetPwd() {
+  var id = document.getElementById('resetUserId').value;
+  var login = document.getElementById('resetUserLogin').value;
+  var pwd = document.getElementById('resetNouveauPwd').value.trim();
+  var err = document.getElementById('resetPwdErr');
+  if (!pwd || pwd.length < 4) { err.textContent = 'Mot de passe trop court (min 4 caracteres).'; return; }
+  var hash = await hashStr(login + ':' + pwd);
+  try {
+    await supa('PATCH', 'utilisateurs?login=eq.' + encodeURIComponent(login), {password_hash:hash});
+    await supa('PATCH', 'demandes_reset?id=eq.' + id, {traitee:true});
+    ATOKENS.push(hash);
+    document.getElementById('resetPwdModal').classList.add('hidden');
+    showToast('Mot de passe reinitialise pour ' + login + '!', 'success');
+    logAction('Reset mot de passe: ' + login);
+    loadDemandes();
+    loadUtilisateurs();
+  } catch(e) { err.textContent = 'Erreur, reessaie.'; console.error(e); }
+}
+
+function fermerResetModal() {
+  document.getElementById('resetPwdModal').classList.add('hidden');
 }
 
 async function loadUtilisateurs() {
