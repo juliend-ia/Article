@@ -292,13 +292,15 @@ document.getElementById('addBtn').addEventListener('click', async function() {
   var busStd = document.getElementById('addBusStd').checked;
   var busArt = document.getElementById('addBusArt').checked;
   var chimique = document.getElementById('addChimique').checked;
+  var reparable = document.getElementById('addReparable').checked;
   var npf = document.getElementById('addNpf').value.trim();
   var fournisseur = document.getElementById('addFournisseur').value.trim();
-  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,fournisseur:fournisseur,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,stock_securite:0};
+  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,fournisseur:fournisseur,bus_std:busStd,bus_art:busArt,chimique:chimique,reparable:reparable,interne:false,stock_securite:0};
   try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf','addFournisseur'].forEach(function(id) { document.getElementById(id).value = ''; });
   setBusBtn('addBusStd','addBusStdBtn',false);
   setBusBtn('addBusArt','addBusArtBtn',false);
-  setBusBtn('addChimique','addChimiqueBtn',false); document.getElementById('totalCount').textContent = articles.length; showToast('Article enregistre!', 'success'); buildPills(); switchTab('search'); doSearch(); } catch(e) { showToast('Erreur sauvegarde', 'err'); console.error(e); }
+  setBusBtn('addChimique','addChimiqueBtn',false);
+  setBusBtn('addReparable','addReparableBtn',false); document.getElementById('totalCount').textContent = articles.length; showToast('Article enregistre!', 'success'); buildPills(); switchTab('search'); doSearch(); } catch(e) { showToast('Erreur sauvegarde', 'err'); console.error(e); }
 });
 
 async function delArticle(num) {
@@ -323,6 +325,7 @@ function openEdit(num) {
       setBusBtn('editBusStd','editBusStdBtn',a.bus_std||false);
       setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
       setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
+      setBusBtn('editReparable','editReparableBtn',a.reparable||false);
       _editPhotos = a.photo ? a.photo.split(',').filter(function(u){return u.trim();}) : [];
       _editPhoto = a.photo || null;
       document.getElementById('editPhotoPreview').style.display = 'none';
@@ -337,7 +340,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
   if (!editingNum) return;
   var newNum = document.getElementById('editNum').value.trim(), nom = document.getElementById('editNom').value.trim();
   if (!nom) { showToast('Designation obligatoire', 'err'); return; }
-  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null,npf:document.getElementById('editNpf').value.trim(),fournisseur:document.getElementById('editFournisseur').value.trim(),bus_std:document.getElementById('editBusStd').checked,bus_art:document.getElementById('editBusArt').checked,chimique:document.getElementById('editChimique').checked,interne:false,stock_securite:0};
+  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null,npf:document.getElementById('editNpf').value.trim(),fournisseur:document.getElementById('editFournisseur').value.trim(),bus_std:document.getElementById('editBusStd').checked,bus_art:document.getElementById('editBusArt').checked,chimique:document.getElementById('editChimique').checked,reparable:document.getElementById('editReparable').checked,interne:false,stock_securite:0};
   try {
     if (newNum !== editingNum) { await supa('DELETE', 'articles?num=eq.' + encodeURIComponent(editingNum)); await supa('POST', 'articles', [updated]); }
     else { await supa('PATCH', 'articles?num=eq.' + encodeURIComponent(editingNum), updated); }
@@ -426,7 +429,7 @@ function renderEditPhotos() {
 function ajouterPanier(num) {
   var a = articles.filter(function(x) { return x.num === num; })[0]; if (!a) return;
   var ex = panier.filter(function(x) { return x.num === num; })[0];
-  if (ex) { ex.qty++; showToast('Quantite mise a jour!', 'success'); } else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1}); showToast('Ajoute au panier!', 'success'); }
+  if (ex) { ex.qty++; showToast('Quantite mise a jour!', 'success'); } else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false}); showToast('Ajoute au panier!', 'success'); }
   updateBadge();
 }
 
@@ -523,7 +526,7 @@ async function loadHistorique() {
       for (var j = 0; j < arts.length; j++) {
         var art = arts[j];
         detailRows += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--br);">'
-          + '<div><div style="font-size:16px;font-weight:700;color:var(--ac);">' + esc(art.num) + '</div>'
+          + '<div><div style="font-size:16px;font-weight:700;color:var(--ac);">' + esc(art.num) + (art.reparable ? ' <span style="font-size:12px;background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:4px;padding:1px 6px;color:#9b59b6;vertical-align:middle;">🔧 Réparable</span>' : '') + '</div>'
           + '<div style="font-size:14px;font-weight:500;color:var(--tx);margin-top:2px;">' + esc(art.nom) + '</div>'
           + (art.location ? '<div style="font-size:13px;color:var(--mu);margin-top:2px;">📍 ' + esc(art.location) + '</div>' : '')
           + '</div>'
