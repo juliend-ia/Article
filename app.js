@@ -429,7 +429,7 @@ function renderEditPhotos() {
 function ajouterPanier(num) {
   var a = articles.filter(function(x) { return x.num === num; })[0]; if (!a) return;
   var ex = panier.filter(function(x) { return x.num === num; })[0];
-  if (ex) { ex.qty++; showToast('Quantite mise a jour!', 'success'); } else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false}); showToast('Ajoute au panier!', 'success'); }
+  if (ex) { ex.qty++; showToast('Quantite mise a jour!', 'success'); } else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false}); showToast('Ajoute au panier!', 'success'); }
   updateBadge();
 }
 
@@ -556,13 +556,6 @@ async function loadHistorique() {
         + '</div>'
         + '<div class="bon-detail" style="display:none;margin-top:8px;border-top:1px solid var(--br);border-radius:0 0 8px 8px;overflow:hidden;">'
           + detailRows
-          + '<div style="background:var(--sf);border-top:1px solid var(--br);padding:10px 12px;">'
-            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-              + '<div style="font-size:11px;color:var(--mu);font-weight:600;letter-spacing:0.5px;">FORMAT SAP — pret a coller</div>'
-              + '<div class="btn-copy-sap" data-id="' + b.id + '" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">📋 Copier</div>'
-            + '</div>'
-            + '<pre id="sap-' + b.id + '" style="background:var(--bg);border:1px solid var(--br);border-radius:6px;padding:8px;font-family:monospace;font-size:12px;color:var(--tx);white-space:pre;overflow-x:auto;margin:0;">' + buildSapText(b.numero_ordre, arts) + '</pre>'
-          + '</div>'
         + '</div>'
       + '</div>';
     }
@@ -577,11 +570,10 @@ async function loadHistorique() {
 }
 
 function buildSapText(numeroOrdre, arts) {
-  // Format SAP: article TAB quantite TAB (uqs vide) TAB magasin TAB (centre cts vide) TAB ordre TAB op
-  // 7 colonnes, separateur TAB, sans en-tete
   var lines = [];
   for (var i = 0; i < arts.length; i++) {
     var a = arts[i];
+    if (a.interne) continue;  // articles internes exclus du format SAP
     lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + numeroOrdre + '\t' + '10');
   }
   return esc(lines.join('\n'));
@@ -595,6 +587,7 @@ async function copySAP(id) {
     var lines = [];
     for (var i = 0; i < arts.length; i++) {
       var a = arts[i];
+      if (a.interne) continue;  // articles internes exclus de la copie SAP
       lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + bon.numero_ordre + '\t' + '10');
     }
     var txt = lines.join('\n');
