@@ -133,6 +133,7 @@ async function loadArticles() {
     document.getElementById('totalCount').textContent = articles.length;
     await loadSorties();
     buildPills(); doSearch();
+    updateBadgeAttente();
   } catch(e) { console.error('Erreur:', e); showToast('Erreur connexion', 'err'); }
   finally { showLoading(false); }
 }
@@ -151,8 +152,18 @@ function initUI() {
   // Boutons Modifier/Supprimer - caches pour agent
   window._canEdit = (role === 'admin' || role === 'magasinier');
 
-  // Champ numero agent - visible seulement pour agent
-  var agentField = document.getElementById('agentField');
+  // Bouton son - visible pour magasinier et admin
+  var btnSound = document.getElementById('btnSound');
+  if (btnSound) {
+    if (role === 'admin' || role === 'magasinier') {
+      btnSound.style.display = 'flex';
+      btnSound.textContent = _soundEnabled ? '🔔' : '🔕';
+      btnSound.title = _soundEnabled ? 'Son activé — cliquer pour couper' : 'Son coupé — cliquer pour activer';
+      btnSound.style.color = _soundEnabled ? 'var(--ac)' : 'var(--mu)';
+    } else {
+      btnSound.style.display = 'none';
+    }
+  }
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
   // Historique bons - cache pour agent
@@ -248,8 +259,9 @@ function renderList(q) {
     var loc = a.location ? esc(a.location) : '<span class="nl">Non renseigne</span>';
         var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')<0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
-    var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
-    var fourrow = a.fournisseur ? '<div class="dp"><div class="dl">Fournisseur</div><div class="dv">' + esc(a.fournisseur) + '</div></div>' : '';
+    var npfrow = (a.npf && window._canEdit) ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
+    var fourrow = (a.fournisseur && window._canEdit) ? '<div class="dp"><div class="dl">Fournisseur</div><div class="dv">' + esc(a.fournisseur) + '</div></div>' : '';
+    var minmax = (window._canEdit && (a.min || a.max)) ? '<div class="dp"><div class="dl">Min/Max</div><div class="dv">' + (a.min||0) + '/' + (a.max||0) + '</div></div>' : '';
     var internerow = a.interne ? '<div class="dp"><div class="dl">Type</div><div class="dv" style="color:#9b59b6;font-weight:600;">&#x1F527; Interne</div></div>' : '';
     var busrow = '';
     if (a.bus_art || a.bus_std || a.chimique) {
@@ -472,8 +484,38 @@ document.getElementById('validerBtn').addEventListener('click', async function()
     numAgent = document.getElementById('numeroAgent').value.trim();
     if (!numAgent) { showToast('Saisis ton numero d\'agent', 'err'); return; }
   }
-  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:numAgent||null}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; if (currentUser.role === 'agent') document.getElementById('numeroAgent').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
+  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:numAgent||null}]);
+    var nbArts = panier.length;
+    var totalQty = panier.reduce(function(s,x){return s+x.qty;},0);
+    panier = []; document.getElementById('numeroOrdre').value = '';
+    if (currentUser.role === 'agent') document.getElementById('numeroAgent').value = '';
+    updateBadge(); renderPanier(); loadHistorique();
+    if (currentUser.role === 'agent') {
+      showConfirmAgent(num, nbArts, totalQty);
+    } else {
+      showToast('Bon sauvegarde!', 'success');
+    }
+  } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 });
+
+function showConfirmAgent(ordre, nbArts, totalQty) {
+  var el = document.getElementById('confirmAgent');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'confirmAgent';
+    el.style.cssText = 'position:fixed;inset:0;background:rgba(15,17,23,0.92);display:flex;align-items:center;justify-content:center;z-index:800;padding:24px;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '<div style="background:#1a1d27;border:2px solid #2ecc71;border-radius:16px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
+    + '<div style="font-size:48px;margin-bottom:12px;">✅</div>'
+    + '<div style="font-size:20px;font-weight:700;color:#2ecc71;margin-bottom:8px;">Commande envoyée !</div>'
+    + '<div style="font-size:14px;color:#e8eaf0;margin-bottom:6px;">Le magasin a bien reçu ta demande.</div>'
+    + '<div style="font-size:13px;color:#7a8099;margin-bottom:20px;">Ordre <strong style="color:#f0a500;">' + esc(ordre) + '</strong> · ' + nbArts + ' article(s) · ' + totalQty + ' pièce(s)</div>'
+    + '<div style="font-size:12px;color:#7a8099;margin-bottom:20px;">Un magasinier va préparer ta commande. Merci !</div>'
+    + '<div onclick="document.getElementById(\'confirmAgent\').style.display=\'none\'" style="background:#2ecc71;color:#111;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;">OK</div>'
+    + '</div>';
+  el.style.display = 'flex';
+}
 
 var _histoFiltre = 'today';
 
@@ -572,7 +614,7 @@ async function loadHistorique() {
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
     list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
-    list.querySelectorAll('.chk-sap').forEach(function(el) { el.addEventListener('change', async function() { var id = this.getAttribute('data-id'), val = this.checked; try { await supa('PATCH', 'bons_commande?id=eq.' + id, {sap_effectue:val}); showToast(val ? 'SAP marque fait ✓' : 'SAP marque non fait', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); } }); });
+    list.querySelectorAll('.chk-sap').forEach(function(el) { el.addEventListener('change', async function() { var id = this.getAttribute('data-id'), val = this.checked; try { await supa('PATCH', 'bons_commande?id=eq.' + id, {sap_effectue:val}); showToast(val ? 'SAP marque fait ✓' : 'SAP marque non fait', 'success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur', 'err'); } }); });
   } catch(e) { console.error(e); }
 }
 
@@ -987,6 +1029,96 @@ async function logAction(action, details) {
       details: details || ''
     }]);
   } catch(e) {}
+}
+
+// ── NOTIFICATIONS COMMANDES ──────────────────────────────────────
+var _soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+
+function playDing() {
+  if (!_soundEnabled) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+    o.start(ctx.currentTime);
+    o.stop(ctx.currentTime + 0.6);
+  } catch(e) {}
+}
+
+function showNotifCommande(record) {
+  var login = record ? (record.login || '?') : '?';
+  var agent = record ? (record.numero_agent || '') : '';
+  var ordre = record ? (record.numero_ordre || '?') : '?';
+  var arts  = record && record.articles ? record.articles.length : '?';
+
+  var el = document.getElementById('notifCommande');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'notifCommande';
+    el.style.cssText = 'position:fixed;top:-120px;left:50%;transform:translateX(-50%);z-index:850;transition:top 0.4s cubic-bezier(0.34,1.56,0.64,1);width:calc(100% - 32px);max-width:420px;';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '<div style="background:#1a1d27;border:2px solid #f0a500;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+      + '<div>'
+        + '<div style="font-size:13px;font-weight:700;color:#f0a500;margin-bottom:4px;">🔔 Nouvelle commande reçue !</div>'
+        + '<div style="font-size:12px;color:#e8eaf0;">👤 ' + esc(login) + (agent ? ' · 🪪 Agent ' + esc(agent) : '') + '</div>'
+        + '<div style="font-size:12px;color:#7a8099;margin-top:2px;">Ordre <strong style="color:#f0a500;">' + esc(ordre) + '</strong> · ' + arts + ' article(s)</div>'
+      + '</div>'
+      + '<div onclick="fermerNotif()" style="color:#7a8099;font-size:18px;cursor:pointer;padding:0 4px;line-height:1;">✕</div>'
+    + '</div>'
+  + '</div>';
+  el.style.top = '16px';
+  clearTimeout(el._timer);
+  el._timer = setTimeout(function() { fermerNotif(); }, 6000);
+  updateBadgeAttente();
+}
+
+function fermerNotif() {
+  var el = document.getElementById('notifCommande');
+  if (el) el.style.top = '-120px';
+}
+
+async function updateBadgeAttente() {
+  if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
+  try {
+    var data = await supa('GET', 'bons_commande?sap_effectue=eq.false&select=id');
+    var nb = data ? data.length : 0;
+    var badge = document.getElementById('badgeAttente');
+    if (!badge) {
+      badge = document.createElement('div');
+      badge.id = 'badgeAttente';
+      badge.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
+      badge.onclick = function() { switchTab('panier'); };
+      document.body.appendChild(badge);
+    }
+    if (nb > 0) {
+      badge.innerHTML = '<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;">'
+        + '<span style="font-size:16px;">📋</span>'
+        + nb + ' commande' + (nb > 1 ? 's' : '') + ' en attente SAP'
+        + '</div>';
+      badge.style.display = 'block';
+    } else {
+      badge.style.display = 'none';
+    }
+  } catch(e) {}
+}
+
+function toggleSound() {
+  _soundEnabled = !_soundEnabled;
+  localStorage.setItem('soundEnabled', _soundEnabled ? 'true' : 'false');
+  var btn = document.getElementById('btnSound');
+  if (btn) {
+    btn.textContent = _soundEnabled ? '🔔' : '🔕';
+    btn.title = _soundEnabled ? 'Son activé — cliquer pour couper' : 'Son coupé — cliquer pour activer';
+    btn.style.color = _soundEnabled ? 'var(--ac)' : 'var(--mu)';
+  }
+  showToast(_soundEnabled ? 'Son activé' : 'Son coupé', 'success');
 }
 
 initRealtime();
