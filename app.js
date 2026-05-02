@@ -4,7 +4,7 @@ var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'', prenom:'', role:'user', token:''};
 var SKEY2 = 'bus-auth-v1';
-var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _editPhotos = [], _cats = [], _sortMode = 'alpha', _sortiesCount = {};
+var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _editPhotos = [], _cats = [], _sortiesCount = {};
 
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -158,21 +158,7 @@ function initUI() {
   // Historique bons - cache pour agent
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
-}
 
-function setSortMode(mode) {
-  _sortMode = mode;
-  var btnAlpha   = document.getElementById('sortAlpha');
-  var btnSorties = document.getElementById('sortSorties');
-  if (mode === 'alpha') {
-    btnAlpha.style.borderColor   = 'var(--ac)'; btnAlpha.style.color   = 'var(--ac)'; btnAlpha.style.background   = 'rgba(240,165,0,0.08)';
-    btnSorties.style.borderColor = 'var(--br)'; btnSorties.style.color = 'var(--mu)'; btnSorties.style.background = 'var(--sf)';
-  } else {
-    btnSorties.style.borderColor = 'var(--ac)'; btnSorties.style.color = 'var(--ac)'; btnSorties.style.background = 'rgba(240,165,0,0.08)';
-    btnAlpha.style.borderColor   = 'var(--br)'; btnAlpha.style.color   = 'var(--mu)'; btnAlpha.style.background   = 'var(--sf)';
-  }
-  displayCount = 30; expandedNum = null; doSearch();
-  
   // Prenom dans le header
   var userInfo = document.getElementById('userInfo');
   if (userInfo) {
@@ -235,7 +221,7 @@ function doSearch() {
     if (q && ((a.nom||'').toLowerCase() + '|' + (a.num||'').toLowerCase() + '|' + (a.tags||'').toLowerCase() + '|' + (a.location||'').toLowerCase()).indexOf(q) < 0) continue;
     filtered.push(a);
   }
-  if (_sortMode === 'sorties') {
+  if (Object.keys(_sortiesCount).length > 0) {
     filtered.sort(function(a, b) { return (_sortiesCount[b.num]||0) - (_sortiesCount[a.num]||0); });
   }
   document.getElementById('rc').textContent = (q || selectedCat !== 'TOUT') ? (filtered.length + ' resultat(s)') : (articles.length + ' articles au total');
@@ -284,9 +270,8 @@ function renderList(q) {
       }
     }
     var snum = esc(a.num);
-    var sortiesBadge = (_sortMode === 'sorties' && _sortiesCount[a.num]) ? '<div style="font-size:10px;color:var(--ac);font-weight:600;margin-top:2px;">🔝 Sorti ' + _sortiesCount[a.num] + ' fois</div>' : '';
     var editBtns = window._canEdit ? '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div>' : '';
-    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + sortiesBadge + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + internerow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
+    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + internerow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
   con.innerHTML = h;
   con.querySelectorAll('.card').forEach(function(el) { el.addEventListener('click', function(e) { if (e.target.classList.contains('bedit')||e.target.classList.contains('bdel')||e.target.classList.contains('btn-panier')||e.target.classList.contains('photo-preview')) return; var n = this.getAttribute('data-num'); expandedNum = (expandedNum === n) ? null : n; renderList(document.getElementById('si').value.trim().toLowerCase()); }); });
