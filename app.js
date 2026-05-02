@@ -480,8 +480,9 @@ async function loadHistorique() {
 
     // Debut de journee/semaine EN HEURE LOCALE (Brussels)
     function debutJourLocal(d) {
-      // Retourne minuit heure locale pour la date donnée
-      return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+      // Convertir UTC en heure belge (UTC+2 heure d'ete)
+      var dBrussels = new Date(d.getTime() + 2 * 60 * 60 * 1000);
+      return new Date(dBrussels.getFullYear(), dBrussels.getMonth(), dBrussels.getDate(), 0, 0, 0, 0);
     }
     var now = new Date();
     var debutAujourdhui = debutJourLocal(now);
@@ -519,7 +520,9 @@ async function loadHistorique() {
     for (var i = 0; i < filtered.length; i++) {
       var b = filtered[i], arts = b.articles||[];
       var dt = new Date(b.date_creation);
-      var dateStr = dt.toLocaleString('fr-FR', {timeZone:'Europe/Brussels', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+      // Forcer heure belge : UTC+2 (heure d'ete) = +120 minutes
+      var dtBrussels = new Date(dt.getTime() + 2 * 60 * 60 * 1000);
+      var dateStr = dtBrussels.toLocaleDateString('fr-FR') + ' ' + dtBrussels.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
       var sapDone = b.sap_effectue || false;
 
       var detailRows = '';
