@@ -4,7 +4,7 @@ var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'', prenom:'', role:'user', token:''};
 var SKEY2 = 'bus-auth-v1';
-var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _editPhotos = [], _cats = [];
+var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, expandedNum = null, panier = [], _editPhoto = null, _editPhotos = [], _cats = [], _sortMode = 'alpha', _sortiesCount = {};
 
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -131,6 +131,7 @@ async function loadArticles() {
     }
     articles = all;
     document.getElementById('totalCount').textContent = articles.length;
+    await loadSorties();
     buildPills(); doSearch();
   } catch(e) { console.error('Erreur:', e); showToast('Erreur connexion', 'err'); }
   finally { showLoading(false); }
@@ -150,9 +151,27 @@ function initUI() {
   // Boutons Modifier/Supprimer - caches pour agent
   window._canEdit = (role === 'admin' || role === 'magasinier');
 
+  // Champ numero agent - visible seulement pour agent
+  var agentField = document.getElementById('agentField');
+  if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
+
   // Historique bons - cache pour agent
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
+}
+
+function setSortMode(mode) {
+  _sortMode = mode;
+  var btnAlpha   = document.getElementById('sortAlpha');
+  var btnSorties = document.getElementById('sortSorties');
+  if (mode === 'alpha') {
+    btnAlpha.style.borderColor   = 'var(--ac)'; btnAlpha.style.color   = 'var(--ac)'; btnAlpha.style.background   = 'rgba(240,165,0,0.08)';
+    btnSorties.style.borderColor = 'var(--br)'; btnSorties.style.color = 'var(--mu)'; btnSorties.style.background = 'var(--sf)';
+  } else {
+    btnSorties.style.borderColor = 'var(--ac)'; btnSorties.style.color = 'var(--ac)'; btnSorties.style.background = 'rgba(240,165,0,0.08)';
+    btnAlpha.style.borderColor   = 'var(--br)'; btnAlpha.style.color   = 'var(--mu)'; btnAlpha.style.background   = 'var(--sf)';
+  }
+  displayCount = 30; expandedNum = null; doSearch();
   
   // Prenom dans le header
   var userInfo = document.getElementById('userInfo');
@@ -191,6 +210,22 @@ function showCatSugg(inputId, suggId) {
 document.getElementById('si').addEventListener('input', function() { displayCount = 30; expandedNum = null; doSearch(); var clr = document.getElementById('clearSearch'); if (clr) clr.style.display = this.value ? 'block' : 'none'; });
 document.getElementById('clearSearch') && document.getElementById('clearSearch').addEventListener('click', function() { document.getElementById('si').value = ''; this.style.display = 'none'; displayCount = 30; expandedNum = null; doSearch(); });
 
+async function loadSorties() {
+  try {
+    var data = await supa('GET', 'bons_commande?select=articles&statut=eq.valide');
+    _sortiesCount = {};
+    if (data) {
+      for (var i = 0; i < data.length; i++) {
+        var arts = data[i].articles || [];
+        for (var j = 0; j < arts.length; j++) {
+          var n = arts[j].num;
+          _sortiesCount[n] = (_sortiesCount[n] || 0) + 1;
+        }
+      }
+    }
+  } catch(e) { _sortiesCount = {}; }
+}
+
 function doSearch() {
   var q = document.getElementById('si').value.trim().toLowerCase();
   filtered = [];
@@ -199,6 +234,9 @@ function doSearch() {
     if (selectedCat !== 'TOUT' && a.categorie !== selectedCat) continue;
     if (q && ((a.nom||'').toLowerCase() + '|' + (a.num||'').toLowerCase() + '|' + (a.tags||'').toLowerCase() + '|' + (a.location||'').toLowerCase()).indexOf(q) < 0) continue;
     filtered.push(a);
+  }
+  if (_sortMode === 'sorties') {
+    filtered.sort(function(a, b) { return (_sortiesCount[b.num]||0) - (_sortiesCount[a.num]||0); });
   }
   document.getElementById('rc').textContent = (q || selectedCat !== 'TOUT') ? (filtered.length + ' resultat(s)') : (articles.length + ' articles au total');
   renderList(q);
@@ -222,13 +260,13 @@ function renderList(q) {
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = a.npf ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
     var fourrow = a.fournisseur ? '<div class="dp"><div class="dl">Fournisseur</div><div class="dv">' + esc(a.fournisseur) + '</div></div>' : '';
+    var internerow = a.interne ? '<div class="dp"><div class="dl">Type</div><div class="dv" style="color:#9b59b6;font-weight:600;">&#x1F527; Interne</div></div>' : '';
     var busrow = '';
-    if (a.bus_art || a.bus_std || a.chimique || a.interne) {
+    if (a.bus_art || a.bus_std || a.chimique) {
       busrow = '<div style="width:100%;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;">';
       if (a.bus_std) busrow += '<div style="display:flex;align-items:center;gap:4px;background:rgba(46,204,113,0.1);border:1px solid #2ecc71;border-radius:6px;padding:3px 8px;"><svg width=\"28\" height=\"14\" viewBox=\"0 0 60 28\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"2\" width=\"52\" height=\"18\" rx=\"4\" fill=\"#2ecc71\" opacity=\"0.2\" stroke=\"#2ecc71\" stroke-width=\"2\"/><rect x=\"6\" y=\"6\" width=\"8\" height=\"6\" rx=\"1\" fill=\"#2ecc71\" opacity=\"0.6\"/><rect x=\"16\" y=\"6\" width=\"8\" height=\"6\" rx=\"1\" fill=\"#2ecc71\" opacity=\"0.6\"/><rect x=\"26\" y=\"6\" width=\"8\" height=\"6\" rx=\"1\" fill=\"#2ecc71\" opacity=\"0.6\"/><circle cx=\"12\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#2ecc71\" stroke-width=\"2\"/><circle cx=\"44\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#2ecc71\" stroke-width=\"2\"/></svg><span style="color:#2ecc71;font-size:11px;font-weight:600;">STD</span></div>';
       if (a.bus_art) busrow += '<div style="display:flex;align-items:center;gap:4px;background:rgba(240,165,0,0.1);border:1px solid #f0a500;border-radius:6px;padding:3px 8px;"><svg width=\"42\" height=\"14\" viewBox=\"0 0 90 28\" xmlns=\"http://www.w3.org/2000/svg\"><rect x=\"2\" y=\"2\" width=\"38\" height=\"18\" rx=\"4\" fill=\"#f0a500\" opacity=\"0.2\" stroke=\"#f0a500\" stroke-width=\"2\"/><rect x=\"40\" y=\"6\" width=\"6\" height=\"10\" rx=\"1\" fill=\"#f0a500\" opacity=\"0.4\"/><line x1=\"41\" y1=\"6\" x2=\"41\" y2=\"16\" stroke=\"#f0a500\" stroke-width=\"1\"/><line x1=\"43\" y1=\"6\" x2=\"43\" y2=\"16\" stroke=\"#f0a500\" stroke-width=\"1\"/><line x1=\"45\" y1=\"6\" x2=\"45\" y2=\"16\" stroke=\"#f0a500\" stroke-width=\"1\"/><rect x=\"46\" y=\"2\" width=\"38\" height=\"18\" rx=\"4\" fill=\"#f0a500\" opacity=\"0.2\" stroke=\"#f0a500\" stroke-width=\"2\"/><circle cx=\"12\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#f0a500\" stroke-width=\"2\"/><circle cx=\"34\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#f0a500\" stroke-width=\"2\"/><circle cx=\"56\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#f0a500\" stroke-width=\"2\"/><circle cx=\"78\" cy=\"24\" r=\"3\" fill=\"none\" stroke=\"#f0a500\" stroke-width=\"2\"/></svg><span style="color:#f0a500;font-size:11px;font-weight:600;">ART</span></div>';
       if (a.chimique) busrow += '<div style="display:flex;align-items:center;gap:4px;background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:6px;padding:3px 8px;"><span style="font-size:12px;">&#x2697;</span><span style="color:#e74c3c;font-size:11px;font-weight:600;">Chimique</span></div>';
-      if (a.interne) busrow += '<div style="display:flex;align-items:center;gap:4px;background:rgba(155,89,182,0.1);border:1px solid #9b59b6;border-radius:6px;padding:3px 8px;"><span style="font-size:12px;">&#x1F527;</span><span style="color:#9b59b6;font-size:11px;font-weight:600;">Interne</span></div>';
       busrow += '</div>';
     }
     var minmax = (a.min || a.max) ? '<div class="dp"><div class="dl">Min/Max</div><div class="dv">' + (a.min||0) + '/' + (a.max||0) + '</div></div>' : '';
@@ -246,8 +284,9 @@ function renderList(q) {
       }
     }
     var snum = esc(a.num);
+    var sortiesBadge = (_sortMode === 'sorties' && _sortiesCount[a.num]) ? '<div style="font-size:10px;color:var(--ac);font-weight:600;margin-top:2px;">🔝 Sorti ' + _sortiesCount[a.num] + ' fois</div>' : '';
     var editBtns = window._canEdit ? '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div>' : '';
-    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
+    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + sortiesBadge + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + internerow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
   con.innerHTML = h;
   con.querySelectorAll('.card').forEach(function(el) { el.addEventListener('click', function(e) { if (e.target.classList.contains('bedit')||e.target.classList.contains('bdel')||e.target.classList.contains('btn-panier')||e.target.classList.contains('photo-preview')) return; var n = this.getAttribute('data-num'); expandedNum = (expandedNum === n) ? null : n; renderList(document.getElementById('si').value.trim().toLowerCase()); }); });
@@ -269,8 +308,9 @@ document.getElementById('addBtn').addEventListener('click', async function() {
   var busArt = document.getElementById('addBusArt').checked;
   var chimique = document.getElementById('addChimique').checked;
   var npf = document.getElementById('addNpf').value.trim();
-  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,stock_securite:0};
-  try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf'].forEach(function(id) { document.getElementById(id).value = ''; });
+  var fournisseur = document.getElementById('addFournisseur').value.trim();
+  var a = {num:num,nom:nom,categorie:document.getElementById('addCat').value.trim(),tags:document.getElementById('addTags').value.trim(),location:document.getElementById('addLoc').value.trim(),min:parseInt(document.getElementById('addMin').value)||0,max:parseInt(document.getElementById('addMax').value)||0,photo:null,npf:npf,fournisseur:fournisseur,bus_std:busStd,bus_art:busArt,chimique:chimique,interne:false,stock_securite:0};
+  try { await supa('POST', 'articles', [a]); articles.push(a); ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf','addFournisseur'].forEach(function(id) { document.getElementById(id).value = ''; });
   setBusBtn('addBusStd','addBusStdBtn',false);
   setBusBtn('addBusArt','addBusArtBtn',false);
   setBusBtn('addChimique','addChimiqueBtn',false); document.getElementById('totalCount').textContent = articles.length; showToast('Article enregistre!', 'success'); buildPills(); switchTab('search'); doSearch(); } catch(e) { showToast('Erreur sauvegarde', 'err'); console.error(e); }
@@ -294,6 +334,7 @@ function openEdit(num) {
       document.getElementById('editMin').value = a.min||0;
       document.getElementById('editMax').value = a.max||0;
       if(document.getElementById('editNpf')) document.getElementById('editNpf').value = a.npf||'';
+      if(document.getElementById('editFournisseur')) document.getElementById('editFournisseur').value = a.fournisseur||'';
       setBusBtn('editBusStd','editBusStdBtn',a.bus_std||false);
       setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
       setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
@@ -311,7 +352,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
   if (!editingNum) return;
   var newNum = document.getElementById('editNum').value.trim(), nom = document.getElementById('editNom').value.trim();
   if (!nom) { showToast('Designation obligatoire', 'err'); return; }
-  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null,npf:document.getElementById('editNpf').value.trim(),bus_std:document.getElementById('editBusStd').checked,bus_art:document.getElementById('editBusArt').checked,chimique:document.getElementById('editChimique').checked,interne:false,stock_securite:0};
+  var updated = {num:newNum,nom:nom,categorie:document.getElementById('editCat').value.trim(),tags:document.getElementById('editTags').value.trim(),location:document.getElementById('editLoc').value.trim(),min:parseInt(document.getElementById('editMin').value)||0,max:parseInt(document.getElementById('editMax').value)||0,photo:_editPhoto||null,npf:document.getElementById('editNpf').value.trim(),fournisseur:document.getElementById('editFournisseur').value.trim(),bus_std:document.getElementById('editBusStd').checked,bus_art:document.getElementById('editBusArt').checked,chimique:document.getElementById('editChimique').checked,interne:false,stock_securite:0};
   try {
     if (newNum !== editingNum) { await supa('DELETE', 'articles?num=eq.' + encodeURIComponent(editingNum)); await supa('POST', 'articles', [updated]); }
     else { await supa('PATCH', 'articles?num=eq.' + encodeURIComponent(editingNum), updated); }
@@ -434,7 +475,12 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   if (!num) { showToast('Saisis un numero ordre', 'err'); return; }
   if (!/^\d{8}$/.test(num)) { showToast('Le numero ordre doit avoir 8 chiffres', 'err'); return; }
   if (!panier.length) { showToast('Panier vide', 'err'); return; }
-  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||''}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
+  var numAgent = '';
+  if (currentUser.role === 'agent') {
+    numAgent = document.getElementById('numeroAgent').value.trim();
+    if (!numAgent) { showToast('Saisis ton numero d\'agent', 'err'); return; }
+  }
+  try { await supa('POST', 'bons_commande', [{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:numAgent||null}]); showToast('Bon sauvegarde!', 'success'); panier = []; document.getElementById('numeroOrdre').value = ''; if (currentUser.role === 'agent') document.getElementById('numeroAgent').value = ''; updateBadge(); renderPanier(); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 });
 
 var _histoFiltre = 'today';
@@ -506,6 +552,7 @@ async function loadHistorique() {
             + '<div class="histo-num">Ordre ' + esc(b.numero_ordre) + '</div>'
             + '<div class="histo-date">' + dateStr + '</div>'
             + (b.login ? '<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 ' + esc(b.login) + '</div>' : '')
+            + (b.numero_agent ? '<div style="font-size:11px;color:var(--gn);margin-top:2px;">🪪 Agent: ' + esc(b.numero_agent) + '</div>' : '')
             + '<div class="histo-count">' + arts.length + ' article(s)</div>'
           + '</div>'
           + '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">'
@@ -514,6 +561,7 @@ async function loadHistorique() {
               + 'SAP fait'
             + '</label>'
             + '<div style="color:var(--mu);font-size:18px;">▼</div>'
+            + '<div class="btn-copy-sap" data-id="' + b.id + '" style="background:rgba(46,204,113,0.15);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">📋 Copier</div>'
             + '<div class="btn-dl" data-id="' + b.id + '">Excel</div>'
             + '<div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
           + '</div>'
