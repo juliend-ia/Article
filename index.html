@@ -198,6 +198,11 @@ main{padding:14px;max-width:800px;margin:0 auto;}
             <span id="addChimiqueCheck" style="color:#e74c3c;font-size:16px;display:none;">✕</span>
             <span style="color:#e74c3c;font-size:13px;font-weight:700;">Chimique</span>
           </div>
+          <input type="checkbox" id="addReparable" style="display:none"/>
+          <div id="addReparableBtn" onclick="toggleBusBtn('addReparable','addReparableBtn','#9b59b6')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(155,89,182,0.08);border:2px solid #9b59b6;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
+            <span id="addReparableCheck" style="color:#9b59b6;font-size:16px;display:none;">✕</span>
+            <span style="color:#9b59b6;font-size:13px;font-weight:700;">🔧 Rép.</span>
+          </div>
         </div>
       </div>
       <button class="bsave" id="addBtn">ENREGISTRER</button>
@@ -277,6 +282,11 @@ main{padding:14px;max-width:800px;margin:0 auto;}
         <div id="editChimiqueBtn" onclick="toggleBusBtn('editChimique','editChimiqueBtn','#e74c3c')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(231,76,60,0.08);border:2px solid #e74c3c;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
           <span id="editChimiqueCheck" style="color:#e74c3c;font-size:16px;display:none;">✕</span>
           <span style="color:#e74c3c;font-size:13px;font-weight:700;">Chimique</span>
+        </div>
+        <input type="checkbox" id="editReparable" style="display:none"/>
+        <div id="editReparableBtn" onclick="toggleBusBtn('editReparable','editReparableBtn','#9b59b6')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(155,89,182,0.08);border:2px solid #9b59b6;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
+          <span id="editReparableCheck" style="color:#9b59b6;font-size:16px;display:none;">✕</span>
+          <span style="color:#9b59b6;font-size:13px;font-weight:700;">🔧 Rép.</span>
         </div>
       </div>
     </div>
