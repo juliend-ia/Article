@@ -212,13 +212,17 @@ async function loadSorties() {
   } catch(e) { _sortiesCount = {}; }
 }
 
+function normalize(s) {
+  return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
 function doSearch() {
-  var q = document.getElementById('si').value.trim().toLowerCase();
+  var q = normalize(document.getElementById('si').value.trim());
   filtered = [];
   for (var i = 0; i < articles.length; i++) {
     var a = articles[i];
     if (selectedCat !== 'TOUT' && a.categorie !== selectedCat) continue;
-    if (q && ((a.nom||'').toLowerCase() + '|' + (a.num||'').toLowerCase() + '|' + (a.tags||'').toLowerCase() + '|' + (a.location||'').toLowerCase()).indexOf(q) < 0) continue;
+    if (q && (normalize(a.nom) + '|' + normalize(a.num) + '|' + normalize(a.tags) + '|' + normalize(a.location)).indexOf(q) < 0) continue;
     filtered.push(a);
   }
   if (Object.keys(_sortiesCount).length > 0) {
@@ -230,7 +234,7 @@ function doSearch() {
 
 function hl(txt, q) {
   if (!q || !txt) return esc(txt || '');
-  var out = '', t = txt.toLowerCase(), i = 0;
+  var out = '', t = normalize(txt), i = 0;
   while (i < txt.length) { var j = t.indexOf(q, i); if (j < 0) { out += esc(txt.slice(i)); break; } out += esc(txt.slice(i,j)) + '<span class="hl">' + esc(txt.slice(j, j+q.length)) + '</span>'; i = j + q.length; }
   return out;
 }
