@@ -745,14 +745,13 @@ function setBusBtn(checkId, btnId, checked) {
 // ── REALTIME SUPABASE ──
 var _lastBonId = null;
 var _pollingInterval = null;
+var _notifCooldown = false;
 
 function initRealtime() {
-  // Mémoriser le dernier bon au démarrage
   supa('GET', 'bons_commande?select=id&order=date_creation.desc&limit=1')
     .then(function(data) { if (data && data.length) _lastBonId = data[0].id; })
     .catch(function() {});
 
-  // WebSocket Supabase
   try {
     var ws = new WebSocket(
       SURL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SKEY + '&vsn=1.0.0'
@@ -766,9 +765,13 @@ function initRealtime() {
         var msg = JSON.parse(e.data);
         if (msg.event === 'phx_reply') return;
         if (msg.topic && msg.topic.indexOf('bons_commande') >= 0) {
-          var record = (msg.payload && msg.payload.record) ? msg.payload.record : null;
-          if (record && record.id) _lastBonId = record.id;
-          onNouveauBon(record);
+          // WebSocket signale un changement mais sans données fiables
+          // On recharge juste l'historique si l'onglet panier est ouvert
+          // La notification est gérée par le polling qui a les vraies données
+          if (document.getElementById('p3') && document.getElementById('p3').style.display !== 'none') {
+            loadHistorique();
+          }
+          updateBadgeAttente();
         }
         if (msg.topic && msg.topic.indexOf('articles') >= 0) { loadArticlesSilent(); }
       } catch(err) {}
@@ -777,7 +780,7 @@ function initRealtime() {
     ws.onerror = function() { ws.close(); };
   } catch(e) {}
 
-  // Polling toutes les 12s — fonctionne peu importe l'onglet actif
+  // Polling backup toutes les 12s
   if (_pollingInterval) clearInterval(_pollingInterval);
   _pollingInterval = setInterval(async function() {
     if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
@@ -799,11 +802,24 @@ function initRealtime() {
 
 function onNouveauBon(record) {
   if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
-  // Recharger l'historique si onglet panier ouvert
+  // Ignorer si on n'a pas les vraies données (record fantôme du WebSocket)
+  if (!record || !record.id || !record.numero_ordre) return;
+  // Ne pas notifier si c'est soi-même qui a créé le bon
+  if (record.login && record.login === currentUser.login) {
+    updateBadgeAttente();
+    if (document.getElementById('p3') && document.getElementById('p3').style.display !== 'none') {
+      loadHistorique();
+    }
+    return;
+  }
+  // Anti-doublon — ignorer si déjà notifié dans les 5 dernières secondes
+  if (_notifCooldown) return;
+  _notifCooldown = true;
+  setTimeout(function() { _notifCooldown = false; }, 5000);
+
   if (document.getElementById('p3') && document.getElementById('p3').style.display !== 'none') {
     loadHistorique();
   }
-  // Notifier — peu importe l'onglet actif
   playDing();
   showNotifCommande(record);
   updateBadgeAttente();
@@ -1059,20 +1075,32 @@ async function logAction(action, details) {
 
 // ── NOTIFICATIONS COMMANDES ──────────────────────────────────────
 var _soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+var _audioCtx = null;
+
+// Initialiser l'AudioContext au premier geste utilisateur
+document.addEventListener('click', function initAudio() {
+  if (!_audioCtx) {
+    try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
+  }
+  if (_audioCtx && _audioCtx.state === 'suspended') {
+    _audioCtx.resume().catch(function() {});
+  }
+}, { once: false });
 
 function playDing() {
   if (!_soundEnabled) return;
   try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var o = ctx.createOscillator();
-    var g = ctx.createGain();
-    o.connect(g); g.connect(ctx.destination);
-    o.frequency.setValueAtTime(880, ctx.currentTime);
-    o.frequency.setValueAtTime(1100, ctx.currentTime + 0.1);
-    g.gain.setValueAtTime(0.3, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
-    o.start(ctx.currentTime);
-    o.stop(ctx.currentTime + 0.6);
+    if (!_audioCtx) return; // pas encore de geste utilisateur
+    if (_audioCtx.state === 'suspended') _audioCtx.resume();
+    var o = _audioCtx.createOscillator();
+    var g = _audioCtx.createGain();
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.frequency.setValueAtTime(880, _audioCtx.currentTime);
+    o.frequency.setValueAtTime(1100, _audioCtx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, _audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime + 0.6);
+    o.start(_audioCtx.currentTime);
+    o.stop(_audioCtx.currentTime + 0.6);
   } catch(e) {}
 }
 
