@@ -524,26 +524,29 @@ async function loadHistorique() {
     var data = await supa('GET', 'bons_commande?select=*&order=date_creation.desc&limit=200');
     var list = document.getElementById('historiqueList');
 
-    // Debut de journee/semaine EN HEURE LOCALE (Brussels)
-    function debutJourLocal(d) {
-      // Convertir UTC en heure belge (UTC+2 heure d'ete)
-      var dBrussels = new Date(d.getTime() + 2 * 60 * 60 * 1000);
-      return new Date(dBrussels.getFullYear(), dBrussels.getMonth(), dBrussels.getDate(), 0, 0, 0, 0);
+    // Heure belge = UTC+2 (heure d'été)
+    var OFFSET = 2 * 60 * 60 * 1000;
+
+    // Date du jour en heure belge (yyyy-mm-dd)
+    function dateBelge(ts) {
+      var d = new Date(ts + OFFSET);
+      return d.toISOString().slice(0, 10); // "2026-05-03"
     }
-    var now = new Date();
-    var debutAujourdhui = debutJourLocal(now);
-    var debutSemaine = new Date(debutAujourdhui);
-    var jourSemaine = debutAujourdhui.getDay(); // 0=dim
+
+    var maintenant = Date.now();
+    var aujourdhui = dateBelge(maintenant);
+
+    // Lundi de la semaine en cours
+    var nowBelge = new Date(maintenant + OFFSET);
+    var jourSemaine = nowBelge.getUTCDay(); // 0=dim
     var offsetLundi = jourSemaine === 0 ? -6 : 1 - jourSemaine;
-    debutSemaine.setDate(debutAujourdhui.getDate() + offsetLundi);
+    var lundiTs = maintenant + offsetLundi * 86400000;
+    var lundi = dateBelge(lundiTs);
 
     var filtered = (data || []).filter(function(b) {
-      // Convertir la date UTC en heure locale pour comparer
-      var d = new Date(b.date_creation);
-      var dLocal = debutJourLocal(d);
-      // On compare les debuts de jour locaux
-      if (_histoFiltre === 'today') return dLocal >= debutAujourdhui;
-      if (_histoFiltre === 'week')  return dLocal >= debutSemaine;
+      var dateBon = dateBelge(new Date(b.date_creation).getTime());
+      if (_histoFiltre === 'today') return dateBon === aujourdhui;
+      if (_histoFiltre === 'week')  return dateBon >= lundi;
       return true;
     });
 
