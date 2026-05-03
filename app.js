@@ -600,7 +600,7 @@ async function loadHistorique() {
             + '<div style="color:var(--mu);font-size:18px;">▼</div>'
             + '<div class="btn-copy-sap" data-id="' + b.id + '" style="background:rgba(46,204,113,0.15);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">📋 Copier</div>'
             + '<div class="btn-dl" data-id="' + b.id + '">Excel</div>'
-            + '<div class="btn-del-bon" data-id="' + b.id + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
+            + '<div class="btn-del-bon" data-id="' + b.id + '" data-sap="' + (sapDone ? 'true' : 'false') + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
           + '</div>'
         + '</div>'
         + '<div class="bon-detail" style="display:none;margin-top:8px;border-top:1px solid var(--br);border-radius:0 0 8px 8px;overflow:hidden;">'
@@ -612,7 +612,20 @@ async function loadHistorique() {
     list.innerHTML = h;
     list.querySelectorAll('.histo-tab').forEach(function(el) { el.addEventListener('click', function() { _histoFiltre = this.getAttribute('data-f'); loadHistorique(); }); });
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
-    list.querySelectorAll('.btn-del-bon').forEach(function(el) { el.addEventListener('click', async function() { if (!confirm('Supprimer ce bon?')) return; try { await supa('DELETE', 'bons_commande?id=eq.' + this.getAttribute('data-id')); showToast('Bon supprime!', 'success'); loadHistorique(); } catch(e) { showToast('Erreur', 'err'); console.error(e); } }); });
+    list.querySelectorAll('.btn-del-bon').forEach(function(el) {
+      el.addEventListener('click', async function() {
+        var id = this.getAttribute('data-id');
+        var sapFait = this.getAttribute('data-sap') === 'true';
+        var msg = sapFait ? 'Supprimer ce bon?' : '⚠️ Ce bon n\'a pas encore été sorti sur SAP !\nSupprimer quand même ?';
+        if (!confirm(msg)) return;
+        try {
+          await supa('DELETE', 'bons_commande?id=eq.' + id);
+          showToast('Bon supprime!', 'success');
+          loadHistorique();
+          updateBadgeAttente();
+        } catch(e) { showToast('Erreur', 'err'); console.error(e); }
+      });
+    });
     list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.chk-sap').forEach(function(el) { el.addEventListener('change', async function() { var id = this.getAttribute('data-id'), val = this.checked; try { await supa('PATCH', 'bons_commande?id=eq.' + id, {sap_effectue:val}); showToast(val ? 'SAP marque fait ✓' : 'SAP marque non fait', 'success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur', 'err'); } }); });
   } catch(e) { console.error(e); }
@@ -730,57 +743,70 @@ function setBusBtn(checkId, btnId, checked) {
 
 
 // ── REALTIME SUPABASE ──
+var _lastBonId = null;
+var _pollingInterval = null;
+
 function initRealtime() {
+  // Mémoriser le dernier bon au démarrage
+  supa('GET', 'bons_commande?select=id&order=date_creation.desc&limit=1')
+    .then(function(data) { if (data && data.length) _lastBonId = data[0].id; })
+    .catch(function() {});
+
+  // WebSocket Supabase
   try {
     var ws = new WebSocket(
       SURL.replace('https://', 'wss://') + '/realtime/v1/websocket?apikey=' + SKEY + '&vsn=1.0.0'
     );
-
     ws.onopen = function() {
-      // S'abonner aux changements de la table bons_commande
-      ws.send(JSON.stringify({
-        topic: 'realtime:public:bons_commande',
-        event: 'phx_join',
-        payload: {},
-        ref: '1'
-      }));
-      // S'abonner aux changements des articles
-      ws.send(JSON.stringify({
-        topic: 'realtime:public:articles',
-        event: 'phx_join',
-        payload: {},
-        ref: '2'
-      }));
+      ws.send(JSON.stringify({ topic: 'realtime:public:bons_commande', event: 'phx_join', payload: {}, ref: '1' }));
+      ws.send(JSON.stringify({ topic: 'realtime:public:articles', event: 'phx_join', payload: {}, ref: '2' }));
     };
-
     ws.onmessage = function(e) {
       try {
         var msg = JSON.parse(e.data);
         if (msg.event === 'phx_reply') return;
         if (msg.topic && msg.topic.indexOf('bons_commande') >= 0) {
-          // Nouveau bon de commande ou modification
-          if (document.getElementById('p3').style.display !== 'none') {
-            loadHistorique();
-          }
+          var record = (msg.payload && msg.payload.record) ? msg.payload.record : null;
+          if (record && record.id) _lastBonId = record.id;
+          onNouveauBon(record);
         }
-        if (msg.topic && msg.topic.indexOf('articles') >= 0) {
-          // Article modifie - recharger silencieusement
-          loadArticlesSilent();
-        }
+        if (msg.topic && msg.topic.indexOf('articles') >= 0) { loadArticlesSilent(); }
       } catch(err) {}
     };
+    ws.onclose = function() { setTimeout(initRealtime, 3000); };
+    ws.onerror = function() { ws.close(); };
+  } catch(e) {}
 
-    ws.onclose = function() {
-      // Reconnexion automatique apres 3 secondes
-      setTimeout(initRealtime, 3000);
-    };
+  // Polling toutes les 12s — fonctionne peu importe l'onglet actif
+  if (_pollingInterval) clearInterval(_pollingInterval);
+  _pollingInterval = setInterval(async function() {
+    if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
+    try {
+      var data = await supa('GET', 'bons_commande?select=id,login,numero_agent,numero_ordre,articles&order=date_creation.desc&limit=1');
+      if (data && data.length) {
+        var latest = data[0];
+        if (_lastBonId !== null && latest.id !== _lastBonId) {
+          _lastBonId = latest.id;
+          onNouveauBon(latest);
+        } else if (_lastBonId === null) {
+          _lastBonId = latest.id;
+        }
+      }
+      updateBadgeAttente();
+    } catch(e) {}
+  }, 12000);
+}
 
-    ws.onerror = function() {
-      ws.close();
-    };
-  } catch(e) {
-    console.log('Realtime non disponible');
+function onNouveauBon(record) {
+  if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
+  // Recharger l'historique si onglet panier ouvert
+  if (document.getElementById('p3') && document.getElementById('p3').style.display !== 'none') {
+    loadHistorique();
   }
+  // Notifier — peu importe l'onglet actif
+  playDing();
+  showNotifCommande(record);
+  updateBadgeAttente();
 }
 
 async function loadArticlesSilent() {
