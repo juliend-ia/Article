@@ -3,7 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#f0a500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Magasin 2K">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
 <title>Magasin 2K</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#f0a500">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Magasin 2K">
+<link rel="apple-touch-icon" href="icon_180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icon_32.png">
 <style>
 :root{--bg:#0f1117;--sf:#1a1d27;--cd:#21252f;--br:#2e3344;--ac:#f0a500;--tx:#e8eaf0;--mu:#7a8099;--gn:#2ecc71;--rd:#e74c3c;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -352,6 +366,24 @@ main{padding:14px;max-width:800px;margin:0 auto;}
   </div>
 </div>
 <div class="toast" id="toast"></div>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Article/sw.js')
+      .then(function(reg) { console.log('SW enregistré:', reg.scope); })
+      .catch(function(err) { console.log('SW erreur:', err); });
+  });
+}
+</script>
 <script src="app.js"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Article/sw.js')
+      .then(function(reg) { console.log('SW enregistre:', reg.scope); })
+      .catch(function(err) { console.log('SW erreur:', err); });
+  });
+}
+</script>
 </body>
 </html>
