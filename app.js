@@ -199,9 +199,9 @@ function initUI() {
     }
   }
 
-  // Outillage — visible pour tous sauf agents
+  // Outillage visible pour tous
   var navO = document.getElementById('navOutillage');
-  if (navO) navO.style.display = (role === 'agent') ? 'none' : '';
+  if (navO) navO.style.display = '';
 
   // Admin dans le header
   var navAdmin = document.getElementById('navAdmin');
@@ -219,8 +219,8 @@ function initUI() {
   // Prénom dans le header
   var userInfo = document.getElementById('userInfo');
   if (userInfo) {
-    var badge = role === 'admin' ? '👑' : role === 'magasinier' ? '🔧' : role === 'brigadier' ? '🎖️' : '👷';
-    userInfo.textContent = badge + ' ' + currentUser.prenom;
+    var badge = role === 'admin' ? 'Admin' : role === 'magasinier' ? 'Magasin' : role === 'brigadier' ? 'Brigadier' : '';
+    userInfo.textContent = badge ? badge + ' ' + currentUser.prenom : currentUser.prenom;
   }
 }
 
@@ -493,6 +493,28 @@ function ajouterPanier(num) {
   var ex = panier.filter(function(x) { return x.num === num; })[0];
   if (ex) { ex.qty++; showToast('Quantite mise a jour!', 'success'); } else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false}); showToast('Ajoute au panier!', 'success'); }
   updateBadge();
+}
+
+function toggleSwitch(toggleId, inputId) {
+  var input = document.getElementById(inputId);
+  var toggle = document.getElementById(toggleId);
+  if (!input || !toggle) return;
+  var isOn = input.value === 'true';
+  isOn = !isOn;
+  input.value = isOn ? 'true' : 'false';
+  toggle.style.background = isOn ? '#2ecc71' : '#e74c3c';
+  var dot = toggle.querySelector('div');
+  if (dot) dot.style.left = isOn ? '24px' : '2px';
+}
+
+function setSwitch(toggleId, inputId, value) {
+  var input = document.getElementById(inputId);
+  var toggle = document.getElementById(toggleId);
+  if (!input || !toggle) return;
+  input.value = value ? 'true' : 'false';
+  toggle.style.background = value ? '#2ecc71' : '#e74c3c';
+  var dot = toggle.querySelector('div');
+  if (dot) dot.style.left = value ? '24px' : '2px';
 }
 
 function toggleBon(el) {
@@ -942,9 +964,9 @@ async function loadDemandesCompte() {
         + '<div style="margin-top:12px;background:var(--cd);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
           + '<div style="font-size:12px;color:var(--mu);flex:1;">Choisir le rôle :</div>'
           + '<select id="role-' + d.id + '" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);">'
-            + '<option value="agent">👷 Agent maintenance</option>'
-            + '<option value="magasinier">🔧 Magasinier</option>'
-            + '<option value="brigadier">🎖️ Brigadier</option>'
+            + '<option value="agent">Agent maintenance</option>'
+            + '<option value="magasinier">Magasinier</option>'
+            + '<option value="brigadier">Brigadier</option>'
           + '</select>'
           + '<div onclick="validerCompte(\'' + esc(d.id) + '\',\'' + esc(d.matricule) + '\',\'' + esc(d.prenom) + '\',\'' + esc(d.password_hash) + '\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">✓ Valider</div>'
         + '</div>'
@@ -1071,7 +1093,7 @@ async function loadUtilisateurs() {
         + '<div>'
           + '<div style="font-size:15px;font-weight:600;color:var(--tx);">' + esc(u.prenom) + '</div>'
           + '<div style="font-size:12px;color:var(--mu);">Login: ' + esc(u.login) + '</div>'
-          + '<div style="font-size:11px;color:' + (u.role==='admin'?'var(--ac)':'var(--gn)') + ';margin-top:2px;">' + (u.role==='admin'?'👑 Admin':'👤 User') + (u.actif?'':' — Inactif') + '</div>'
+          + '<div style="font-size:11px;color:' + (u.role==='admin'?'var(--ac)':'var(--gn)') + ';margin-top:2px;">' + (u.role==='admin'?'Admin':'User') + (u.actif?'':' — Inactif') + '</div>'
         + '</div>'
         + '<div style="display:flex;gap:6px;">'
           + '<div style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="' + u.id + '" onclick="editUser(this)">✏️</div>'
@@ -1130,6 +1152,9 @@ async function editUser(el) {
     var pmEl = document.getElementById('editUserPeutModifier');
     if (actifEl) actifEl.checked = (u.actif === true);
     if (pmEl) pmEl.checked = (u.peut_modifier === true || u.peut_modifier === null || u.peut_modifier === undefined);
+    // Toggles custom
+    setSwitch('toggleActif', 'editUserActif', u.actif === true);
+    setSwitch('togglePeutModifier', 'editUserPeutModifier', u.peut_modifier !== false);
     document.getElementById('editUserModal').classList.remove('hidden');
   } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 }
@@ -1140,8 +1165,8 @@ async function saveEditUser() {
   var login = document.getElementById('editUserLogin').value.trim().toLowerCase();
   var pwd = document.getElementById('editUserPwd').value.trim();
   var role = document.getElementById('editUserRole').value;
-  var actif = document.getElementById('editUserActif').checked;
-  var peutModifier = document.getElementById('editUserPeutModifier') ? document.getElementById('editUserPeutModifier').checked : true;
+  var actif = document.getElementById('editUserActif').value === 'true';
+  var peutModifier = document.getElementById('editUserPeutModifier') ? document.getElementById('editUserPeutModifier').value === 'true' : true;
   if (!prenom || !login) { showToast('Prenom et login obligatoires', 'err'); return; }
   var updates = {prenom:prenom, login:login, role:role, actif:actif, peut_modifier:peutModifier};
   
