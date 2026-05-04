@@ -101,21 +101,50 @@ document.getElementById('resetBtn').addEventListener('click', async function() {
   var login = document.getElementById('resetLogin').value.trim().toLowerCase();
   var err = document.getElementById('resetErr');
   if (!login) { err.textContent = 'Saisis ton login.'; return; }
-  // Verifier que le login existe
   try {
     var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(login) + '&select=login,actif');
     if (!udata || !udata.length) { err.textContent = 'Login inconnu.'; return; }
     if (!udata[0].actif) { err.textContent = 'Compte desactive.'; return; }
-    // Verifier pas de demande deja en attente
     var existing = await supa('GET', 'demandes_reset?login=eq.' + encodeURIComponent(login) + '&traitee=eq.false&select=id');
     if (existing && existing.length) { err.textContent = 'Demande deja envoyee, patiente.'; return; }
-    // Creer la demande
     await supa('POST', 'demandes_reset', [{login:login, traitee:false}]);
     err.style.color = '#2ecc71';
     err.textContent = 'Demande envoyee ! L\'admin va te recontacter.';
     document.getElementById('resetLogin').value = '';
     setTimeout(function() { err.textContent = ''; err.style.color = '#e74c3c'; document.getElementById('resetPanel').style.display = 'none'; }, 3000);
   } catch(e) { err.textContent = 'Erreur, reessaie.'; console.error(e); }
+});
+
+// Créer un compte
+var createLink = document.getElementById('createAccountLink');
+if (createLink) createLink.addEventListener('click', function() {
+  var panel = document.getElementById('createAccountPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+
+var createBtn = document.getElementById('createAccountBtn');
+if (createBtn) createBtn.addEventListener('click', async function() {
+  var matricule = (document.getElementById('newMatricule').value||'').trim();
+  var prenom = (document.getElementById('newPrenomCompte').value||'').trim();
+  var pwd = (document.getElementById('newPwdCompte').value||'').trim();
+  var err = document.getElementById('createAccountErr');
+  err.textContent = ''; err.style.color = '#e74c3c';
+  if (!matricule) { err.textContent = 'Matricule obligatoire.'; return; }
+  if (!prenom) { err.textContent = 'Prénom obligatoire.'; return; }
+  if (!pwd || pwd.length < 4) { err.textContent = 'Mot de passe trop court (min 4 car.).'; return; }
+  try {
+    var existing = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(matricule) + '&select=id');
+    if (existing && existing.length) { err.textContent = 'Ce matricule existe déjà.'; return; }
+    var existDemande = await supa('GET', 'demandes_compte?matricule=eq.' + encodeURIComponent(matricule) + '&statut=eq.en_attente&select=id');
+    if (existDemande && existDemande.length) { err.textContent = 'Demande déjà envoyée, patiente.'; return; }
+    var hash = await hashStr(matricule + ':' + pwd);
+    await supa('POST', 'demandes_compte', [{ matricule: matricule, prenom: prenom, password_hash: hash }]);
+    err.style.color = '#2ecc71';
+    err.textContent = '✓ Demande envoyée ! L\'admin validera ton compte.';
+    document.getElementById('newMatricule').value = '';
+    document.getElementById('newPrenomCompte').value = '';
+    document.getElementById('newPwdCompte').value = '';
+  } catch(e) { err.textContent = 'Erreur, réessaie.'; console.error(e); }
 });
 
 async function loadArticles() {
@@ -875,8 +904,79 @@ async function loadArticlesSilent() {
 // ── PAGE ADMIN ──
 async function loadAdminPage() {
   await loadDemandes();
+  await loadDemandesCompte();
   await loadUtilisateurs();
   await loadHistoriqueActions();
+}
+
+async function loadDemandesCompte() {
+  try {
+    var data = await supa('GET', 'demandes_compte?statut=eq.en_attente&order=created_at.asc&select=*');
+    var section = document.getElementById('demandesCompteSection');
+    var badge = document.getElementById('badgeDemandesCompte');
+    var list = document.getElementById('demandesCompteList');
+    if (!section || !list) return;
+    if (!data || !data.length) { section.style.display = 'none'; return; }
+    section.style.display = 'block';
+    badge.style.display = 'inline-flex';
+    badge.textContent = data.length;
+    var h = '';
+    for (var i = 0; i < data.length; i++) {
+      var d = data[i];
+      var date = new Date(new Date(d.created_at).getTime() + 2*60*60*1000).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
+          + '<div>'
+            + '<div style="font-size:15px;font-weight:700;color:var(--tx);">👤 ' + esc(d.prenom) + ' — Matricule ' + esc(d.matricule) + '</div>'
+            + '<div style="font-size:11px;color:var(--mu);margin-top:3px;">Demande le ' + date + '</div>'
+          + '</div>'
+          + '<div style="display:flex;gap:6px;">'
+            + '<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" onclick="refuserCompte(\'' + esc(d.id) + '\')">✕ Refuser</div>'
+          + '</div>'
+        + '</div>'
+        + '<div style="margin-top:12px;background:var(--cd);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
+          + '<div style="font-size:12px;color:var(--mu);flex:1;">Choisir le rôle :</div>'
+          + '<select id="role-' + d.id + '" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);">'
+            + '<option value="agent">👷 Agent maintenance</option>'
+            + '<option value="magasinier">🔧 Magasinier</option>'
+          + '</select>'
+          + '<div onclick="validerCompte(\'' + esc(d.id) + '\',\'' + esc(d.matricule) + '\',\'' + esc(d.prenom) + '\',\'' + esc(d.password_hash) + '\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">✓ Valider</div>'
+        + '</div>'
+      + '</div>';
+    }
+    list.innerHTML = h;
+  } catch(e) { console.error('loadDemandesCompte:', e); }
+}
+
+async function validerCompte(id, matricule, prenom, pwdHash) {
+  var role = document.getElementById('role-' + id);
+  var roleVal = role ? role.value : 'agent';
+  var login = matricule;
+  try {
+    // Créer l'utilisateur
+    await supa('POST', 'utilisateurs', [{
+      login: login,
+      prenom: prenom,
+      password_hash: pwdHash,
+      role: roleVal,
+      actif: true
+    }]);
+    // Marquer la demande traitée
+    await supa('PATCH', 'demandes_compte?id=eq.' + id, { statut: 'valide' });
+    showToast('Compte créé pour ' + prenom + ' (' + login + ')', 'success');
+    logAction('Creation compte: ' + prenom + ' / ' + login + ' / ' + roleVal);
+    loadDemandesCompte();
+    loadUtilisateurs();
+  } catch(e) { showToast('Erreur — login déjà existant ?', 'err'); console.error(e); }
+}
+
+async function refuserCompte(id) {
+  if (!confirm('Refuser cette demande ?')) return;
+  try {
+    await supa('PATCH', 'demandes_compte?id=eq.' + id, { statut: 'refuse' });
+    showToast('Demande refusée', 'success');
+    loadDemandesCompte();
+  } catch(e) { showToast('Erreur', 'err'); }
 }
 
 async function loadDemandes() {
@@ -1211,21 +1311,20 @@ function switchSection(section) {
   var isOutillage = section === 'outillage';
   var isAdmin = section === 'admin';
 
+  document.getElementById('sectionPieces').style.display = (isPieces || isAdmin) ? '' : 'none';
+  document.getElementById('sectionOutillage').style.display = isOutillage ? '' : 'none';
+
   if (isAdmin) {
-    document.getElementById('sectionPieces').style.display = '';
-    document.getElementById('sectionOutillage').style.display = 'none';
-    switchTab('t4');
+    switchTab('admin');
   } else if (isPieces) {
-    document.getElementById('sectionPieces').style.display = '';
-    document.getElementById('sectionOutillage').style.display = 'none';
-    // Ne pas réinitialiser les onglets — garder l'onglet actif
+    // Garder l'onglet actif sauf si on était sur admin
+    var p4 = document.getElementById('p4');
+    if (p4 && p4.style.display !== 'none') switchTab('search');
   } else if (isOutillage) {
-    document.getElementById('sectionPieces').style.display = 'none';
-    document.getElementById('sectionOutillage').style.display = '';
     loadOutillage();
   }
 
-  // Nav styling barre secondaire
+  // Nav styling
   ['navPieces','navOutillage'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
