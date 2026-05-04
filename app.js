@@ -33,12 +33,12 @@ async function checkAuth() {
         {login:'Djulien', prenom:'Djulien', role:'admin', token:stored} :
         {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:stored};
     }
-    // Recharger le role depuis la base
     try {
-      var data = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(currentUser.login) + '&select=prenom,role,actif');
+      var data = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(currentUser.login) + '&select=prenom,role,actif,peut_modifier');
       if (data && data.length) {
         currentUser.prenom = data[0].prenom;
         currentUser.role = data[0].role;
+        currentUser.peut_modifier = data[0].peut_modifier !== false;
         if (!data[0].actif) { localStorage.removeItem(SKEY2); location.reload(); return; }
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
       }
@@ -57,12 +57,12 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
   var h = await hashStr(u + ':' + p);
   // Verifier D'ABORD dans la table utilisateurs
   try {
-    var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(u) + '&select=login,prenom,role,actif,password_hash');
+    var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(u) + '&select=login,prenom,role,actif,password_hash,peut_modifier');
     if (udata && udata.length) {
       var dbUser = udata[0];
       if (dbUser.password_hash !== h) { err.textContent = 'Mot de passe incorrect.'; document.getElementById('loginPwd').value = ''; return; }
       if (!dbUser.actif) { err.textContent = 'Compte desactive.'; return; }
-      currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:dbUser.role, token:h};
+      currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:dbUser.role, token:h, peut_modifier: dbUser.peut_modifier !== false};
       if (ATOKENS.indexOf(h) < 0) ATOKENS.push(h);
       localStorage.setItem(SKEY2, h);
       localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -169,24 +169,27 @@ async function loadArticles() {
 
 function initUI() {
   var role = currentUser.role;
-  
+  var peutModifier = currentUser.peut_modifier !== false;
+
+  // _canEdit = peut modifier les articles (admin ou magasinier avec peut_modifier)
+  window._canEdit = (role === 'admin') || ((role === 'magasinier' || role === 'brigadier') && peutModifier);
+
   // Onglet Admin - admin seulement
   var t4 = document.getElementById('t4');
   if (t4) { t4.style.display = role === 'admin' ? 'flex' : 'none'; t4.style.justifyContent = 'center'; t4.style.alignItems = 'center'; }
-  
-  // Onglet Ajouter - admin + magasinier
-  var t2 = document.getElementById('t2');
-  if (t2) { t2.style.display = (role === 'admin' || role === 'magasinier') ? 'flex' : 'none'; t2.style.justifyContent = 'center'; t2.style.alignItems = 'center'; }
-  
-  // Boutons Modifier/Supprimer - caches pour agent
-  window._canEdit = (role === 'admin' || role === 'magasinier');
 
-  // Onglet Ajouter outillage — magasinier/admin seulement
+  // Onglet Ajouter - admin + magasinier/brigadier avec droit modif
+  var t2 = document.getElementById('t2');
+  if (t2) { t2.style.display = window._canEdit ? 'flex' : 'none'; t2.style.justifyContent = 'center'; t2.style.alignItems = 'center'; }
+
+  // Onglet Ajouter outillage — canEdit seulement
   var ot2 = document.getElementById('ot2');
   if (ot2) ot2.style.display = window._canEdit ? '' : 'none';
+
+  // Son — magasinier, brigadier, admin
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
-    if (role === 'admin' || role === 'magasinier') {
+    if (role !== 'agent') {
       btnSound.style.display = 'flex';
       btnSound.textContent = _soundEnabled ? '🔔' : '🔕';
       btnSound.title = _soundEnabled ? 'Son activé — cliquer pour couper' : 'Son coupé — cliquer pour activer';
@@ -195,9 +198,9 @@ function initUI() {
       btnSound.style.display = 'none';
     }
   }
-  // Outillage visible seulement pour magasinier et admin
+
+  // Outillage — visible pour tous sauf agents
   var navO = document.getElementById('navOutillage');
-  var navP = document.getElementById('navPieces');
   if (navO) navO.style.display = (role === 'agent') ? 'none' : '';
 
   // Admin dans le header
@@ -205,16 +208,18 @@ function initUI() {
   if (navAdmin) navAdmin.style.display = (role === 'admin') ? 'block' : 'none';
   var btnAdmin = document.getElementById('btnAdmin');
   if (btnAdmin) btnAdmin.addEventListener('click', function() { switchSection('admin'); });
+
+  var agentField = document.getElementById('agentField');
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
-  // Historique bons - cache pour agent
+  // Historique bons - caché pour agent
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
 
-  // Prenom dans le header
+  // Prénom dans le header
   var userInfo = document.getElementById('userInfo');
   if (userInfo) {
-    var badge = role === 'admin' ? '👑' : (role === 'magasinier' ? '🔧' : '👷');
+    var badge = role === 'admin' ? '👑' : role === 'magasinier' ? '🔧' : role === 'brigadier' ? '🎖️' : '👷';
     userInfo.textContent = badge + ' ' + currentUser.prenom;
   }
 }
@@ -939,6 +944,7 @@ async function loadDemandesCompte() {
           + '<select id="role-' + d.id + '" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);">'
             + '<option value="agent">👷 Agent maintenance</option>'
             + '<option value="magasinier">🔧 Magasinier</option>'
+            + '<option value="brigadier">🎖️ Brigadier</option>'
           + '</select>'
           + '<div onclick="validerCompte(\'' + esc(d.id) + '\',\'' + esc(d.matricule) + '\',\'' + esc(d.prenom) + '\',\'' + esc(d.password_hash) + '\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">✓ Valider</div>'
         + '</div>'
@@ -1082,13 +1088,12 @@ async function createUser() {
   var login = document.getElementById('newLogin').value.trim().toLowerCase();
   var pwd = document.getElementById('newPwd').value.trim();
   var role = document.getElementById('newRole').value;
+  var peutModifier = document.getElementById('newPeutModifier') ? document.getElementById('newPeutModifier').checked : true;
   if (!prenom || !login || !pwd) { showToast('Tous les champs sont obligatoires', 'err'); return; }
   if (pwd.length < 4) { showToast('Mot de passe trop court (min 4 caracteres)', 'err'); return; }
-  
   var hash = await hashStr(login + ':' + pwd);
   try {
-    await supa('POST', 'utilisateurs', [{prenom:prenom, login:login, password_hash:hash, role:role, actif:true}]);
-    // Ajouter dans ATOKENS dynamiquement
+    await supa('POST', 'utilisateurs', [{prenom:prenom, login:login, password_hash:hash, role:role, actif:true, peut_modifier:peutModifier}]);
     ATOKENS.push(hash);
     document.getElementById('newPrenom').value = '';
     document.getElementById('newLogin').value = '';
@@ -1122,6 +1127,8 @@ async function editUser(el) {
     document.getElementById('editUserPwd').value = '';
     document.getElementById('editUserRole').value = u.role;
     document.getElementById('editUserActif').checked = u.actif;
+    var pmEl = document.getElementById('editUserPeutModifier');
+    if (pmEl) pmEl.checked = u.peut_modifier !== false;
     document.getElementById('editUserModal').classList.remove('hidden');
   } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 }
@@ -1133,10 +1140,9 @@ async function saveEditUser() {
   var pwd = document.getElementById('editUserPwd').value.trim();
   var role = document.getElementById('editUserRole').value;
   var actif = document.getElementById('editUserActif').checked;
-  
+  var peutModifier = document.getElementById('editUserPeutModifier') ? document.getElementById('editUserPeutModifier').checked : true;
   if (!prenom || !login) { showToast('Prenom et login obligatoires', 'err'); return; }
-  
-  var updates = {prenom:prenom, login:login, role:role, actif:actif};
+  var updates = {prenom:prenom, login:login, role:role, actif:actif, peut_modifier:peutModifier};
   
   if (pwd) {
     updates.password_hash = await hashStr(login + ':' + pwd);
@@ -1397,7 +1403,7 @@ function doOutilSearch() {
         + '<div class="cnum" style="background:rgba(155,89,182,0.12);color:#9b59b6;border-color:#9b59b6;">🔧</div>'
         + '<div style="flex:1;min-width:0;">'
           + '<div class="cn">' + esc(o.nom) + '</div>'
-          + (o.location ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
+          + (o.location && currentUser.role !== 'agent' ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
         + '</div>'
         + (window._canEdit ? '<div style="display:flex;gap:6px;">'
             + '<div onclick="' + pretBtnAction + '" style="background:rgba(' + (isPret ? '231,76,60' : '46,204,113') + ',0.1);border:1px solid ' + pretBtnBorder + ';border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" title="' + (isPret ? 'En prêt' : 'Enregistrer un prêt') + '">' + pretBtnText + '</div>'
