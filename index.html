@@ -90,7 +90,7 @@ main{padding:14px;max-width:800px;margin:0 auto;}
 .ma{display:flex;gap:8px;margin-top:12px;}
 .bms{flex:1;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;}
 .bmc{flex:1;background:var(--sf);color:var(--mu);border:1px solid var(--br);border-radius:10px;padding:14px;font-size:16px;cursor:pointer;}
-.photo-preview{width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--br);margin-top:8px;background:#fff;cursor:pointer;display:block;}
+.photo-preview{width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--br);margin-top:8px;background:var(--sf);cursor:pointer;display:block;}
 .photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:700;padding:16px;}
 .photo-overlay img{max-width:100%;max-height:85vh;object-fit:contain;border-radius:8px;}
 .photo-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;}
@@ -335,9 +335,15 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     </div>
   </div>
 </div>
-<div class="photo-overlay hidden" id="photoOverlay">
-  <button class="photo-close" id="photoCloseBtn">X</button>
-  <img id="photoFull" src="" alt="Photo"/>
+<div class="photo-overlay hidden" id="photoOverlay" onclick="closePhotoOverlay(event)">
+  <button class="photo-close" id="photoCloseBtn" onclick="closePhoto()">✕</button>
+  <!-- Flèche gauche -->
+  <div id="photoArrowLeft" onclick="event.stopPropagation();navigatePhoto(-1)" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#fff;z-index:10;user-select:none;">‹</div>
+  <img id="photoFull" src="" alt="Photo" onclick="event.stopPropagation()"/>
+  <!-- Flèche droite -->
+  <div id="photoArrowRight" onclick="event.stopPropagation();navigatePhoto(1)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#fff;z-index:10;user-select:none;">›</div>
+  <!-- Compteur -->
+  <div id="photoCounter" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.6);font-size:13px;display:none;"></div>
 </div>
 <div class="mo hidden" id="editUserModal">
   <div class="modal">
