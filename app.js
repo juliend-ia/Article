@@ -1405,12 +1405,14 @@ function doOutilSearch() {
     var borderColor = isPret ? '#e74c3c' : 'var(--br)';
 
     // Panneau prêt : si en prêt → affiche agent + bouton retour, sinon formulaire caché
+    var canRetour = currentUser.role === 'admin' || currentUser.role === 'magasinier' || currentUser.role === 'brigadier';
+
     var pretPanel = isPret
-      ? '<div style="background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+      ? '<div style="background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;" onclick="event.stopPropagation()">'
           + '<div><div style="font-size:12px;font-weight:700;color:#e74c3c;">🔴 EN PRÊT — Agent ' + esc(o.agent_pret) + '</div>'
           + (o.date_pret ? '<div style="font-size:10px;color:var(--mu);margin-top:2px;">Depuis le ' + formatDateBelge(o.date_pret) + '</div>' : '')
           + '</div>'
-          + '<div onclick="retourOutil(\'' + o.id + '\')" style="background:#2ecc71;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">✓ Retour</div>'
+          + (canRetour ? '<div onclick="retourOutil(\'' + o.id + '\')" style="background:#2ecc71;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">✓ Retour</div>' : '')
         + '</div>'
       : '<div id="pretPanel-' + o.id + '" style="display:none;background:var(--sf);border:1px solid var(--ac);border-radius:8px;padding:8px 12px;margin-top:8px;">'
           + '<div style="display:flex;gap:8px;align-items:center;">'
