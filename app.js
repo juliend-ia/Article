@@ -1269,6 +1269,18 @@ function switchOutilTab(id) {
 
 // Ajouter outil
 document.addEventListener('DOMContentLoaded', function() {
+  // Navigation Pièces / Outillage
+  var navP = document.getElementById('navPieces');
+  var navO = document.getElementById('navOutillage');
+  if (navP) navP.addEventListener('click', function() { switchSection('pieces'); });
+  if (navO) navO.addEventListener('click', function() { switchSection('outillage'); });
+
+  // Onglets outillage
+  var ot1 = document.getElementById('ot1');
+  var ot2 = document.getElementById('ot2');
+  if (ot1) ot1.addEventListener('click', function() { switchOutilTab('ot1'); });
+  if (ot2) ot2.addEventListener('click', function() { switchOutilTab('ot2'); });
+
   var addBtn = document.getElementById('outilAddBtn');
   if (addBtn) addBtn.addEventListener('click', async function() {
     var nom = (document.getElementById('outilNom').value||'').trim();
