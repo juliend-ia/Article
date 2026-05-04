@@ -1214,31 +1214,28 @@ function switchSection(section) {
   var isOutillage = section === 'outillage';
   var isAdmin = section === 'admin';
 
-  document.getElementById('sectionPieces').style.display = isPieces ? '' : 'none';
-  document.getElementById('sectionOutillage').style.display = isOutillage ? '' : 'none';
-
-  // Afficher p4 (admin) ou pas
-  var p4 = document.getElementById('p4');
-  if (p4) {
-    if (isAdmin) {
-      // Basculer vers section pièces mais afficher p4
-      document.getElementById('sectionPieces').style.display = '';
-      switchTab('t4');
-    } else if (isPieces) {
-      switchTab('t1');
-    }
+  if (isAdmin) {
+    document.getElementById('sectionPieces').style.display = '';
+    document.getElementById('sectionOutillage').style.display = 'none';
+    switchTab('t4');
+  } else if (isPieces) {
+    document.getElementById('sectionPieces').style.display = '';
+    document.getElementById('sectionOutillage').style.display = 'none';
+    // Ne pas réinitialiser les onglets — garder l'onglet actif
+  } else if (isOutillage) {
+    document.getElementById('sectionPieces').style.display = 'none';
+    document.getElementById('sectionOutillage').style.display = '';
+    loadOutillage();
   }
 
   // Nav styling
   ['navPieces','navOutillage','navAdmin'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    var active = (id === 'navPieces' && isPieces) || (id === 'navOutillage' && isOutillage) || (id === 'navAdmin' && isAdmin);
+    var active = (id === 'navPieces' && (isPieces || isAdmin)) || (id === 'navOutillage' && isOutillage) || (id === 'navAdmin' && isAdmin);
     el.style.color = active ? 'var(--ac)' : 'var(--mu)';
     el.style.borderBottom = active ? '3px solid var(--ac)' : '3px solid transparent';
   });
-
-  if (isOutillage && outillage.length === 0) loadOutillage();
 }
 
 // ── OUTILLAGE ────────────────────────────────────────────────────
