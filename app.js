@@ -152,7 +152,9 @@ function initUI() {
   // Boutons Modifier/Supprimer - caches pour agent
   window._canEdit = (role === 'admin' || role === 'magasinier');
 
-  // Bouton son - visible pour magasinier et admin
+  // Onglet Ajouter outillage — magasinier/admin seulement
+  var ot2 = document.getElementById('ot2');
+  if (ot2) ot2.style.display = window._canEdit ? '' : 'none';
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
     if (role === 'admin' || role === 'magasinier') {
@@ -164,9 +166,11 @@ function initUI() {
       btnSound.style.display = 'none';
     }
   }
-  // Onglet Ajouter outillage
-  var ot2 = document.getElementById('ot2');
-  if (ot2) ot2.style.display = window._canEdit ? '' : 'none';
+  // Outillage visible seulement pour magasinier et admin
+  var navO = document.getElementById('navOutillage');
+  var navP = document.getElementById('navPieces');
+  if (navO) navO.style.display = (role === 'agent') ? 'none' : '';
+  if (navP && role === 'agent') navP.style.flex = '1';
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
   // Historique bons - cache pour agent
