@@ -1420,21 +1420,21 @@ function doOutilSearch() {
           + '</div>'
         + '</div>';
 
-    var photoHtml = o.photo ? '<img src="' + esc(o.photo) + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;" onclick="openPhoto(\'' + esc(o.photo) + '\')">' : '';
+    var photoHtml = o.photo ? '<img src="' + esc(o.photo) + '" class="outil-photo" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;display:none;" onclick="event.stopPropagation();openPhoto(\'' + esc(o.photo) + '\')">' : '';
 
     var pretBtnColor = isPret ? '#e74c3c' : '#2ecc71';
     var pretBtnBorder = isPret ? '#e74c3c' : '#2ecc71';
     var pretBtnText = isPret ? '🔴' : '🟢';
     var pretBtnAction = isPret ? '' : 'togglePretPanel(\'' + o.id + '\')';
 
-    return '<div class="card" style="border-left:4px solid ' + borderColor + ';">'
+    return '<div class="card" style="border-left:4px solid ' + borderColor + ';cursor:pointer;" onclick="toggleOutilCard(this)">'
       + '<div class="ct">'
         + '<div class="cnum" style="background:rgba(155,89,182,0.12);color:#9b59b6;border-color:#9b59b6;">🔧</div>'
         + '<div style="flex:1;min-width:0;">'
           + '<div class="cn">' + esc(o.nom) + '</div>'
           + (o.location && currentUser.role !== 'agent' ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
         + '</div>'
-        + (window._canEdit ? '<div style="display:flex;gap:6px;">'
+        + (window._canEdit ? '<div style="display:flex;gap:6px;" onclick="event.stopPropagation()">'
             + '<div onclick="' + pretBtnAction + '" style="background:rgba(' + (isPret ? '231,76,60' : '46,204,113') + ',0.1);border:1px solid ' + pretBtnBorder + ';border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" title="' + (isPret ? 'En prêt' : 'Enregistrer un prêt') + '">' + pretBtnText + '</div>'
             + '<div onclick="openOutilEdit(\'' + o.id + '\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">✏️</div>'
             + '<div onclick="deleteOutil(\'' + o.id + '\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">🗑</div>'
@@ -1452,6 +1452,14 @@ function doOutilSearch() {
 function formatDateBelge(ts) {
   var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
   return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+function toggleOutilCard(card) {
+  var photo = card.querySelector('.outil-photo');
+  var pretPanel = card.querySelector('[id^="pretPanel-"]');
+  var isOpen = card.classList.contains('exp');
+  card.classList.toggle('exp', !isOpen);
+  if (photo) photo.style.display = isOpen ? 'none' : 'block';
 }
 
 function togglePretPanel(id) {
