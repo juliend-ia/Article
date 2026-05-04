@@ -249,8 +249,13 @@ main{padding:14px;max-width:800px;margin:0 auto;}
         <select id="newRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
           <option value="agent">👷 Agent maintenance</option>
           <option value="magasinier">🔧 Magasinier</option>
+          <option value="brigadier">🎖️ Brigadier</option>
           <option value="admin">👑 Administrateur</option>
         </select>
+      </div>
+      <div class="field" style="display:flex;align-items:center;gap:10px;">
+        <input type="checkbox" id="newPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/>
+        <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="newPeutModifier">Peut modifier les articles</label>
       </div>
       <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
     </div>
@@ -346,8 +351,13 @@ main{padding:14px;max-width:800px;margin:0 auto;}
       <select id="editUserRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
         <option value="agent">👷 Agent maintenance</option>
         <option value="magasinier">🔧 Magasinier</option>
+        <option value="brigadier">🎖️ Brigadier</option>
         <option value="admin">👑 Administrateur</option>
       </select>
+    </div>
+    <div class="field" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="editUserPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/>
+      <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="editUserPeutModifier">Peut modifier les articles</label>
     </div>
     <div class="field" style="display:flex;align-items:center;gap:10px;">
       <input type="checkbox" id="editUserActif" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;"/>
