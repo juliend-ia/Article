@@ -1125,9 +1125,11 @@ async function editUser(el) {
     document.getElementById('editUserLogin').value = u.login || '';
     document.getElementById('editUserPwd').value = '';
     document.getElementById('editUserRole').value = u.role || 'agent';
-    document.getElementById('editUserActif').checked = u.actif === true || u.actif === 'true';
+    // Forcer les checkboxes via JS
+    var actifEl = document.getElementById('editUserActif');
     var pmEl = document.getElementById('editUserPeutModifier');
-    if (pmEl) pmEl.checked = u.peut_modifier === true || u.peut_modifier === null || u.peut_modifier === undefined;
+    if (actifEl) actifEl.checked = (u.actif === true);
+    if (pmEl) pmEl.checked = (u.peut_modifier === true || u.peut_modifier === null || u.peut_modifier === undefined);
     document.getElementById('editUserModal').classList.remove('hidden');
   } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 }
