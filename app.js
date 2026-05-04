@@ -1120,15 +1120,14 @@ async function editUser(el) {
     var data = await supa('GET', 'utilisateurs?id=eq.' + id + '&select=*');
     if (!data || !data.length) return;
     var u = data[0];
-    // Remplir le formulaire de modif
     document.getElementById('editUserId').value = u.id;
-    document.getElementById('editUserPrenom').value = u.prenom;
-    document.getElementById('editUserLogin').value = u.login;
+    document.getElementById('editUserPrenom').value = u.prenom || '';
+    document.getElementById('editUserLogin').value = u.login || '';
     document.getElementById('editUserPwd').value = '';
-    document.getElementById('editUserRole').value = u.role;
-    document.getElementById('editUserActif').checked = u.actif;
+    document.getElementById('editUserRole').value = u.role || 'agent';
+    document.getElementById('editUserActif').checked = u.actif === true || u.actif === 'true';
     var pmEl = document.getElementById('editUserPeutModifier');
-    if (pmEl) pmEl.checked = u.peut_modifier !== false;
+    if (pmEl) pmEl.checked = u.peut_modifier === true || u.peut_modifier === null || u.peut_modifier === undefined;
     document.getElementById('editUserModal').classList.remove('hidden');
   } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 }
