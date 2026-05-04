@@ -171,14 +171,11 @@ function initUI() {
   var navP = document.getElementById('navPieces');
   if (navO) navO.style.display = (role === 'agent') ? 'none' : '';
 
-  // Admin dans la nav principale
+  // Admin dans le header
   var navAdmin = document.getElementById('navAdmin');
-  if (navAdmin) {
-    navAdmin.style.display = (role === 'admin') ? 'flex' : 'none';
-  }
-  // Masquer l'ancien onglet t4
-  var t4 = document.getElementById('t4');
-  if (t4) t4.style.display = 'none';
+  if (navAdmin) navAdmin.style.display = (role === 'admin') ? 'block' : 'none';
+  var btnAdmin = document.getElementById('btnAdmin');
+  if (btnAdmin) btnAdmin.addEventListener('click', function() { switchSection('admin'); });
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
   // Historique bons - cache pour agent
@@ -1228,11 +1225,11 @@ function switchSection(section) {
     loadOutillage();
   }
 
-  // Nav styling
-  ['navPieces','navOutillage','navAdmin'].forEach(function(id) {
+  // Nav styling barre secondaire
+  ['navPieces','navOutillage'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
-    var active = (id === 'navPieces' && (isPieces || isAdmin)) || (id === 'navOutillage' && isOutillage) || (id === 'navAdmin' && isAdmin);
+    var active = (id === 'navPieces' && (isPieces || isAdmin)) || (id === 'navOutillage' && isOutillage);
     el.style.color = active ? 'var(--ac)' : 'var(--mu)';
     el.style.borderBottom = active ? '3px solid var(--ac)' : '3px solid transparent';
   });
