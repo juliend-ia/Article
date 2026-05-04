@@ -216,12 +216,9 @@ function initUI() {
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
 
-  // Prénom dans le header
+  // Prénom seul dans le header
   var userInfo = document.getElementById('userInfo');
-  if (userInfo) {
-    var badge = role === 'admin' ? 'Admin' : role === 'magasinier' ? 'Magasin' : role === 'brigadier' ? 'Brigadier' : '';
-    userInfo.textContent = badge ? badge + ' ' + currentUser.prenom : currentUser.prenom;
-  }
+  if (userInfo) userInfo.textContent = currentUser.prenom || '';
 }
 
 function getCats() { var c = {}; for (var i = 0; i < articles.length; i++) { var x = articles[i].categorie || ''; if (x) c[x] = true; } return Object.keys(c).sort(); }
@@ -1307,7 +1304,10 @@ async function updateBadgeAttente() {
       badge = document.createElement('div');
       badge.id = 'badgeAttente';
       badge.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
-      badge.onclick = function() { switchTab('panier'); };
+      badge.onclick = function() {
+      switchSection('pieces');
+      setTimeout(function() { switchTab('panier'); }, 50);
+    };
       document.body.appendChild(badge);
     }
     if (nb > 0) {
@@ -1346,10 +1346,13 @@ function switchSection(section) {
   document.getElementById('sectionPieces').style.display = (isPieces || isAdmin) ? '' : 'none';
   document.getElementById('sectionOutillage').style.display = isOutillage ? '' : 'none';
 
+  // Cacher/montrer les onglets pièces selon le mode
+  var tabsEl = document.querySelector('#sectionPieces .tabs');
+  if (tabsEl) tabsEl.style.display = isAdmin ? 'none' : '';
+
   if (isAdmin) {
     switchTab('admin');
   } else if (isPieces) {
-    // Garder l'onglet actif sauf si on était sur admin
     var p4 = document.getElementById('p4');
     if (p4 && p4.style.display !== 'none') switchTab('search');
   } else if (isOutillage) {
