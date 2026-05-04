@@ -152,6 +152,15 @@ main{padding:14px;max-width:800px;margin:0 auto;}
   <div id="btnSound" onclick="toggleSound()" style="display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--sf);border:1px solid var(--br);cursor:pointer;font-size:16px;margin-right:4px;" title="Son activé"></div>
   <button class="btn-logout" id="logoutBtn">Deco</button>
 </header>
+
+<!-- Navigation principale Pièces / Outillage -->
+<div style="background:var(--sf);border-bottom:1px solid var(--br);display:flex;padding:0 14px;gap:0;">
+  <div id="navPieces" onclick="switchSection('pieces')" style="flex:1;text-align:center;padding:12px 6px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ac);border-bottom:3px solid var(--ac);">🔩 Pièces</div>
+  <div id="navOutillage" onclick="switchSection('outillage')" style="flex:1;text-align:center;padding:12px 6px;font-size:14px;font-weight:700;cursor:pointer;color:var(--mu);border-bottom:3px solid transparent;">🔧 Outillage</div>
+</div>
+
+<!-- SECTION PIÈCES -->
+<div id="sectionPieces">
 <main>
   <div class="tabs">
     <div class="tab active" id="t1">Recherche</div>
@@ -350,6 +359,64 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     </div>
   </div>
 </div>
+</div><!-- fin sectionPieces -->
+
+<!-- SECTION OUTILLAGE -->
+<div id="sectionOutillage" style="display:none;">
+<main>
+  <div class="tabs">
+    <div class="tab active" id="ot1" onclick="switchOutilTab('ot1')">🔍 Recherche</div>
+    <div class="tab" id="ot2" onclick="switchOutilTab('ot2')" style="display:none;">➕ Ajouter</div>
+  </div>
+
+  <!-- Recherche outillage -->
+  <div id="op1">
+    <div class="sb"><input type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch()"/></div>
+    <div class="rc" id="outilCount"></div>
+    <div id="outilRes"></div>
+  </div>
+
+  <!-- Ajouter outillage -->
+  <div id="op2" style="display:none;">
+    <div class="fc">
+      <h2>Nouvel Outil</h2>
+      <div class="field"><label>Désignation</label><input type="text" id="outilNom" placeholder="ex: Cle dynamometrique Facom"/></div>
+      <div class="field"><label>Emplacement</label><input type="text" id="outilLoc" placeholder="ex: VANAS 1 - Tiroir 22"/></div>
+      <div class="field"><label>Mots-clés</label><input type="text" id="outilTags" placeholder="ex: facom cle"/></div>
+      <div class="field">
+        <label>Photo</label>
+        <div id="outilPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+        <div class="edit-photo-btn" id="outilPhotoBtn" onclick="document.getElementById('outilPhotoInput').click()">📷 Ajouter une photo</div>
+        <input type="file" id="outilPhotoInput" accept="image/*" capture="environment" style="display:none"/>
+      </div>
+      <button class="bsave" id="outilAddBtn">ENREGISTRER</button>
+    </div>
+  </div>
+</main>
+</div><!-- fin sectionOutillage -->
+
+<!-- Modale modifier outillage -->
+<div class="mo hidden" id="outilEditModal">
+  <div class="modal">
+    <h2>Modifier outil</h2>
+    <input type="hidden" id="outilEditId"/>
+    <div class="field"><label>Désignation</label><input type="text" id="outilEditNom"/></div>
+    <div class="field"><label>Emplacement</label><input type="text" id="outilEditLoc"/></div>
+    <div class="field"><label>Mots-clés</label><input type="text" id="outilEditTags"/></div>
+    <div class="field">
+      <label>Photo</label>
+      <div id="outilEditPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+      <div class="edit-photo-btn" onclick="document.getElementById('outilEditPhotoInput').click()">📷 Ajouter une photo</div>
+      <input type="file" id="outilEditPhotoInput" accept="image/*" capture="environment" style="display:none"/>
+      <button id="outilEditPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:13px;cursor:pointer;">🗑 Supprimer la photo</button>
+    </div>
+    <div class="ma">
+      <button class="bmc" onclick="closeOutilEdit()">Annuler</button>
+      <button class="bms" id="outilEditSaveBtn">ENREGISTRER</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
