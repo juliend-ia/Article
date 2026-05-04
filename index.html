@@ -404,7 +404,10 @@ main{padding:14px;max-width:800px;margin:0 auto;}
 
   <!-- Recherche outillage -->
   <div id="op1">
-    <div class="sb"><input type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch()"/></div>
+    <div class="sb">
+      <input type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch();document.getElementById('clearOutilSearch').style.display=this.value?'block':'none'"/>
+      <span id="clearOutilSearch" onclick="document.getElementById('outilSearch').value='';doOutilSearch();this.style.display='none';" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;display:none;">&#x2715;</span>
+    </div>
     <div class="rc" id="outilCount"></div>
     <div id="outilRes"></div>
   </div>
