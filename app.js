@@ -833,6 +833,7 @@ function initRealtime() {
     ws.onopen = function() {
       ws.send(JSON.stringify({ topic: 'realtime:public:bons_commande', event: 'phx_join', payload: {}, ref: '1' }));
       ws.send(JSON.stringify({ topic: 'realtime:public:articles', event: 'phx_join', payload: {}, ref: '2' }));
+      ws.send(JSON.stringify({ topic: 'realtime:public:outillage', event: 'phx_join', payload: {}, ref: '3' }));
     };
     ws.onmessage = function(e) {
       try {
@@ -845,6 +846,17 @@ function initRealtime() {
           updateBadgeAttente();
         }
         if (msg.topic && msg.topic.indexOf('articles') >= 0) { loadArticlesSilent(); }
+        // Outillage modifié — recharger si on est sur l'onglet outillage
+        if (msg.topic && msg.topic.indexOf('outillage') >= 0) {
+          if (_currentSection === 'outillage') {
+            loadOutillage();
+          } else {
+            // Mettre à jour silencieusement les données en mémoire
+            supa('GET', 'outillage?select=*&order=nom.asc').then(function(data) {
+              if (data) { outillage = data; updateBadgePretsOutillage(); }
+            }).catch(function() {});
+          }
+        }
       } catch(err) {}
     };
     ws.onclose = function() { setTimeout(initRealtime, 3000); };
