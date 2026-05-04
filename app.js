@@ -1220,6 +1220,7 @@ async function loadOutillage() {
     var data = await supa('GET', 'outillage?select=*&order=nom.asc');
     outillage = data || [];
     doOutilSearch();
+    updateBadgePretsOutillage();
     var tab2 = document.getElementById('ot2');
     if (tab2) tab2.style.display = window._canEdit ? '' : 'none';
   } catch(e) { showToast('Erreur chargement outillage', 'err'); }
@@ -1234,14 +1235,34 @@ function doOutilSearch() {
     return (normalize(o.nom) + '|' + normalize(o.location||'') + '|' + normalize(o.tags||'')).indexOf(q) >= 0;
   });
   var count = document.getElementById('outilCount');
-  if (count) count.textContent = filtered.length + ' outil(s)';
+  var enPret = outillage.filter(function(o) { return o.agent_pret; }).length;
+  if (count) count.textContent = filtered.length + ' outil(s)' + (enPret ? ' · ⚠️ ' + enPret + ' en prêt' : '');
   var res = document.getElementById('outilRes');
   if (!res) return;
   if (!filtered.length) { res.innerHTML = '<div class="empty"><div class="ei">🔧</div>Aucun outil trouvé</div>'; return; }
 
   res.innerHTML = filtered.map(function(o) {
+    var isPret = !!o.agent_pret;
+    var borderColor = isPret ? '#e74c3c' : 'var(--ac)';
+    var pretBadge = isPret
+      ? '<div style="background:rgba(231,76,60,0.12);border:1px solid #e74c3c;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+          + '<div><div style="font-size:12px;font-weight:700;color:#e74c3c;">🔴 EN PRÊT — Agent ' + esc(o.agent_pret) + '</div>'
+          + (o.date_pret ? '<div style="font-size:10px;color:var(--mu);margin-top:2px;">Depuis le ' + formatDateBelge(o.date_pret) + '</div>' : '')
+          + '</div>'
+          + '<div onclick="retourOutil(\'' + o.id + '\')" style="background:#2ecc71;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">✓ Retour</div>'
+        + '</div>'
+      : (window._canEdit
+          ? '<div style="margin-top:8px;">'
+              + '<div style="display:flex;gap:8px;align-items:center;">'
+                + '<input type="text" id="pret-' + o.id + '" placeholder="N° agent..." style="flex:1;background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);-webkit-appearance:none;" inputmode="numeric"/>'
+                + '<div onclick="pretOutil(\'' + o.id + '\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Prêt</div>'
+              + '</div>'
+            + '</div>'
+          : '');
+
     var photoHtml = o.photo ? '<img src="' + esc(o.photo) + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;" onclick="openPhoto(\'' + esc(o.photo) + '\')">' : '';
-    return '<div class="card" style="border-left:4px solid var(--ac);">'
+
+    return '<div class="card" style="border-left:4px solid ' + borderColor + ';' + (isPret ? 'opacity:0.9;' : '') + '">'
       + '<div class="ct">'
         + '<div class="cnum" style="background:rgba(155,89,182,0.12);color:#9b59b6;border-color:#9b59b6;">🔧</div>'
         + '<div style="flex:1;min-width:0;">'
@@ -1249,13 +1270,64 @@ function doOutilSearch() {
           + (o.location ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
         + '</div>'
         + (window._canEdit ? '<div style="display:flex;gap:6px;">'
-          + '<div onclick="openOutilEdit(\'' + o.id + '\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">✏️</div>'
-          + '<div onclick="deleteOutil(\'' + o.id + '\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">🗑</div>'
+            + '<div onclick="openOutilEdit(\'' + o.id + '\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">✏️</div>'
+            + '<div onclick="deleteOutil(\'' + o.id + '\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">🗑</div>'
           + '</div>' : '')
       + '</div>'
+      + pretBadge
       + photoHtml
       + '</div>';
   }).join('');
+
+  // Badge global prêts non retournés
+  updateBadgePretsOutillage();
+}
+
+function formatDateBelge(ts) {
+  var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
+  return d.toLocaleDateString('fr-FR') + ' ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+
+async function pretOutil(id) {
+  var input = document.getElementById('pret-' + id);
+  var agent = (input ? input.value.trim() : '');
+  if (!agent) { showToast('Saisir un numéro d\'agent', 'err'); return; }
+  try {
+    await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: agent, date_pret: new Date().toISOString() });
+    showToast('Prêt enregistré — Agent ' + agent, 'success');
+    await loadOutillage();
+  } catch(e) { showToast('Erreur', 'err'); }
+}
+
+async function retourOutil(id) {
+  if (!confirm('Confirmer le retour de l\'outil ?')) return;
+  try {
+    await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: null, date_pret: null });
+    showToast('Retour enregistré ✓', 'success');
+    await loadOutillage();
+  } catch(e) { showToast('Erreur', 'err'); }
+}
+
+function updateBadgePretsOutillage() {
+  if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
+  var nb = outillage.filter(function(o) { return o.agent_pret; }).length;
+  var badge = document.getElementById('badgePrets');
+  if (!badge) {
+    badge = document.createElement('div');
+    badge.id = 'badgePrets';
+    badge.style.cssText = 'position:fixed;bottom:140px;right:16px;z-index:800;cursor:pointer;';
+    badge.onclick = function() { switchSection('outillage'); };
+    document.body.appendChild(badge);
+  }
+  if (nb > 0) {
+    badge.innerHTML = '<div style="background:#e74c3c;color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(231,76,60,0.4);display:flex;align-items:center;gap:8px;">'
+      + '<span style="font-size:16px;">🔧</span>'
+      + nb + ' outil' + (nb > 1 ? 's' : '') + ' en prêt'
+      + '</div>';
+    badge.style.display = 'block';
+  } else {
+    badge.style.display = 'none';
+  }
 }
 
 function switchOutilTab(id) {
