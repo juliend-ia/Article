@@ -318,12 +318,13 @@ function renderList(q) {
     var photoRow = '';
     if (a.photo) {
       var photos = a.photo.split(',').filter(function(u){return u.trim();});
+      var allPhotos = photos;
       if (photos.length === 1) {
-        photoRow = '<div style="width:100%;margin-top:6px"><img src="' + photos[0] + '" class="photo-preview" data-num="' + esc(a.num) + '"/></div>';
+        photoRow = '<div style="width:100%;margin-top:6px;background:var(--sf);border-radius:8px;padding:4px;"><img src="' + photos[0] + '" class="photo-preview" data-num="' + esc(a.num) + '" data-photos="' + esc(photos.join(',')) + '" style="background:var(--sf);"/></div>';
       } else if (photos.length > 1) {
-        photoRow = '<div style="width:100%;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;">';
+        photoRow = '<div style="width:100%;margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;background:var(--sf);border-radius:8px;padding:6px;">';
         for (var pi = 0; pi < photos.length; pi++) {
-          photoRow += '<img src="' + photos[pi] + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;background:#fff;" onclick="event.stopPropagation();document.getElementById(&quot;photoFull&quot;).src=this.src;document.getElementById(&quot;photoOverlay&quot;).classList.remove(&quot;hidden&quot;)"/>';
+          photoRow += '<img src="' + photos[pi] + '" data-photos="' + esc(photos.join(',')) + '" style="width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;background:var(--sf);" onclick="event.stopPropagation();openPhoto(this.src,this.getAttribute(\'data-photos\').split(\',\'))"/>';
         }
         photoRow += '</div>';
       }
@@ -337,12 +338,59 @@ function renderList(q) {
   con.querySelectorAll('.bedit').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); openEdit(this.getAttribute('data-num')); }); });
   con.querySelectorAll('.bdel').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); delArticle(this.getAttribute('data-num')); }); });
   con.querySelectorAll('.btn-panier').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); ajouterPanier(this.getAttribute('data-num')); }); });
-  con.querySelectorAll('.photo-preview').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); document.getElementById('photoFull').src = this.src; document.getElementById('photoOverlay').classList.remove('hidden'); }); });
+  con.querySelectorAll('.photo-preview').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); var allP = this.getAttribute('data-photos') ? this.getAttribute('data-photos').split(',') : [this.src]; openPhoto(this.src, allP); }); });
   if (filtered.length > displayCount) { lm.style.display = 'block'; lm.textContent = 'Afficher plus (' + (filtered.length - displayCount) + ' restants)'; } else lm.style.display = 'none';
 }
 
 document.getElementById('lm').addEventListener('click', function() { displayCount += 30; renderList(document.getElementById('si').value.trim().toLowerCase()); });
-document.getElementById('photoCloseBtn').addEventListener('click', function() { document.getElementById('photoOverlay').classList.add('hidden'); });
+// ── LIGHTBOX AVEC FLÈCHES ────────────────────────────────────────
+var _lightboxPhotos = [];
+var _lightboxIndex = 0;
+
+function openPhoto(url, allPhotos) {
+  var overlay = document.getElementById('photoOverlay');
+  var img = document.getElementById('photoFull');
+  var arrowL = document.getElementById('photoArrowLeft');
+  var arrowR = document.getElementById('photoArrowRight');
+  var counter = document.getElementById('photoCounter');
+
+  // Si pas de liste fournie, juste cette photo
+  _lightboxPhotos = allPhotos && allPhotos.length ? allPhotos : [url];
+  _lightboxIndex = _lightboxPhotos.indexOf(url);
+  if (_lightboxIndex < 0) _lightboxIndex = 0;
+
+  img.src = _lightboxPhotos[_lightboxIndex];
+  overlay.classList.remove('hidden');
+
+  var multi = _lightboxPhotos.length > 1;
+  arrowL.style.display = multi ? 'flex' : 'none';
+  arrowR.style.display = multi ? 'flex' : 'none';
+  counter.style.display = multi ? 'block' : 'none';
+  if (multi) counter.textContent = (_lightboxIndex+1) + ' / ' + _lightboxPhotos.length;
+}
+
+function navigatePhoto(dir) {
+  _lightboxIndex = (_lightboxIndex + dir + _lightboxPhotos.length) % _lightboxPhotos.length;
+  document.getElementById('photoFull').src = _lightboxPhotos[_lightboxIndex];
+  document.getElementById('photoCounter').textContent = (_lightboxIndex+1) + ' / ' + _lightboxPhotos.length;
+}
+
+function closePhoto() {
+  document.getElementById('photoOverlay').classList.add('hidden');
+}
+
+function closePhotoOverlay(e) {
+  if (e.target === document.getElementById('photoOverlay')) closePhoto();
+}
+
+// Clavier gauche/droite/escape
+document.addEventListener('keydown', function(e) {
+  var overlay = document.getElementById('photoOverlay');
+  if (overlay.classList.contains('hidden')) return;
+  if (e.key === 'ArrowLeft') navigatePhoto(-1);
+  else if (e.key === 'ArrowRight') navigatePhoto(1);
+  else if (e.key === 'Escape') closePhoto();
+});
 
 document.getElementById('addBtn').addEventListener('click', async function() {
   var num = document.getElementById('addNum').value.trim(), nom = document.getElementById('addNom').value.trim();
@@ -475,7 +523,7 @@ function renderEditPhotos() {
     var img = document.createElement('img');
     img.src = url;
     img.style.cssText = 'width:80px;height:80px;object-fit:cover;border-radius:6px;border:1px solid var(--br);cursor:pointer;';
-    img.onclick = (function(u) { return function() { document.getElementById('photoFull').src = u; document.getElementById('photoOverlay').classList.remove('hidden'); }; })(url);
+    img.onclick = (function(u) { return function() { openPhoto(u, _editPhotos); }; })(url);
     var del = document.createElement('div');
     del.style.cssText = 'position:absolute;top:-4px;right:-4px;background:var(--rd);color:#fff;border-radius:50%;width:18px;height:18px;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:bold;';
     del.textContent = 'x';
