@@ -247,10 +247,10 @@ main{padding:14px;max-width:800px;margin:0 auto;}
       <div class="field">
         <label>Rôle</label>
         <select id="newRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
-          <option value="agent">👷 Agent maintenance</option>
-          <option value="magasinier">🔧 Magasinier</option>
-          <option value="brigadier">🎖️ Brigadier</option>
-          <option value="admin">👑 Administrateur</option>
+          <option value="agent">Agent maintenance</option>
+          <option value="magasinier">Magasinier</option>
+          <option value="brigadier">Brigadier</option>
+          <option value="admin">Administrateur</option>
         </select>
       </div>
       <div class="field" style="display:flex;align-items:center;gap:10px;">
@@ -349,19 +349,25 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     <div class="field">
       <label>Rôle</label>
       <select id="editUserRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
-        <option value="agent">👷 Agent maintenance</option>
-        <option value="magasinier">🔧 Magasinier</option>
-        <option value="brigadier">🎖️ Brigadier</option>
-        <option value="admin">👑 Administrateur</option>
+        <option value="agent">Agent maintenance</option>
+        <option value="magasinier">Magasinier</option>
+        <option value="brigadier">Brigadier</option>
+        <option value="admin">Administrateur</option>
       </select>
     </div>
-    <div class="field" style="display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="editUserPeutModifier" style="width:20px;height:20px;accent-color:#2ecc71;cursor:pointer;flex-shrink:0;"/>
-      <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="editUserPeutModifier">Peut modifier les articles</label>
+    <div class="field" style="display:flex;align-items:center;justify-content:space-between;background:var(--sf);border-radius:8px;padding:12px;">
+      <label style="margin:0;font-size:14px;color:var(--tx);">Peut modifier les articles</label>
+      <div id="togglePeutModifier" onclick="toggleSwitch('togglePeutModifier','editUserPeutModifier')" style="width:48px;height:26px;border-radius:13px;background:#e74c3c;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
+      </div>
+      <input type="hidden" id="editUserPeutModifier" value="false"/>
     </div>
-    <div class="field" style="display:flex;align-items:center;gap:10px;">
-      <input type="checkbox" id="editUserActif" style="width:20px;height:20px;accent-color:#2ecc71;cursor:pointer;flex-shrink:0;"/>
-      <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="editUserActif">Compte actif</label>
+    <div class="field" style="display:flex;align-items:center;justify-content:space-between;background:var(--sf);border-radius:8px;padding:12px;">
+      <label style="margin:0;font-size:14px;color:var(--tx);">Compte actif</label>
+      <div id="toggleActif" onclick="toggleSwitch('toggleActif','editUserActif')" style="width:48px;height:26px;border-radius:13px;background:#e74c3c;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;">
+        <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
+      </div>
+      <input type="hidden" id="editUserActif" value="false"/>
     </div>
     <div class="ma">
       <button class="bmc" onclick="closeEditUser()">Annuler</button>
