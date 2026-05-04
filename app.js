@@ -164,6 +164,9 @@ function initUI() {
       btnSound.style.display = 'none';
     }
   }
+  // Onglet Ajouter outillage
+  var ot2 = document.getElementById('ot2');
+  if (ot2) ot2.style.display = window._canEdit ? '' : 'none';
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
   // Historique bons - cache pour agent
@@ -1188,6 +1191,194 @@ function toggleSound() {
     btn.style.color = _soundEnabled ? 'var(--ac)' : 'var(--mu)';
   }
   showToast(_soundEnabled ? 'Son activé' : 'Son coupé', 'success');
+}
+
+// ── SECTION NAVIGATION ──────────────────────────────────────────
+var _currentSection = 'pieces';
+
+function switchSection(section) {
+  _currentSection = section;
+  var isPieces = section === 'pieces';
+  document.getElementById('sectionPieces').style.display = isPieces ? '' : 'none';
+  document.getElementById('sectionOutillage').style.display = isPieces ? 'none' : '';
+  var navP = document.getElementById('navPieces');
+  var navO = document.getElementById('navOutillage');
+  navP.style.color = isPieces ? 'var(--ac)' : 'var(--mu)';
+  navP.style.borderBottom = isPieces ? '3px solid var(--ac)' : '3px solid transparent';
+  navO.style.color = isPieces ? 'var(--mu)' : 'var(--ac)';
+  navO.style.borderBottom = isPieces ? '3px solid transparent' : '3px solid var(--ac)';
+  if (!isPieces && outillage.length === 0) loadOutillage();
+}
+
+// ── OUTILLAGE ────────────────────────────────────────────────────
+var outillage = [];
+var _outilPhoto = null;
+var _outilEditPhoto = null;
+
+async function loadOutillage() {
+  try {
+    var data = await supa('GET', 'outillage?select=*&order=nom.asc');
+    outillage = data || [];
+    doOutilSearch();
+    var tab2 = document.getElementById('ot2');
+    if (tab2) tab2.style.display = window._canEdit ? '' : 'none';
+  } catch(e) { showToast('Erreur chargement outillage', 'err'); }
+}
+
+function normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+
+function doOutilSearch() {
+  var q = normalize(document.getElementById('outilSearch').value.trim());
+  var filtered = outillage.filter(function(o) {
+    if (!q) return true;
+    return (normalize(o.nom) + '|' + normalize(o.location||'') + '|' + normalize(o.tags||'')).indexOf(q) >= 0;
+  });
+  var count = document.getElementById('outilCount');
+  if (count) count.textContent = filtered.length + ' outil(s)';
+  var res = document.getElementById('outilRes');
+  if (!res) return;
+  if (!filtered.length) { res.innerHTML = '<div class="empty"><div class="ei">🔧</div>Aucun outil trouvé</div>'; return; }
+
+  res.innerHTML = filtered.map(function(o) {
+    var photoHtml = o.photo ? '<img src="' + esc(o.photo) + '" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;" onclick="openPhoto(\'' + esc(o.photo) + '\')">' : '';
+    return '<div class="card" style="border-left:4px solid var(--ac);">'
+      + '<div class="ct">'
+        + '<div class="cnum" style="background:rgba(155,89,182,0.12);color:#9b59b6;border-color:#9b59b6;">🔧</div>'
+        + '<div style="flex:1;min-width:0;">'
+          + '<div class="cn">' + esc(o.nom) + '</div>'
+          + (o.location ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
+        + '</div>'
+        + (window._canEdit ? '<div style="display:flex;gap:6px;">'
+          + '<div onclick="openOutilEdit(\'' + o.id + '\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">✏️</div>'
+          + '<div onclick="deleteOutil(\'' + o.id + '\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">🗑</div>'
+          + '</div>' : '')
+      + '</div>'
+      + photoHtml
+      + '</div>';
+  }).join('');
+}
+
+function switchOutilTab(id) {
+  ['ot1','ot2'].forEach(function(t) {
+    var el = document.getElementById(t);
+    if (el) el.classList.toggle('active', t === id);
+  });
+  document.getElementById('op1').style.display = id === 'ot1' ? '' : 'none';
+  document.getElementById('op2').style.display = id === 'ot2' ? '' : 'none';
+}
+
+// Ajouter outil
+document.addEventListener('DOMContentLoaded', function() {
+  var addBtn = document.getElementById('outilAddBtn');
+  if (addBtn) addBtn.addEventListener('click', async function() {
+    var nom = (document.getElementById('outilNom').value||'').trim();
+    if (!nom) { showToast('Désignation obligatoire', 'err'); return; }
+    var loc = (document.getElementById('outilLoc').value||'').trim();
+    var tags = (document.getElementById('outilTags').value||'').trim();
+    var obj = { nom: nom, location: loc, tags: tags, photo: _outilPhoto || null };
+    try {
+      await supa('POST', 'outillage', [obj]);
+      showToast('Outil enregistré!', 'success');
+      document.getElementById('outilNom').value = '';
+      document.getElementById('outilLoc').value = '';
+      document.getElementById('outilTags').value = '';
+      _outilPhoto = null;
+      document.getElementById('outilPhotoContainer').innerHTML = '';
+      loadOutillage();
+      switchOutilTab('ot1');
+    } catch(e) { showToast('Erreur', 'err'); }
+  });
+
+  // Photo ajout
+  var photoInput = document.getElementById('outilPhotoInput');
+  if (photoInput) photoInput.addEventListener('change', async function() {
+    var file = this.files[0]; if (!file) return;
+    var url = await uploadPhoto(file, 'outillage');
+    if (url) {
+      _outilPhoto = url;
+      document.getElementById('outilPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">';
+    }
+  });
+
+  // Photo edit
+  var editPhotoInput = document.getElementById('outilEditPhotoInput');
+  if (editPhotoInput) editPhotoInput.addEventListener('change', async function() {
+    var file = this.files[0]; if (!file) return;
+    var url = await uploadPhoto(file, 'outillage');
+    if (url) {
+      _outilEditPhoto = url;
+      document.getElementById('outilEditPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">';
+      document.getElementById('outilEditPhotoRemove').style.display = 'block';
+    }
+  });
+
+  var removeBtn = document.getElementById('outilEditPhotoRemove');
+  if (removeBtn) removeBtn.addEventListener('click', function() {
+    _outilEditPhoto = null;
+    document.getElementById('outilEditPhotoContainer').innerHTML = '';
+    this.style.display = 'none';
+  });
+
+  // Sauvegarder edit
+  var saveBtn = document.getElementById('outilEditSaveBtn');
+  if (saveBtn) saveBtn.addEventListener('click', async function() {
+    var id = document.getElementById('outilEditId').value;
+    var nom = (document.getElementById('outilEditNom').value||'').trim();
+    if (!nom) { showToast('Désignation obligatoire', 'err'); return; }
+    var obj = {
+      nom: nom,
+      location: (document.getElementById('outilEditLoc').value||'').trim(),
+      tags: (document.getElementById('outilEditTags').value||'').trim(),
+      photo: _outilEditPhoto
+    };
+    try {
+      await supa('PATCH', 'outillage?id=eq.' + id, obj);
+      showToast('Outil modifié!', 'success');
+      closeOutilEdit();
+      loadOutillage();
+    } catch(e) { showToast('Erreur', 'err'); }
+  });
+});
+
+async function uploadPhoto(file, bucket) {
+  try {
+    var ext = file.name.split('.').pop();
+    var path = Date.now() + '.' + ext;
+    var resp = await fetch(SURL + '/storage/v1/object/' + bucket + '/' + path, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + SKEY, 'Content-Type': file.type },
+      body: file
+    });
+    if (!resp.ok) throw new Error();
+    return SURL + '/storage/v1/object/public/' + bucket + '/' + path;
+  } catch(e) { showToast('Erreur upload photo', 'err'); return null; }
+}
+
+function openOutilEdit(id) {
+  var o = outillage.filter(function(x) { return x.id === id; })[0];
+  if (!o) return;
+  document.getElementById('outilEditId').value = o.id;
+  document.getElementById('outilEditNom').value = o.nom || '';
+  document.getElementById('outilEditLoc').value = o.location || '';
+  document.getElementById('outilEditTags').value = o.tags || '';
+  _outilEditPhoto = o.photo || null;
+  var container = document.getElementById('outilEditPhotoContainer');
+  container.innerHTML = o.photo ? '<img src="' + esc(o.photo) + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">' : '';
+  document.getElementById('outilEditPhotoRemove').style.display = o.photo ? 'block' : 'none';
+  document.getElementById('outilEditModal').classList.remove('hidden');
+}
+
+function closeOutilEdit() {
+  document.getElementById('outilEditModal').classList.add('hidden');
+}
+
+async function deleteOutil(id) {
+  if (!confirm('Supprimer cet outil ?')) return;
+  try {
+    await supa('DELETE', 'outillage?id=eq.' + id);
+    showToast('Outil supprimé', 'success');
+    loadOutillage();
+  } catch(e) { showToast('Erreur', 'err'); }
 }
 
 initRealtime();
