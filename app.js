@@ -331,7 +331,7 @@ function renderList(q) {
     }
     var snum = esc(a.num);
     var editBtns = window._canEdit ? '<div class="cbtns"><div class="bedit" data-num="' + snum + '">Modifier</div><div class="bdel" data-num="' + snum + '">Supprimer</div></div>' : '';
-    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div class="cnum">' + hl(a.num,q) + '</div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + internerow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
+    h += '<div class="card' + exp + '" data-num="' + snum + '"><div class="ct"><div><div class="cn">' + hl(a.nom,q) + '</div><div class="cc">' + esc(a.categorie||'') + '</div></div><div style="display:flex;align-items:center;gap:6px;">' + (a.photo ? '<span style="font-size:13px;color:var(--mu);" title="Photo disponible">📷</span>' : '') + '<div class="cnum">' + hl(a.num,q) + '</div></div></div><div class="det"><div class="dp"><div class="dl">N SAP</div><div class="dv">' + snum + '</div></div><div class="dp"><div class="dl">Categorie</div><div class="dv">' + esc(a.categorie||'--') + '</div></div><div class="dp"><div class="dl">Emplacement</div><div class="dv">' + loc + '</div></div>' + minmax + trow + npfrow + fourrow + internerow + busrow + photoRow + editBtns + '<div class="btn-panier" data-num="' + snum + '">Ajouter au panier</div></div></div>';
   }
   con.innerHTML = h;
   con.querySelectorAll('.card').forEach(function(el) { el.addEventListener('click', function(e) { if (e.target.classList.contains('bedit')||e.target.classList.contains('bdel')||e.target.classList.contains('btn-panier')||e.target.classList.contains('photo-preview')) return; var n = this.getAttribute('data-num'); expandedNum = (expandedNum === n) ? null : n; renderList(document.getElementById('si').value.trim().toLowerCase()); }); });
@@ -1493,7 +1493,7 @@ function doOutilSearch() {
       + '<div class="ct">'
         + '<div class="cnum" style="background:rgba(155,89,182,0.12);color:#9b59b6;border-color:#9b59b6;">🔧</div>'
         + '<div style="flex:1;min-width:0;">'
-          + '<div class="cn">' + esc(o.nom) + '</div>'
+          + '<div class="cn">' + esc(o.nom) + (o.photo ? ' <span style="font-size:13px;color:var(--mu);">📷</span>' : '') + '</div>'
           + (o.location && currentUser.role !== 'agent' ? '<div class="cc">📍 ' + esc(o.location) + '</div>' : '')
         + '</div>'
         + (window._canEdit ? '<div style="display:flex;gap:6px;" onclick="event.stopPropagation()">'
