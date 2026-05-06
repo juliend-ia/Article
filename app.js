@@ -29,7 +29,7 @@ async function checkAuth() {
     var cu = localStorage.getItem('currentUser');
     if (cu) { try { currentUser = JSON.parse(cu); } catch(e) {} }
     if (!currentUser.login) {
-      currentUser = stored === ADMIN_TOKEN ? 
+      currentUser = stored === ADMIN_TOKEN ?
         {login:'Djulien', prenom:'Djulien', role:'admin', token:stored} :
         {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:stored};
     }
@@ -55,7 +55,6 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
   var err = document.getElementById('loginErr');
   if (!u || !p) { err.textContent = 'Remplis tous les champs.'; return; }
   var h = await hashStr(u + ':' + p);
-  // Verifier D'ABORD dans la table utilisateurs
   try {
     var udata = await supa('GET', 'utilisateurs?login=eq.' + encodeURIComponent(u) + '&select=login,prenom,role,actif,password_hash,peut_modifier');
     if (udata && udata.length) {
@@ -72,9 +71,8 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       return;
     }
   } catch(e) { console.error('Erreur login table:', e); }
-  // Fallback: verifier ATOKENS (Djulien et magasin2k par defaut)
   if (ATOKENS.indexOf(h) >= 0) {
-    currentUser = h === ADMIN_TOKEN ? 
+    currentUser = h === ADMIN_TOKEN ?
       {login:'Djulien', prenom:'Djulien', role:'admin', token:h} :
       {login:'magasin2k', prenom:'Magasin', role:'magasinier', token:h};
     localStorage.setItem(SKEY2, h);
@@ -171,22 +169,17 @@ function initUI() {
   var role = currentUser.role;
   var peutModifier = currentUser.peut_modifier !== false;
 
-  // _canEdit = peut modifier les articles (admin ou magasinier avec peut_modifier)
   window._canEdit = (role === 'admin') || ((role === 'magasinier' || role === 'brigadier') && peutModifier);
 
-  // Onglet Admin - admin seulement
   var t4 = document.getElementById('t4');
   if (t4) { t4.style.display = role === 'admin' ? 'flex' : 'none'; t4.style.justifyContent = 'center'; t4.style.alignItems = 'center'; }
 
-  // Onglet Ajouter - admin + magasinier/brigadier avec droit modif
   var t2 = document.getElementById('t2');
   if (t2) { t2.style.display = window._canEdit ? 'flex' : 'none'; t2.style.justifyContent = 'center'; t2.style.alignItems = 'center'; }
 
-  // Onglet Ajouter outillage — canEdit seulement
   var ot2 = document.getElementById('ot2');
   if (ot2) ot2.style.display = window._canEdit ? '' : 'none';
 
-  // Son — magasinier, brigadier, admin
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
     if (role !== 'agent') {
@@ -199,11 +192,9 @@ function initUI() {
     }
   }
 
-  // Outillage visible pour tous
   var navO = document.getElementById('navOutillage');
   if (navO) navO.style.display = '';
 
-  // Admin dans le header
   var navAdmin = document.getElementById('navAdmin');
   if (navAdmin) navAdmin.style.display = (role === 'admin') ? 'block' : 'none';
   var btnAdmin = document.getElementById('btnAdmin');
@@ -212,11 +203,9 @@ function initUI() {
   var agentField = document.getElementById('agentField');
   if (agentField) agentField.classList.toggle('hidden', role !== 'agent');
 
-  // Historique bons - caché pour agent
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = (role === 'agent') ? 'none' : 'block';
 
-  // Prénom seul dans le header
   var userInfo = document.getElementById('userInfo');
   if (userInfo) userInfo.textContent = currentUser.prenom || '';
 }
@@ -300,7 +289,7 @@ function renderList(q) {
   for (var i = 0; i < n; i++) {
     var a = filtered[i], exp = (expandedNum === a.num) ? ' exp' : '';
     var loc = a.location ? esc(a.location) : '<span class="nl">Non renseigne</span>';
-        var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')<0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
+    var cleanTags = (a.tags||'').split(',').map(function(t){return t.trim();}).filter(function(t){return t && t.indexOf('bus ')<0 && t.indexOf('produit chimique')<0 && t.indexOf('piece interne')<0;}).join(', ');
     var trow = cleanTags ? '<div class="dp"><div class="dl">Mots-cles</div><div class="dv">' + esc(cleanTags) + '</div></div>' : '';
     var npfrow = (a.npf && window._canEdit) ? '<div class="dp"><div class="dl">NPF</div><div class="dv">' + esc(a.npf) + '</div></div>' : '';
     var fourrow = (a.fournisseur && window._canEdit) ? '<div class="dp"><div class="dl">Fournisseur</div><div class="dv">' + esc(a.fournisseur) + '</div></div>' : '';
@@ -318,7 +307,6 @@ function renderList(q) {
     var photoRow = '';
     if (a.photo) {
       var photos = a.photo.split(',').filter(function(u){return u.trim();});
-      var allPhotos = photos;
       if (photos.length === 1) {
         photoRow = '<div style="width:100%;margin-top:6px;background:var(--sf);border-radius:8px;padding:4px;"><img src="' + photos[0] + '" class="photo-preview" data-num="' + esc(a.num) + '" data-photos="' + esc(photos.join(',')) + '" style="background:var(--sf);"/></div>';
       } else if (photos.length > 1) {
@@ -343,7 +331,7 @@ function renderList(q) {
 }
 
 document.getElementById('lm').addEventListener('click', function() { displayCount += 30; renderList(document.getElementById('si').value.trim().toLowerCase()); });
-// ── LIGHTBOX AVEC FLÈCHES ────────────────────────────────────────
+
 var _lightboxPhotos = [];
 var _lightboxIndex = 0;
 
@@ -353,15 +341,11 @@ function openPhoto(url, allPhotos) {
   var arrowL = document.getElementById('photoArrowLeft');
   var arrowR = document.getElementById('photoArrowRight');
   var counter = document.getElementById('photoCounter');
-
-  // Si pas de liste fournie, juste cette photo
   _lightboxPhotos = allPhotos && allPhotos.length ? allPhotos : [url];
   _lightboxIndex = _lightboxPhotos.indexOf(url);
   if (_lightboxIndex < 0) _lightboxIndex = 0;
-
   img.src = _lightboxPhotos[_lightboxIndex];
   overlay.classList.remove('hidden');
-
   var multi = _lightboxPhotos.length > 1;
   arrowL.style.display = multi ? 'flex' : 'none';
   arrowR.style.display = multi ? 'flex' : 'none';
@@ -375,15 +359,9 @@ function navigatePhoto(dir) {
   document.getElementById('photoCounter').textContent = (_lightboxIndex+1) + ' / ' + _lightboxPhotos.length;
 }
 
-function closePhoto() {
-  document.getElementById('photoOverlay').classList.add('hidden');
-}
+function closePhoto() { document.getElementById('photoOverlay').classList.add('hidden'); }
+function closePhotoOverlay(e) { if (e.target === document.getElementById('photoOverlay')) closePhoto(); }
 
-function closePhotoOverlay(e) {
-  if (e.target === document.getElementById('photoOverlay')) closePhoto();
-}
-
-// Clavier gauche/droite/escape
 document.addEventListener('keydown', function(e) {
   var overlay = document.getElementById('photoOverlay');
   if (overlay.classList.contains('hidden')) return;
@@ -462,13 +440,10 @@ document.getElementById('editPhotoInput').addEventListener('change', async funct
   if (!editingNum) { showToast('Erreur: pas d article selectionne', 'err'); return; }
   showToast('Upload en cours...', 'success');
   try {
-    // Compresser l image
     var compressed = await compressImage(file);
-    // Generer un nom unique
     var ext = file.name.split('.').pop() || 'jpg';
     var timestamp = Date.now();
     var path = editingNum + '/' + timestamp + '.' + ext;
-    // Uploader dans Supabase Storage
     var res = await fetch(SURL + '/storage/v1/object/photos-articles/' + path, {
       method: 'POST',
       headers: { 'apikey': SKEY, 'Authorization': 'Bearer ' + SKEY, 'Content-Type': compressed.type || 'image/jpeg' },
@@ -476,7 +451,6 @@ document.getElementById('editPhotoInput').addEventListener('change', async funct
     });
     if (!res.ok) throw new Error('Upload failed');
     var url = SURL + '/storage/v1/object/public/photos-articles/' + path;
-    // Ajouter a la liste des photos
     if (!_editPhotos) _editPhotos = [];
     _editPhotos.push(url);
     _editPhoto = _editPhotos.join(',');
@@ -637,35 +611,33 @@ async function loadHistorique() {
     var data = await supa('GET', 'bons_commande?select=*&order=date_creation.desc&limit=200');
     var list = document.getElementById('historiqueList');
 
-    // Heure belge = UTC+2 (heure d'été)
     var OFFSET = 2 * 60 * 60 * 1000;
 
-    // Date du jour en heure belge (yyyy-mm-dd)
     function dateBelge(ts) {
       var d = new Date(ts + OFFSET);
-      return d.toISOString().slice(0, 10); // "2026-05-03"
+      return d.toISOString().slice(0, 10);
     }
 
     var maintenant = Date.now();
     var aujourdhui = dateBelge(maintenant);
 
-    // Lundi de la semaine en cours
     var nowBelge = new Date(maintenant + OFFSET);
-    var jourSemaine = nowBelge.getUTCDay(); // 0=dim
+    var jourSemaine = nowBelge.getUTCDay();
     var offsetLundi = jourSemaine === 0 ? -6 : 1 - jourSemaine;
     var lundiTs = maintenant + offsetLundi * 86400000;
     var lundi = dateBelge(lundiTs);
 
+    // Exclure les bons annulés (réouverture) de l'historique
     var filtered = (data || []).filter(function(b) {
+      if (b.statut === 'annule') return false;
       var dateBon = dateBelge(new Date(b.date_creation).getTime());
       if (_histoFiltre === 'today') return dateBon === aujourdhui;
       if (_histoFiltre === 'week')  return dateBon >= lundi;
       return true;
     });
 
-    // Onglets filtre
     var tabs = '<div style="display:flex;gap:6px;margin-bottom:12px;">'
-      + ['today','week','all'].map(function(f, i) {
+      + ['today','week','all'].map(function(f) {
           var label = f === 'today' ? "Aujourd'hui" : f === 'week' ? 'Cette semaine' : 'Tout';
           var active = _histoFiltre === f;
           return '<div class="histo-tab" data-f="' + f + '" style="flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:2px solid ' + (active ? 'var(--ac)' : 'var(--br)') + ';color:' + (active ? 'var(--ac)' : 'var(--mu)') + ';background:' + (active ? 'rgba(240,165,0,0.08)' : 'var(--sf)') + ';">' + label + '</div>';
@@ -682,7 +654,6 @@ async function loadHistorique() {
     for (var i = 0; i < filtered.length; i++) {
       var b = filtered[i], arts = b.articles||[];
       var dt = new Date(b.date_creation);
-      // Forcer heure belge : UTC+2 (heure d'ete) = +120 minutes
       var dtBrussels = new Date(dt.getTime() + 2 * 60 * 60 * 1000);
       var dateStr = dtBrussels.toLocaleDateString('fr-FR') + ' ' + dtBrussels.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
       var sapDone = b.sap_effectue || false;
@@ -716,6 +687,7 @@ async function loadHistorique() {
             + '<div style="color:var(--mu);font-size:18px;">▼</div>'
             + '<div class="btn-copy-sap" data-id="' + b.id + '" style="background:rgba(46,204,113,0.15);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">📋 Copier</div>'
             + '<div class="btn-dl" data-id="' + b.id + '">Excel</div>'
+            + '<div class="btn-reopen" data-id="' + b.id + '" data-sap="' + (sapDone ? 'true' : 'false') + '" style="background:rgba(100,149,237,0.1);border:1px solid #6495ed;color:#6495ed;border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;">✏️ Modifier</div>'
             + '<div class="btn-del-bon" data-id="' + b.id + '" data-sap="' + (sapDone ? 'true' : 'false') + '" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;">Supprimer</div>'
           + '</div>'
         + '</div>'
@@ -728,6 +700,8 @@ async function loadHistorique() {
     list.innerHTML = h;
     list.querySelectorAll('.histo-tab').forEach(function(el) { el.addEventListener('click', function() { _histoFiltre = this.getAttribute('data-f'); loadHistorique(); }); });
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
+
+    // ── BOUTON SUPPRIMER ──
     list.querySelectorAll('.btn-del-bon').forEach(function(el) {
       el.addEventListener('click', async function() {
         var id = this.getAttribute('data-id');
@@ -742,16 +716,71 @@ async function loadHistorique() {
         } catch(e) { showToast('Erreur', 'err'); console.error(e); }
       });
     });
+
     list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
     list.querySelectorAll('.chk-sap').forEach(function(el) { el.addEventListener('change', async function() { var id = this.getAttribute('data-id'), val = this.checked; try { await supa('PATCH', 'bons_commande?id=eq.' + id, {sap_effectue:val}); showToast(val ? 'SAP marque fait ✓' : 'SAP marque non fait', 'success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur', 'err'); } }); });
+
+    // ── BOUTON MODIFIER (ROUVRIR) ──
+    list.querySelectorAll('.btn-reopen').forEach(function(el) {
+      el.addEventListener('click', function(e) {
+        e.stopPropagation();
+        rouvrirBon(this.getAttribute('data-id'), this.getAttribute('data-sap') === 'true');
+      });
+    });
+
   } catch(e) { console.error(e); }
+}
+
+// ── ROUVRIR UN BON EN MODE PANIER ──
+async function rouvrirBon(id, sapFait) {
+  var msg = sapFait
+    ? '⚠️ Ce bon a déjà été sorti sur SAP !\nLe modifier peut créer une incohérence.\nContinuer quand même ?'
+    : 'Rouvrir ce bon dans le panier pour le modifier ?';
+  if (!confirm(msg)) return;
+
+  try {
+    var data = await supa('GET', 'bons_commande?id=eq.' + id + '&select=*');
+    if (!data || !data.length) { showToast('Bon introuvable', 'err'); return; }
+    var bon = data[0];
+
+    // Recharger les articles dans le panier
+    panier = (bon.articles || []).map(function(a) {
+      return {
+        num: a.num,
+        nom: a.nom,
+        location: a.location || '',
+        qty: a.qty,
+        reparable: a.reparable || false,
+        interne: a.interne || false
+      };
+    });
+
+    // Remettre le numéro d'ordre
+    document.getElementById('numeroOrdre').value = bon.numero_ordre || '';
+
+    // Remettre le numéro agent si applicable
+    var agentInput = document.getElementById('numeroAgent');
+    if (agentInput && bon.numero_agent) agentInput.value = bon.numero_agent;
+
+    // Supprimer l'ancien bon définitivement
+    await supa('DELETE', 'bons_commande?id=eq.' + id);
+
+    // Mettre à jour badge + aller sur panier
+    updateBadge();
+    switchTab('panier');
+    renderPanier();
+    loadHistorique();
+    updateBadgeAttente();
+    showToast('Bon rechargé dans le panier !', 'success');
+
+  } catch(e) { showToast('Erreur', 'err'); console.error(e); }
 }
 
 function buildSapText(numeroOrdre, arts) {
   var lines = [];
   for (var i = 0; i < arts.length; i++) {
     var a = arts[i];
-    if (a.interne) continue;  // articles internes exclus du format SAP
+    if (a.interne) continue;
     lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + numeroOrdre + '\t' + '10');
   }
   return esc(lines.join('\n'));
@@ -765,16 +794,14 @@ async function copySAP(id) {
     var lines = [];
     for (var i = 0; i < arts.length; i++) {
       var a = arts[i];
-      if (a.interne) continue;  // articles internes exclus de la copie SAP
+      if (a.interne) continue;
       lines.push(a.num + '\t' + a.qty + '\t' + '\t' + '2K' + '\t' + '\t' + bon.numero_ordre + '\t' + '10');
     }
     var txt = lines.join('\n');
-    // Methode moderne (HTTPS requis - GitHub Pages OK)
     if (navigator.clipboard && navigator.clipboard.writeText) {
       await navigator.clipboard.writeText(txt);
       showToast('Copie! Colle dans SAP', 'success');
     } else {
-      // Fallback ancien
       var ta = document.createElement('textarea');
       ta.value = txt;
       ta.style.position = 'fixed';
@@ -823,7 +850,6 @@ function switchTab(tab) {
   if (tab === 'admin' && currentUser.role === 'admin') { loadAdminPage(); }
 }
 
-
 function toggleBusBtn(checkId, btnId, color) {
   var cb = document.getElementById(checkId);
   var btn = document.getElementById(btnId);
@@ -857,7 +883,6 @@ function setBusBtn(checkId, btnId, checked) {
   }
 }
 
-
 // ── REALTIME SUPABASE ──
 var _lastBonId = null;
 var _lastBonCreatedAt = null;
@@ -865,7 +890,6 @@ var _pollingInterval = null;
 var _notifCooldown = false;
 
 function initRealtime() {
-  // Mémoriser le dernier bon ET sa date au démarrage
   supa('GET', 'bons_commande?select=id,date_creation&order=date_creation.desc&limit=1')
     .then(function(data) {
       if (data && data.length) {
@@ -894,12 +918,10 @@ function initRealtime() {
           updateBadgeAttente();
         }
         if (msg.topic && msg.topic.indexOf('articles') >= 0) { loadArticlesSilent(); }
-        // Outillage modifié — recharger si on est sur l'onglet outillage
         if (msg.topic && msg.topic.indexOf('outillage') >= 0) {
           if (_currentSection === 'outillage') {
             loadOutillage();
           } else {
-            // Mettre à jour silencieusement les données en mémoire
             supa('GET', 'outillage?select=*&order=nom.asc').then(function(data) {
               if (data) { outillage = data; updateBadgePretsOutillage(); }
             }).catch(function() {});
@@ -918,9 +940,6 @@ function initRealtime() {
       var data = await supa('GET', 'bons_commande?select=id,login,numero_agent,numero_ordre,articles,date_creation&order=date_creation.desc&limit=1');
       if (data && data.length) {
         var latest = data[0];
-        // Nouveau bon = ID différent ET date plus récente que le dernier connu
-        // La date plus récente évite de notifier quand on supprime un bon
-        // et que l'ancien remonte en premier
         var isNewer = _lastBonCreatedAt === null || latest.date_creation > _lastBonCreatedAt;
         if (_lastBonId !== null && latest.id !== _lastBonId && isNewer) {
           _lastBonId = latest.id;
@@ -942,9 +961,7 @@ function initRealtime() {
 
 function onNouveauBon(record) {
   if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
-  // Ignorer si on n'a pas les vraies données (record fantôme du WebSocket)
   if (!record || !record.id || !record.numero_ordre) return;
-  // Ne pas notifier si c'est soi-même qui a créé le bon
   if (record.login && record.login === currentUser.login) {
     updateBadgeAttente();
     if (document.getElementById('p3') && document.getElementById('p3').style.display !== 'none') {
@@ -952,7 +969,6 @@ function onNouveauBon(record) {
     }
     return;
   }
-  // Anti-doublon — ignorer si déjà notifié dans les 5 dernières secondes
   if (_notifCooldown) return;
   _notifCooldown = true;
   setTimeout(function() { _notifCooldown = false; }, 5000);
@@ -983,7 +999,6 @@ async function loadArticlesSilent() {
     }
   } catch(e) {}
 }
-
 
 // ── PAGE ADMIN ──
 async function loadAdminPage() {
@@ -1038,15 +1053,7 @@ async function validerCompte(id, matricule, prenom, pwdHash) {
   var roleVal = role ? role.value : 'agent';
   var login = matricule;
   try {
-    // Créer l'utilisateur
-    await supa('POST', 'utilisateurs', [{
-      login: login,
-      prenom: prenom,
-      password_hash: pwdHash,
-      role: roleVal,
-      actif: true
-    }]);
-    // Marquer la demande traitée
+    await supa('POST', 'utilisateurs', [{login:login, prenom:prenom, password_hash:pwdHash, role:roleVal, actif:true}]);
     await supa('PATCH', 'demandes_compte?id=eq.' + id, { statut: 'valide' });
     showToast('Compte créé pour ' + prenom + ' (' + login + ')', 'success');
     logAction('Creation compte: ' + prenom + ' / ' + login + ' / ' + roleVal);
@@ -1070,10 +1077,7 @@ async function loadDemandes() {
     var section = document.getElementById('resetDemandesSection');
     var badge = document.getElementById('badgeDemandes');
     var list = document.getElementById('demandesList');
-    if (!data || !data.length) {
-      section.style.display = 'none';
-      return;
-    }
+    if (!data || !data.length) { section.style.display = 'none'; return; }
     section.style.display = 'block';
     badge.style.display = 'inline-flex';
     badge.textContent = data.length;
@@ -1106,10 +1110,7 @@ function ouvrirResetModal(id, login) {
 }
 
 async function ignorerDemande(id) {
-  try {
-    await supa('PATCH', 'demandes_reset?id=eq.' + id, {traitee:true});
-    loadDemandes();
-  } catch(e) { showToast('Erreur', 'err'); }
+  try { await supa('PATCH', 'demandes_reset?id=eq.' + id, {traitee:true}); loadDemandes(); } catch(e) { showToast('Erreur', 'err'); }
 }
 
 async function validerResetPwd() {
@@ -1131,18 +1132,13 @@ async function validerResetPwd() {
   } catch(e) { err.textContent = 'Erreur, reessaie.'; console.error(e); }
 }
 
-function fermerResetModal() {
-  document.getElementById('resetPwdModal').classList.add('hidden');
-}
+function fermerResetModal() { document.getElementById('resetPwdModal').classList.add('hidden'); }
 
 async function loadUtilisateurs() {
   try {
     var data = await supa('GET', 'utilisateurs?select=*&order=prenom.asc');
     var list = document.getElementById('usersList');
-    if (!data || !data.length) {
-      list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucun utilisateur</div>';
-      return;
-    }
+    if (!data || !data.length) { list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucun utilisateur</div>'; return; }
     var h = '';
     for (var i = 0; i < data.length; i++) {
       var u = data[i];
@@ -1186,11 +1182,7 @@ async function createUser() {
 async function deleteUser(el) {
   var id = el.getAttribute('data-id');
   if (!confirm('Supprimer cet utilisateur?')) return;
-  try {
-    await supa('DELETE', 'utilisateurs?id=eq.' + id);
-    showToast('Utilisateur supprime', 'success');
-    loadUtilisateurs();
-  } catch(e) { showToast('Erreur suppression', 'err'); }
+  try { await supa('DELETE', 'utilisateurs?id=eq.' + id); showToast('Utilisateur supprime', 'success'); loadUtilisateurs(); } catch(e) { showToast('Erreur suppression', 'err'); }
 }
 
 async function editUser(el) {
@@ -1204,12 +1196,10 @@ async function editUser(el) {
     document.getElementById('editUserLogin').value = u.login || '';
     document.getElementById('editUserPwd').value = '';
     document.getElementById('editUserRole').value = u.role || 'agent';
-    // Forcer les checkboxes via JS
     var actifEl = document.getElementById('editUserActif');
     var pmEl = document.getElementById('editUserPeutModifier');
     if (actifEl) actifEl.checked = (u.actif === true);
     if (pmEl) pmEl.checked = (u.peut_modifier === true || u.peut_modifier === null || u.peut_modifier === undefined);
-    // Toggles custom
     setSwitch('toggleActif', 'editUserActif', u.actif === true);
     setSwitch('togglePeutModifier', 'editUserPeutModifier', u.peut_modifier !== false);
     document.getElementById('editUserModal').classList.remove('hidden');
@@ -1226,10 +1216,8 @@ async function saveEditUser() {
   var peutModifier = document.getElementById('editUserPeutModifier') ? document.getElementById('editUserPeutModifier').value === 'true' : true;
   if (!prenom || !login) { showToast('Prenom et login obligatoires', 'err'); return; }
   var updates = {prenom:prenom, login:login, role:role, actif:actif, peut_modifier:peutModifier};
-  
   if (pwd) {
     updates.password_hash = await hashStr(login + ':' + pwd);
-    // Mettre a jour ATOKENS
     var oldData = await supa('GET', 'utilisateurs?id=eq.' + id + '&select=password_hash');
     if (oldData && oldData.length) {
       var oldHash = oldData[0].password_hash;
@@ -1238,7 +1226,6 @@ async function saveEditUser() {
       else ATOKENS.push(updates.password_hash);
     }
   }
-  
   try {
     await supa('PATCH', 'utilisateurs?id=eq.' + id, updates);
     document.getElementById('editUserModal').classList.add('hidden');
@@ -1248,18 +1235,13 @@ async function saveEditUser() {
   } catch(e) { showToast('Erreur modification', 'err'); console.error(e); }
 }
 
-function closeEditUser() {
-  document.getElementById('editUserModal').classList.add('hidden');
-}
+function closeEditUser() { document.getElementById('editUserModal').classList.add('hidden'); }
 
 async function loadHistoriqueActions() {
   try {
     var data = await supa('GET', 'historique_actions?select=*&order=created_at.desc&limit=50');
     var list = document.getElementById('actionsList');
-    if (!data || !data.length) {
-      list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucune action</div>';
-      return;
-    }
+    if (!data || !data.length) { list.innerHTML = '<div style="color:var(--mu);padding:20px;text-align:center;">Aucune action</div>'; return; }
     var h = '';
     for (var i = 0; i < data.length; i++) {
       var a = data[i];
@@ -1279,34 +1261,24 @@ async function loadHistoriqueActions() {
 
 async function logAction(action, details) {
   if (!currentUser.login) return;
-  try {
-    await supa('POST', 'historique_actions', [{
-      login: currentUser.login,
-      prenom: currentUser.prenom,
-      action: action,
-      details: details || ''
-    }]);
-  } catch(e) {}
+  try { await supa('POST', 'historique_actions', [{login:currentUser.login, prenom:currentUser.prenom, action:action, details:details||''}]); } catch(e) {}
 }
 
-// ── NOTIFICATIONS COMMANDES ──────────────────────────────────────
+// ── NOTIFICATIONS COMMANDES ──
 var _soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
 var _audioCtx = null;
 
-// Initialiser l'AudioContext au premier geste utilisateur
 document.addEventListener('click', function initAudio() {
   if (!_audioCtx) {
     try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {}
   }
-  if (_audioCtx && _audioCtx.state === 'suspended') {
-    _audioCtx.resume().catch(function() {});
-  }
+  if (_audioCtx && _audioCtx.state === 'suspended') { _audioCtx.resume().catch(function() {}); }
 }, { once: false });
 
 function playDing() {
   if (!_soundEnabled) return;
   try {
-    if (!_audioCtx) return; // pas encore de geste utilisateur
+    if (!_audioCtx) return;
     if (_audioCtx.state === 'suspended') _audioCtx.resume();
     var o = _audioCtx.createOscillator();
     var g = _audioCtx.createGain();
@@ -1325,7 +1297,6 @@ function showNotifCommande(record) {
   var agent = record ? (record.numero_agent || '') : '';
   var ordre = record ? (record.numero_ordre || '?') : '?';
   var arts  = record && record.articles ? record.articles.length : '?';
-
   var el = document.getElementById('notifCommande');
   if (!el) {
     el = document.createElement('div');
@@ -1349,32 +1320,23 @@ function showNotifCommande(record) {
   updateBadgeAttente();
 }
 
-function fermerNotif() {
-  var el = document.getElementById('notifCommande');
-  if (el) el.style.top = '-120px';
-}
+function fermerNotif() { var el = document.getElementById('notifCommande'); if (el) el.style.top = '-120px'; }
 
 async function updateBadgeAttente() {
   if (currentUser.role !== 'admin' && currentUser.role !== 'magasinier') return;
   try {
-    var data = await supa('GET', 'bons_commande?sap_effectue=eq.false&select=id');
+    var data = await supa('GET', 'bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
     var nb = data ? data.length : 0;
     var badge = document.getElementById('badgeAttente');
     if (!badge) {
       badge = document.createElement('div');
       badge.id = 'badgeAttente';
       badge.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
-      badge.onclick = function() {
-      switchSection('pieces');
-      setTimeout(function() { switchTab('panier'); }, 50);
-    };
+      badge.onclick = function() { switchSection('pieces'); setTimeout(function() { switchTab('panier'); }, 50); };
       document.body.appendChild(badge);
     }
     if (nb > 0) {
-      badge.innerHTML = '<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;">'
-        + '<span style="font-size:16px;">📋</span>'
-        + nb + ' commande' + (nb > 1 ? 's' : '') + ' en attente SAP'
-        + '</div>';
+      badge.innerHTML = '<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">📋</span>' + nb + ' commande' + (nb > 1 ? 's' : '') + ' en attente SAP</div>';
       badge.style.display = 'block';
     } else {
       badge.style.display = 'none';
@@ -1394,7 +1356,7 @@ function toggleSound() {
   showToast(_soundEnabled ? 'Son activé' : 'Son coupé', 'success');
 }
 
-// ── SECTION NAVIGATION ──────────────────────────────────────────
+// ── SECTION NAVIGATION ──
 var _currentSection = 'pieces';
 
 function switchSection(section) {
@@ -1406,20 +1368,13 @@ function switchSection(section) {
   document.getElementById('sectionPieces').style.display = (isPieces || isAdmin) ? '' : 'none';
   document.getElementById('sectionOutillage').style.display = isOutillage ? '' : 'none';
 
-  // Cacher/montrer les onglets pièces selon le mode
   var tabsEl = document.querySelector('#sectionPieces .tabs');
   if (tabsEl) tabsEl.style.display = isAdmin ? 'none' : '';
 
-  if (isAdmin) {
-    switchTab('admin');
-  } else if (isPieces) {
-    var p4 = document.getElementById('p4');
-    if (p4 && p4.style.display !== 'none') switchTab('search');
-  } else if (isOutillage) {
-    loadOutillage();
-  }
+  if (isAdmin) { switchTab('admin'); }
+  else if (isPieces) { var p4 = document.getElementById('p4'); if (p4 && p4.style.display !== 'none') switchTab('search'); }
+  else if (isOutillage) { loadOutillage(); }
 
-  // Nav styling
   ['navPieces','navOutillage'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
@@ -1429,7 +1384,7 @@ function switchSection(section) {
   });
 }
 
-// ── OUTILLAGE ────────────────────────────────────────────────────
+// ── OUTILLAGE ──
 var outillage = [];
 var _outilPhoto = null;
 var _outilEditPhoto = null;
@@ -1444,8 +1399,6 @@ async function loadOutillage() {
     if (tab2) tab2.style.display = window._canEdit ? '' : 'none';
   } catch(e) { showToast('Erreur chargement outillage', 'err'); }
 }
-
-function normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
 function doOutilSearch() {
   var q = normalize(document.getElementById('outilSearch').value.trim());
@@ -1463,8 +1416,6 @@ function doOutilSearch() {
   res.innerHTML = filtered.map(function(o) {
     var isPret = !!o.agent_pret;
     var borderColor = isPret ? '#e74c3c' : 'var(--br)';
-
-    // Panneau prêt : si en prêt → affiche agent + bouton retour, sinon formulaire caché
     var canRetour = currentUser.role === 'admin' || currentUser.role === 'magasinier' || currentUser.role === 'brigadier';
 
     var pretPanel = isPret
@@ -1484,7 +1435,6 @@ function doOutilSearch() {
 
     var photoHtml = o.photo ? '<img src="' + esc(o.photo) + '" class="outil-photo" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;display:none;" onclick="event.stopPropagation();openPhoto(\'' + esc(o.photo) + '\')">' : '';
 
-    var pretBtnColor = isPret ? '#e74c3c' : '#2ecc71';
     var pretBtnBorder = isPret ? '#e74c3c' : '#2ecc71';
     var pretBtnText = isPret ? '🔴' : '🟢';
     var pretBtnAction = isPret ? '' : 'togglePretPanel(\'' + o.id + '\')';
@@ -1507,7 +1457,6 @@ function doOutilSearch() {
       + '</div>';
   }).join('');
 
-  // Badge global prêts non retournés
   updateBadgePretsOutillage();
 }
 
@@ -1518,7 +1467,6 @@ function formatDateBelge(ts) {
 
 function toggleOutilCard(card) {
   var photo = card.querySelector('.outil-photo');
-  var pretPanel = card.querySelector('[id^="pretPanel-"]');
   var isOpen = card.classList.contains('exp');
   card.classList.toggle('exp', !isOpen);
   if (photo) photo.style.display = isOpen ? 'none' : 'block';
@@ -1528,30 +1476,19 @@ function togglePretPanel(id) {
   var panel = document.getElementById('pretPanel-' + id);
   if (!panel) return;
   panel.style.display = panel.style.display === 'none' ? '' : 'none';
-  if (panel.style.display !== 'none') {
-    var input = document.getElementById('pret-' + id);
-    if (input) input.focus();
-  }
+  if (panel.style.display !== 'none') { var input = document.getElementById('pret-' + id); if (input) input.focus(); }
 }
 
 async function confirmerPret(id) {
   var input = document.getElementById('pret-' + id);
   var agent = (input ? input.value.trim() : '');
   if (!agent) { showToast('Saisir un numéro d\'agent', 'err'); return; }
-  try {
-    await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: agent, date_pret: new Date().toISOString() });
-    showToast('Prêt enregistré — Agent ' + agent, 'success');
-    await loadOutillage();
-  } catch(e) { showToast('Erreur', 'err'); }
+  try { await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: agent, date_pret: new Date().toISOString() }); showToast('Prêt enregistré — Agent ' + agent, 'success'); await loadOutillage(); } catch(e) { showToast('Erreur', 'err'); }
 }
 
 async function retourOutil(id) {
   if (!confirm('Confirmer le retour de l\'outil ?')) return;
-  try {
-    await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: null, date_pret: null });
-    showToast('Retour enregistré ✓', 'success');
-    await loadOutillage();
-  } catch(e) { showToast('Erreur', 'err'); }
+  try { await supa('PATCH', 'outillage?id=eq.' + id, { agent_pret: null, date_pret: null }); showToast('Retour enregistré ✓', 'success'); await loadOutillage(); } catch(e) { showToast('Erreur', 'err'); }
 }
 
 function updateBadgePretsOutillage() {
@@ -1566,28 +1503,18 @@ function updateBadgePretsOutillage() {
     document.body.appendChild(badge);
   }
   if (nb > 0) {
-    badge.innerHTML = '<div style="background:#e74c3c;color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(231,76,60,0.4);display:flex;align-items:center;gap:8px;">'
-      + '<span style="font-size:16px;">🔧</span>'
-      + nb + ' outil' + (nb > 1 ? 's' : '') + ' en prêt'
-      + '</div>';
+    badge.innerHTML = '<div style="background:#e74c3c;color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(231,76,60,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">🔧</span>' + nb + ' outil' + (nb > 1 ? 's' : '') + ' en prêt</div>';
     badge.style.display = 'block';
-  } else {
-    badge.style.display = 'none';
-  }
+  } else { badge.style.display = 'none'; }
 }
 
 function switchOutilTab(id) {
-  ['ot1','ot2'].forEach(function(t) {
-    var el = document.getElementById(t);
-    if (el) el.classList.toggle('active', t === id);
-  });
+  ['ot1','ot2'].forEach(function(t) { var el = document.getElementById(t); if (el) el.classList.toggle('active', t === id); });
   document.getElementById('op1').style.display = id === 'ot1' ? '' : 'none';
   document.getElementById('op2').style.display = id === 'ot2' ? '' : 'none';
 }
 
-// Ajouter outil
 document.addEventListener('DOMContentLoaded', function() {
-  // Navigation Pièces / Outillage / Admin
   var navP = document.getElementById('navPieces');
   var navO = document.getElementById('navOutillage');
   var navA = document.getElementById('navAdmin');
@@ -1595,7 +1522,6 @@ document.addEventListener('DOMContentLoaded', function() {
   if (navO) navO.addEventListener('click', function() { switchSection('outillage'); });
   if (navA) navA.addEventListener('click', function() { switchSection('admin'); });
 
-  // Onglets outillage
   var ot1 = document.getElementById('ot1');
   var ot2 = document.getElementById('ot2');
   if (ot1) ot1.addEventListener('click', function() { switchOutilTab('ot1'); });
@@ -1621,54 +1547,30 @@ document.addEventListener('DOMContentLoaded', function() {
     } catch(e) { showToast('Erreur', 'err'); }
   });
 
-  // Photo ajout
   var photoInput = document.getElementById('outilPhotoInput');
   if (photoInput) photoInput.addEventListener('change', async function() {
     var file = this.files[0]; if (!file) return;
     var url = await uploadPhoto(file, 'outillage');
-    if (url) {
-      _outilPhoto = url;
-      document.getElementById('outilPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">';
-    }
+    if (url) { _outilPhoto = url; document.getElementById('outilPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">'; }
   });
 
-  // Photo edit
   var editPhotoInput = document.getElementById('outilEditPhotoInput');
   if (editPhotoInput) editPhotoInput.addEventListener('change', async function() {
     var file = this.files[0]; if (!file) return;
     var url = await uploadPhoto(file, 'outillage');
-    if (url) {
-      _outilEditPhoto = url;
-      document.getElementById('outilEditPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">';
-      document.getElementById('outilEditPhotoRemove').style.display = 'block';
-    }
+    if (url) { _outilEditPhoto = url; document.getElementById('outilEditPhotoContainer').innerHTML = '<img src="' + url + '" style="width:100%;max-height:150px;object-fit:cover;border-radius:8px;">'; document.getElementById('outilEditPhotoRemove').style.display = 'block'; }
   });
 
   var removeBtn = document.getElementById('outilEditPhotoRemove');
-  if (removeBtn) removeBtn.addEventListener('click', function() {
-    _outilEditPhoto = null;
-    document.getElementById('outilEditPhotoContainer').innerHTML = '';
-    this.style.display = 'none';
-  });
+  if (removeBtn) removeBtn.addEventListener('click', function() { _outilEditPhoto = null; document.getElementById('outilEditPhotoContainer').innerHTML = ''; this.style.display = 'none'; });
 
-  // Sauvegarder edit
   var saveBtn = document.getElementById('outilEditSaveBtn');
   if (saveBtn) saveBtn.addEventListener('click', async function() {
     var id = document.getElementById('outilEditId').value;
     var nom = (document.getElementById('outilEditNom').value||'').trim();
     if (!nom) { showToast('Désignation obligatoire', 'err'); return; }
-    var obj = {
-      nom: nom,
-      location: (document.getElementById('outilEditLoc').value||'').trim(),
-      tags: (document.getElementById('outilEditTags').value||'').trim(),
-      photo: _outilEditPhoto
-    };
-    try {
-      await supa('PATCH', 'outillage?id=eq.' + id, obj);
-      showToast('Outil modifié!', 'success');
-      closeOutilEdit();
-      loadOutillage();
-    } catch(e) { showToast('Erreur', 'err'); }
+    var obj = { nom: nom, location: (document.getElementById('outilEditLoc').value||'').trim(), tags: (document.getElementById('outilEditTags').value||'').trim(), photo: _outilEditPhoto };
+    try { await supa('PATCH', 'outillage?id=eq.' + id, obj); showToast('Outil modifié!', 'success'); closeOutilEdit(); loadOutillage(); } catch(e) { showToast('Erreur', 'err'); }
   });
 });
 
@@ -1700,17 +1602,11 @@ function openOutilEdit(id) {
   document.getElementById('outilEditModal').classList.remove('hidden');
 }
 
-function closeOutilEdit() {
-  document.getElementById('outilEditModal').classList.add('hidden');
-}
+function closeOutilEdit() { document.getElementById('outilEditModal').classList.add('hidden'); }
 
 async function deleteOutil(id) {
   if (!confirm('Supprimer cet outil ?')) return;
-  try {
-    await supa('DELETE', 'outillage?id=eq.' + id);
-    showToast('Outil supprimé', 'success');
-    loadOutillage();
-  } catch(e) { showToast('Erreur', 'err'); }
+  try { await supa('DELETE', 'outillage?id=eq.' + id); showToast('Outil supprimé', 'success'); loadOutillage(); } catch(e) { showToast('Erreur', 'err'); }
 }
 
 initRealtime();
