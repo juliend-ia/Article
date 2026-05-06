@@ -5,134 +5,195 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Magasin 2K</title>
 <style>
-:root{--bg:#0f1117;--sf:#1a1d27;--cd:#21252f;--br:#2e3344;--ac:#f0a500;--tx:#e8eaf0;--mu:#7a8099;--gn:#2ecc71;--rd:#e74c3c;}
+:root{--bg:#0d0f18;--sf:#151826;--cd:#1a1d2e;--br:#1e2235;--br2:#2a2d42;--ac:#f0a500;--tx:#e8eaf0;--mu:#4a5068;--mu2:#6a6d82;--gn:#2ecc71;--rd:#e74c3c;--pu:#9b59b6;--bl:#6495ed;}
 *{box-sizing:border-box;margin:0;padding:0;}
-body{background:var(--bg);color:var(--tx);font-family:sans-serif;min-height:100vh;}
+body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow:hidden;}
 .hidden{display:none!important;}
-.login-overlay{position:fixed;inset:0;background:#0f1117;display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;}
-.login-box{background:#1a1d27;border:1px solid #2e3344;border-radius:16px;padding:32px 24px;width:100%;max-width:360px;text-align:center;}
-.login-title{font-size:26px;font-weight:700;color:#f0a500;margin-bottom:4px;}
-.login-sub{font-size:12px;color:#7a8099;margin-bottom:28px;}
+.login-overlay{position:fixed;inset:0;background:#0d0f18;display:flex;align-items:center;justify-content:center;z-index:1000;padding:24px;}
+.login-box{background:#151826;border:1px solid #1e2235;border-radius:16px;padding:36px 28px;width:100%;max-width:380px;text-align:center;}
+.login-title{font-size:28px;font-weight:800;color:var(--ac);letter-spacing:1px;}
+.login-sub{font-size:11px;color:var(--mu);margin-bottom:28px;margin-top:4px;text-transform:uppercase;letter-spacing:2px;}
 .login-field{margin-bottom:14px;text-align:left;}
-.login-field label{display:block;font-size:11px;color:#7a8099;margin-bottom:6px;}
-.login-field input{width:100%;background:#0f1117;border:2px solid #2e3344;border-radius:8px;padding:12px 14px;font-size:16px;color:#e8eaf0;-webkit-appearance:none;}
-.login-field input:focus{outline:none;border-color:#f0a500;}
-.login-btn{width:100%;background:#f0a500;color:#111;border:none;border-radius:10px;padding:14px;font-size:18px;font-weight:700;cursor:pointer;margin-top:8px;}
-.login-err{color:#e74c3c;font-size:13px;margin-top:12px;min-height:20px;}
-.login-forgot{color:#7a8099;font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline;}
-.login-forgot:hover{color:#f0a500;}
-.reset-panel{display:none;margin-top:16px;text-align:left;border-top:1px solid #2e3344;padding-top:16px;}
-.reset-panel label{display:block;font-size:11px;color:#7a8099;margin-bottom:6px;}
-.reset-panel input{width:100%;background:#0f1117;border:2px solid #2e3344;border-radius:8px;padding:12px 14px;font-size:16px;color:#e8eaf0;-webkit-appearance:none;margin-bottom:10px;}
-.reset-panel input:focus{outline:none;border-color:#f0a500;}
-.btn-reset{width:100%;background:rgba(240,165,0,0.15);border:2px solid #f0a500;color:#f0a500;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;}
-.badge-demandes{background:var(--rd);color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;margin-left:6px;vertical-align:middle;}
-.loading-overlay{position:fixed;inset:0;background:rgba(15,17,23,0.92);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:900;gap:16px;}
-.spinner{width:44px;height:44px;border:4px solid #2e3344;border-top-color:#f0a500;border-radius:50%;animation:spin 0.8s linear infinite;}
+.login-field label{display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.login-field input{width:100%;background:#0d0f18;border:1.5px solid var(--br2);border-radius:8px;padding:13px 16px;font-size:16px;color:var(--tx);outline:none;-webkit-appearance:none;}
+.login-field input:focus{border-color:var(--ac);}
+.login-btn{width:100%;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:17px;font-weight:800;cursor:pointer;margin-top:8px;}
+.login-err{color:var(--rd);font-size:13px;margin-top:12px;min-height:20px;}
+.login-forgot{color:var(--mu);font-size:12px;margin-top:14px;cursor:pointer;text-decoration:underline;}
+.login-forgot:hover{color:var(--ac);}
+.reset-panel{display:none;margin-top:16px;text-align:left;border-top:1px solid var(--br);padding-top:16px;}
+.reset-panel label{display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.reset-panel input{width:100%;background:#0d0f18;border:1.5px solid var(--br2);border-radius:8px;padding:12px 14px;font-size:16px;color:var(--tx);-webkit-appearance:none;outline:none;margin-bottom:10px;}
+.reset-panel input:focus{border-color:var(--ac);}
+.btn-reset{width:100%;background:rgba(240,165,0,0.12);border:1.5px solid var(--ac);color:var(--ac);border-radius:8px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;}
+.loading-overlay{position:fixed;inset:0;background:rgba(13,15,24,0.94);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:900;gap:16px;}
+.spinner{width:44px;height:44px;border:3px solid var(--br2);border-top-color:var(--ac);border-radius:50%;animation:spin 0.7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
-.loading-text{color:#7a8099;font-size:15px;}
-header{background:var(--sf);border-bottom:3px solid var(--ac);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:100;}
-.logo{font-size:20px;font-weight:700;color:var(--ac);line-height:1;}
-.logo small{display:block;font-size:10px;color:var(--mu);font-weight:400;}
-.stats{margin-left:auto;font-size:11px;color:var(--mu);text-align:right;}
-.stats strong{color:var(--ac);font-size:17px;display:block;}
-.btn-logout{background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;}
-main{padding:14px;max-width:800px;margin:0 auto;}
-.tabs{display:flex;gap:6px;margin-bottom:14px;}
-.tab{flex:1;padding:9px 6px;border:2px solid var(--br);border-radius:8px;background:var(--sf);color:var(--mu);font-size:13px;font-weight:600;cursor:pointer;text-align:center;position:relative;}
-.tab.active{border-color:var(--ac);color:var(--ac);background:rgba(240,165,0,0.08);}
-.badge{position:absolute;top:-6px;right:-6px;background:var(--rd);color:#fff;border-radius:50%;width:18px;height:18px;font-size:10px;display:none;align-items:center;justify-content:center;font-weight:700;}
-.sb{position:relative;margin-bottom:10px;}
-.sb input{width:100%;background:var(--sf);border:2px solid var(--br);border-radius:10px;padding:13px 46px 13px 16px;font-size:16px;color:var(--tx);-webkit-appearance:none;}
-.sb input:focus{outline:none;border-color:var(--ac);}
-.sb input::placeholder{color:var(--mu);}
-.cs{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;scrollbar-width:none;}
-.cs::-webkit-scrollbar{display:none;}
-.pill{flex-shrink:0;padding:6px 14px;border-radius:20px;border:1px solid var(--br);background:var(--sf);color:var(--mu);font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;}
-.pill.active{border-color:var(--ac);color:var(--ac);background:rgba(240,165,0,0.1);}
-.rc{font-size:11px;color:var(--mu);margin-bottom:10px;}
-.card{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:13px;margin-bottom:8px;cursor:pointer;border-left:4px solid transparent;}
-.card.exp{border-left-color:var(--ac);background:#252936;}
-.ct{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-.cnum{font-size:16px;color:var(--ac);font-weight:700;background:rgba(240,165,0,0.1);padding:4px 10px;border-radius:5px;white-space:nowrap;}
-.cn{font-size:15px;font-weight:500;}
-.cc{font-size:11px;color:var(--mu);margin-top:3px;}
-.det{margin-top:10px;padding-top:10px;border-top:1px solid var(--br);display:none;gap:8px;flex-wrap:wrap;}
-.card.exp .det{display:flex;}
-.dp{background:var(--sf);border-radius:8px;padding:7px 11px;font-size:12px;}
-.dl{color:var(--mu);font-size:10px;margin-bottom:2px;}
-.dv{font-weight:500;}
-.nl{color:var(--mu);font-style:italic;}
-.cbtns{display:flex;gap:8px;margin-top:10px;width:100%;}
-.bedit{flex:1;background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:9px;font-size:13px;cursor:pointer;text-align:center;}
-.bdel{flex:1;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:9px;font-size:13px;cursor:pointer;text-align:center;}
-.btn-panier{width:100%;background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:9px;font-size:13px;cursor:pointer;text-align:center;margin-top:8px;}
-.lm{text-align:center;padding:14px;color:var(--mu);font-size:13px;cursor:pointer;border:1px dashed var(--br);border-radius:8px;margin-top:8px;}
-.empty{text-align:center;color:var(--mu);padding:40px 20px;font-size:14px;}
-.ei{font-size:36px;margin-bottom:10px;}
-.fc{background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:18px;}
-.fc h2{font-size:19px;color:var(--ac);margin-bottom:14px;}
+.loading-text{color:var(--mu);font-size:14px;}
+.app{display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+.topbar{background:#111422;border-bottom:2px solid var(--ac);display:flex;align-items:center;padding:0 20px;height:56px;flex-shrink:0;gap:0;z-index:50;}
+.tb-logo{margin-right:28px;flex-shrink:0;}
+.tb-logo-name{font-size:18px;font-weight:800;color:var(--ac);letter-spacing:1px;line-height:1;}
+.tb-logo-sub{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;margin-top:2px;}
+.tb-nav{display:flex;height:100%;align-items:stretch;}
+.tb-nav-item{display:flex;align-items:center;gap:7px;padding:0 18px;font-size:13px;font-weight:700;color:var(--mu);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;position:relative;transition:color 0.15s;}
+.tb-nav-item.on{color:var(--ac);border-bottom-color:var(--ac);}
+.tb-nav-badge{background:var(--rd);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:2px;}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
+.tb-sound{width:34px;height:34px;border-radius:8px;background:var(--sf);border:1px solid var(--br2);display:none;align-items:center;justify-content:center;cursor:pointer;font-size:16px;}
+.tb-admin-btn{background:rgba(240,165,0,0.1);border:1.5px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
+.tb-user-name{font-size:13px;font-weight:700;color:var(--tx);}
+.tb-user-role{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;text-align:right;}
+.tb-logout{background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;font-weight:600;}
+.app-body{display:flex;flex:1;overflow:hidden;}
+.sidebar{width:200px;background:#111422;border-right:1px solid var(--br);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;padding:14px 0;}
+.sidebar::-webkit-scrollbar{width:4px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
+.sidebar-title{font-size:9px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;padding:0 16px 10px;font-weight:700;}
+.cat-item{display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-left:3px solid transparent;transition:all 0.12s;}
+.cat-item.on{border-left-color:var(--ac);background:rgba(240,165,0,0.06);}
+.cat-icon{width:32px;height:32px;border-radius:8px;background:var(--cd);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1px solid var(--br);}
+.cat-item.on .cat-icon{background:rgba(240,165,0,0.1);border-color:rgba(240,165,0,0.25);}
+.cat-info{flex:1;min-width:0;}
+.cat-label{font-size:12px;font-weight:700;color:var(--mu2);}
+.cat-item.on .cat-label{color:var(--ac);}
+.cat-count{font-size:10px;color:var(--mu);margin-top:1px;}
+.cat-sep{height:1px;background:var(--br);margin:6px 16px;}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.searchbar{padding:12px 18px 10px;background:#0f1120;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:12px;flex-shrink:0;}
+.search-wrap{flex:1;position:relative;}
+.search-input{width:100%;background:#1a1d2e;border:1.5px solid var(--br2);border-radius:12px;padding:13px 44px 13px 18px;font-size:16px;color:var(--tx);outline:none;-webkit-appearance:none;}
+.search-input:focus{border-color:var(--ac);}
+.search-input::placeholder{color:var(--mu);}
+.search-clear{position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;display:none;line-height:1;}
+.search-count{font-size:11px;color:var(--mu);white-space:nowrap;flex-shrink:0;}
+.pieces-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 18px;overflow-y:auto;flex:1;align-content:start;}
+.pieces-grid::-webkit-scrollbar{width:4px;}
+.pieces-grid::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
+.piece-card{background:var(--sf);border:1px solid var(--br);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
+.piece-card:hover{border-color:var(--br2);}
+.card-thumb{height:90px;background:#0d0f18;display:flex;align-items:center;justify-content:center;position:relative;}
+.card-thumb-icon{font-size:34px;line-height:1;}
+.card-thumb-cat{font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:1.5px;font-weight:700;position:absolute;bottom:6px;left:0;right:0;text-align:center;}
+.card-thumb-photo{width:100%;height:100%;object-fit:cover;position:absolute;inset:0;}
+.card-body{padding:10px 12px 12px;}
+.card-num{font-size:11px;color:var(--ac);font-weight:800;font-family:monospace;margin-bottom:3px;}
+.card-name{font-size:12px;color:var(--tx);font-weight:600;line-height:1.35;margin-bottom:5px;}
+.card-loc{font-size:10px;color:var(--mu);margin-bottom:6px;font-family:monospace;}
+.card-tags{display:flex;gap:3px;flex-wrap:wrap;margin-bottom:8px;}
+.tag{font-size:8px;font-weight:800;padding:2px 6px;border-radius:3px;text-transform:uppercase;}
+.tag-std{background:rgba(46,204,113,0.12);color:#2ecc71;border:1px solid rgba(46,204,113,0.25);}
+.tag-art{background:rgba(240,165,0,0.12);color:#f0a500;border:1px solid rgba(240,165,0,0.25);}
+.tag-chim{background:rgba(231,76,60,0.12);color:#e74c3c;border:1px solid rgba(231,76,60,0.25);}
+.tag-rep{background:rgba(155,89,182,0.12);color:#9b59b6;border:1px solid rgba(155,89,182,0.25);}
+.tag-int{background:rgba(100,149,237,0.12);color:#6495ed;border:1px solid rgba(100,149,237,0.25);}
+.btn-add-panier{width:100%;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.3);border-radius:7px;padding:8px;font-size:11px;color:var(--gn);font-weight:700;text-align:center;cursor:pointer;}
+.btn-add-panier:hover{background:rgba(46,204,113,0.18);}
+.card-edit-btns{display:flex;gap:5px;margin-top:6px;}
+.btn-edit-card{flex:1;background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;}
+.btn-del-card{flex:1;background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;}
+.load-more{text-align:center;padding:14px;color:var(--mu);font-size:13px;cursor:pointer;border:1px dashed var(--br);border-radius:8px;margin:0 18px 14px;}
+.add-panel{padding:18px;overflow-y:auto;flex:1;}
+.add-panel::-webkit-scrollbar{width:4px;}
+.add-panel::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
+.form-card{background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:20px;}
+.form-card h2{font-size:17px;color:var(--ac);margin-bottom:16px;font-weight:700;}
 .field{margin-bottom:12px;}
-.field label{display:block;font-size:11px;color:var(--mu);margin-bottom:5px;}
-.field input{width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;}
-.field input:focus{outline:none;border-color:var(--ac);}
+.field label{display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;}
+.field input,.field select{width:100%;background:var(--sf);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:15px;color:var(--tx);-webkit-appearance:none;outline:none;}
+.field input:focus,.field select:focus{border-color:var(--ac);}
 .field-row{display:flex;gap:10px;}
 .field-row .field{flex:1;}
 .cat-wrap{position:relative;}
-.cat-wrap input{width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;}
-.cat-wrap input:focus{outline:none;border-color:var(--ac);}
 .cat-sugg{position:absolute;top:100%;left:0;right:0;background:var(--cd);border:1px solid var(--ac);border-radius:0 0 8px 8px;z-index:200;max-height:180px;overflow-y:auto;}
 .cat-sugg-item{padding:10px 13px;cursor:pointer;font-size:14px;border-bottom:1px solid var(--br);}
-.bsave{width:100%;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:17px;font-weight:700;cursor:pointer;margin-top:4px;}
-.mo{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:flex;align-items:flex-end;justify-content:center;z-index:500;}
-.modal{background:var(--cd);border:1px solid var(--br);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;}
-.modal h2{font-size:19px;color:var(--ac);margin-bottom:16px;}
-.ma{display:flex;gap:8px;margin-top:12px;}
-.bms{flex:1;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:700;cursor:pointer;}
-.bmc{flex:1;background:var(--sf);color:var(--mu);border:1px solid var(--br);border-radius:10px;padding:14px;font-size:16px;cursor:pointer;}
-.photo-preview{width:100%;max-height:180px;object-fit:contain;border-radius:8px;border:1px solid var(--br);margin-top:8px;background:var(--sf);cursor:pointer;display:block;}
-.photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.95);display:flex;align-items:center;justify-content:center;z-index:700;padding:16px;}
-.photo-overlay img{max-width:100%;max-height:85vh;object-fit:contain;border-radius:8px;}
-.photo-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;}
-.edit-photo-btn{width:100%;background:var(--sf);border:2px dashed var(--br);border-radius:8px;padding:12px;color:var(--mu);font-size:14px;cursor:pointer;margin-top:6px;text-align:center;}
-.panier-empty{text-align:center;color:var(--mu);padding:30px 20px;font-size:14px;}
-.panier-item{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;}
-.panier-item-info{flex:1;min-width:0;}
-.panier-item-num{font-size:13px;color:var(--ac);font-weight:600;}
-.panier-item-nom{font-size:14px;font-weight:500;margin-top:2px;}
-.panier-item-loc{font-size:11px;color:var(--mu);margin-top:2px;}
-.panier-qty{display:flex;align-items:center;gap:8px;flex-shrink:0;}
-.qty-btn{background:var(--sf);border:1px solid var(--br);color:var(--tx);width:30px;height:30px;border-radius:6px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
-.qty-val{font-size:18px;font-weight:700;color:var(--ac);min-width:24px;text-align:center;}
-.panier-remove{background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 8px;font-size:12px;cursor:pointer;flex-shrink:0;}
-.ordre-field{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:12px;}
-.ordre-field label{display:block;font-size:11px;color:var(--mu);margin-bottom:6px;}
-.ordre-field input{width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;}
+.cat-sugg-item:hover{background:var(--sf);}
+.bus-btns{display:flex;gap:8px;margin-top:6px;}
+.bus-btn{display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;border-radius:8px;padding:9px 10px;flex:1;border-width:2px;border-style:solid;}
+.bus-btn-check{font-size:14px;display:none;}
+.bsave{width:100%;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:16px;font-weight:800;cursor:pointer;margin-top:6px;}
+.edit-photo-btn{width:100%;background:var(--sf);border:1.5px dashed var(--br2);border-radius:8px;padding:12px;color:var(--mu);font-size:13px;cursor:pointer;margin-top:6px;text-align:center;}
+.panier-panel{padding:16px 18px;overflow-y:auto;flex:1;}
+.panier-panel::-webkit-scrollbar{width:4px;}
+.panier-panel::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
+.ordre-block{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:12px;}
+.ordre-block label{display:block;font-size:10px;color:var(--mu);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px;}
+.ordre-block input{width:100%;background:var(--sf);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;outline:none;}
+.ordre-block input:focus{border-color:var(--ac);}
 .panier-actions{display:flex;gap:8px;margin-bottom:14px;}
-.btn-valider{flex:1;background:var(--gn);color:#111;border:none;border-radius:10px;padding:13px;font-size:16px;font-weight:700;cursor:pointer;}
-.btn-vider{background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:8px;padding:13px 16px;font-size:14px;cursor:pointer;}
-.histo-item{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px;}
-.histo-num{font-size:16px;color:var(--ac);font-weight:700;}
-.histo-date{font-size:11px;color:var(--mu);margin-top:2px;}
-.histo-count{font-size:12px;margin-top:4px;}
-.btn-dl{background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 12px;font-size:12px;cursor:pointer;}
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:12px 24px;border-radius:10px;font-weight:600;font-size:15px;transition:transform 0.3s;z-index:999;white-space:nowrap;}
+.btn-valider{flex:1;background:var(--gn);color:#111;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:800;cursor:pointer;}
+.btn-vider{background:rgba(231,76,60,0.1);border:1.5px solid var(--rd);color:var(--rd);border-radius:8px;padding:13px 16px;font-size:13px;cursor:pointer;font-weight:600;}
+.panier-empty{text-align:center;color:var(--mu);padding:40px 20px;font-size:14px;}
+.panier-item{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;margin-bottom:8px;}
+.panier-item-info{flex:1;min-width:0;}
+.panier-item-num{font-size:12px;color:var(--ac);font-weight:800;font-family:monospace;}
+.panier-item-nom{font-size:13px;font-weight:600;margin-top:2px;}
+.panier-item-loc{font-size:10px;color:var(--mu);margin-top:2px;font-family:monospace;}
+.qty-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.qty-btn{background:var(--sf);border:1px solid var(--br2);color:var(--tx);width:30px;height:30px;border-radius:6px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;}
+.qty-val{font-size:18px;font-weight:800;color:var(--ac);min-width:24px;text-align:center;}
+.panier-remove{background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 9px;font-size:12px;cursor:pointer;flex-shrink:0;font-weight:700;}
+.histo-title{font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;margin-bottom:10px;font-weight:700;padding-top:14px;border-top:1px solid var(--br);}
+.histo-tabs{display:flex;gap:6px;margin-bottom:12px;}
+.histo-tab{flex:1;text-align:center;padding:8px 6px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid var(--br);color:var(--mu);background:var(--sf);}
+.histo-tab.on{border-color:var(--ac);color:var(--ac);background:rgba(240,165,0,0.07);}
+.histo-item{background:var(--cd);border:1px solid var(--br);border-radius:10px;padding:12px 14px;margin-bottom:8px;}
+.histo-num{font-size:15px;color:var(--ac);font-weight:800;}
+.histo-date{font-size:10px;color:var(--mu);margin-top:2px;}
+.histo-count{font-size:11px;margin-top:3px;color:var(--mu2);}
+.histo-btns{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end;margin-top:8px;}
+.histo-btn{border-radius:6px;padding:6px 10px;font-size:11px;cursor:pointer;font-weight:700;border-width:1px;border-style:solid;white-space:nowrap;}
+.histo-btn-copy{background:rgba(46,204,113,0.1);border-color:var(--gn);color:var(--gn);}
+.histo-btn-excel{background:rgba(240,165,0,0.1);border-color:var(--ac);color:var(--ac);}
+.histo-btn-reopen{background:rgba(100,149,237,0.1);border-color:var(--bl);color:var(--bl);}
+.histo-btn-del{background:rgba(231,76,60,0.1);border-color:var(--rd);color:var(--rd);}
+.bon-detail{display:none;margin-top:8px;border-top:1px solid var(--br);padding-top:8px;}
+.bon-detail-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--br);}
+.bon-detail-row:last-child{border-bottom:none;}
+.bon-qty{background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:3px 10px;font-size:14px;font-weight:800;}
+.admin-panel{padding:18px;overflow-y:auto;flex:1;}
+.admin-section{background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:18px;margin-bottom:16px;}
+.admin-section h2{font-size:16px;color:var(--ac);margin-bottom:14px;font-weight:700;}
+.badge-demandes{background:var(--rd);color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;margin-left:6px;vertical-align:middle;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:flex-end;justify-content:center;z-index:500;}
+.modal-box{background:var(--cd);border:1px solid var(--br);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;}
+.modal-box::-webkit-scrollbar{width:4px;}
+.modal-box::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
+.modal-box h2{font-size:18px;color:var(--ac);margin-bottom:16px;font-weight:700;}
+.modal-actions{display:flex;gap:8px;margin-top:14px;}
+.btn-modal-save{flex:1;background:var(--ac);color:#111;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;}
+.btn-modal-cancel{flex:1;background:var(--sf);color:var(--mu);border:1px solid var(--br2);border-radius:10px;padding:14px;font-size:15px;cursor:pointer;}
+.photo-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.96);display:flex;align-items:center;justify-content:center;z-index:700;padding:16px;}
+.photo-overlay img{max-width:100%;max-height:88vh;object-fit:contain;border-radius:8px;}
+.photo-close{position:absolute;top:14px;right:14px;background:rgba(255,255,255,0.15);border:none;color:white;font-size:20px;width:44px;height:44px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.photo-arrow{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;background:rgba(255,255,255,0.12);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:24px;color:#fff;user-select:none;}
+.photo-counter{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.5);font-size:13px;display:none;}
+.outil-card{background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:13px;margin-bottom:8px;cursor:pointer;}
+.outil-card.pret{border-left:4px solid var(--rd);}
+.toggle-sw{width:48px;height:26px;border-radius:13px;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;}
+.toggle-sw-dot{width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);padding:12px 24px;border-radius:10px;font-weight:700;font-size:14px;transition:transform 0.3s;z-index:999;white-space:nowrap;}
 .toast.success{background:var(--gn);color:#111;}
 .toast.err{background:var(--rd);color:#fff;}
 .toast.show{transform:translateX(-50%) translateY(0);}
-.hl{background:rgba(240,165,0,0.28);border-radius:3px;padding:0 1px;}
+.hl{background:rgba(240,165,0,0.28);border-radius:2px;padding:0 1px;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
 </style>
 </head>
 <body>
+
+<!-- LOGIN -->
 <div id="loginOverlay" class="login-overlay">
   <div class="login-box">
     <div class="login-title">MAGASIN 2K</div>
-    <div class="login-sub">Depot Bus Citaro</div>
-    <div class="login-field"><label>Nom utilisateur</label><input type="text" id="loginUser" autocomplete="username" autocorrect="off" autocapitalize="none"/></div>
+    <div class="login-sub">Dépôt Bus Citaro</div>
+    <div class="login-field"><label>Identifiant</label><input type="text" id="loginUser" autocomplete="username" autocorrect="off" autocapitalize="none"/></div>
     <div class="login-field"><label>Mot de passe</label><input type="password" id="loginPwd" autocomplete="current-password"/></div>
     <button class="login-btn" id="loginBtn">SE CONNECTER</button>
     <div class="login-err" id="loginErr"></div>
-    <div class="login-forgot" id="forgotLink">Mot de passe oublie ?</div>
+    <div class="login-forgot" id="forgotLink">Mot de passe oublié ?</div>
     <div class="reset-panel" id="resetPanel">
       <label>Ton login</label>
       <input type="text" id="resetLogin" placeholder="ex: marc123" autocorrect="off" autocapitalize="none"/>
@@ -142,304 +203,241 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     <div style="margin-top:14px;border-top:1px solid var(--br);padding-top:14px;">
       <div id="createAccountLink" style="color:var(--mu);font-size:12px;cursor:pointer;text-align:center;text-decoration:underline;">Première connexion ? Créer un compte</div>
       <div id="createAccountPanel" style="display:none;margin-top:14px;">
-        <label style="display:block;font-size:11px;color:var(--mu);margin-bottom:5px;">Matricule (N° agent)</label>
-        <input type="text" id="newMatricule" placeholder="ex: 71694" inputmode="numeric" autocorrect="off" style="width:100%;background:var(--bg);border:2px solid var(--br);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;"/>
-        <label style="display:block;font-size:11px;color:var(--mu);margin-bottom:5px;">Prénom</label>
-        <input type="text" id="newPrenomCompte" placeholder="ex: Marc" style="width:100%;background:var(--bg);border:2px solid var(--br);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;"/>
-        <label style="display:block;font-size:11px;color:var(--mu);margin-bottom:5px;">Mot de passe</label>
-        <input type="password" id="newPwdCompte" placeholder="••••••" style="width:100%;background:var(--bg);border:2px solid var(--br);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;"/>
+        <label style="display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Matricule (N° agent)</label>
+        <input type="text" id="newMatricule" placeholder="ex: 71694" inputmode="numeric" autocorrect="off" style="width:100%;background:var(--bg);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;outline:none;"/>
+        <label style="display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Prénom</label>
+        <input type="text" id="newPrenomCompte" placeholder="ex: Marc" style="width:100%;background:var(--bg);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;outline:none;"/>
+        <label style="display:block;font-size:10px;color:var(--mu);margin-bottom:5px;text-transform:uppercase;letter-spacing:1px;">Mot de passe</label>
+        <input type="password" id="newPwdCompte" placeholder="••••••" style="width:100%;background:var(--bg);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:16px;color:var(--tx);margin-bottom:10px;-webkit-appearance:none;outline:none;"/>
         <button class="btn-reset" id="createAccountBtn">Envoyer la demande</button>
         <div class="login-err" id="createAccountErr"></div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- LOADING -->
 <div id="loadingOverlay" class="loading-overlay hidden">
   <div class="spinner"></div>
   <div class="loading-text" id="loadingText">Chargement...</div>
 </div>
-<header>
-  <div class="logo">MAGASIN 2K<small>Depot Bus Citaro</small></div>
-  <div class="stats"><strong id="totalCount">--</strong>articles</div>
-  <div id="userInfo" style="font-size:12px;color:var(--mu);margin-right:8px;"></div>
-  <div id="btnSound" onclick="toggleSound()" style="display:none;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;background:var(--sf);border:1px solid var(--br);cursor:pointer;font-size:16px;margin-right:4px;" title="Son activé"></div>
-  <div id="navAdmin" style="display:none;margin-right:6px;" ><button id="btnAdmin" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:700;">Admin</button></div>
-  <button class="btn-logout" id="logoutBtn">Déconnexion</button>
-</header>
 
-<!-- Navigation principale -->
-<div style="background:var(--sf);border-bottom:1px solid var(--br);display:flex;padding:0 14px;gap:0;">
-  <div id="navPieces" style="flex:1;text-align:center;padding:12px 6px;font-size:14px;font-weight:700;cursor:pointer;color:var(--ac);border-bottom:3px solid var(--ac);">🔩 Pièces</div>
-  <div id="navOutillage" style="flex:1;text-align:center;padding:12px 6px;font-size:14px;font-weight:700;cursor:pointer;color:var(--mu);border-bottom:3px solid transparent;">🔧 Outillage</div>
+<!-- APP -->
+<div class="app hidden" id="appRoot">
+  <div class="topbar">
+    <div class="tb-logo">
+      <div class="tb-logo-name">MAGASIN 2K</div>
+      <div class="tb-logo-sub">Dépôt Bus Citaro</div>
+    </div>
+    <div class="tb-nav">
+      <div class="tb-nav-item on" id="navPieces">⬡ Pièces</div>
+      <div class="tb-nav-item" id="navOutillage">⚙ Outillage</div>
+      <div class="tb-nav-item" id="navPanier">▣ Panier <span class="tb-nav-badge hidden" id="panierBadge">0</span></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-sound" id="btnSound" onclick="toggleSound()">🔔</div>
+      <div id="navAdmin" style="display:none;"><button class="tb-admin-btn" id="btnAdmin">Admin</button></div>
+      <div><div class="tb-user-name" id="userInfo"></div><div class="tb-user-role" id="userRole"></div></div>
+      <button class="tb-logout" id="logoutBtn">Déco.</button>
+    </div>
+  </div>
+
+  <div class="app-body">
+
+    <!-- SECTION PIÈCES -->
+    <div id="sectionPieces" style="display:flex;flex:1;overflow:hidden;">
+      <div class="sidebar" id="sidebarCats">
+        <div class="sidebar-title">Catégories</div>
+        <div id="catsList"></div>
+      </div>
+      <div class="main-content">
+        <div class="searchbar" id="searchbarRow">
+          <div class="search-wrap">
+            <input class="search-input" type="text" id="si" placeholder="Chercher une pièce, N° SAP, emplacement..." autocomplete="off"/>
+            <span class="search-clear" id="clearSearch">✕</span>
+          </div>
+          <div class="search-count" id="rc"></div>
+        </div>
+        <div id="p1" class="pieces-grid"></div>
+        <div id="lm" class="load-more hidden">Afficher plus</div>
+        <div id="p2" class="add-panel hidden">
+          <div class="form-card">
+            <h2>Nouvel article</h2>
+            <div class="field"><label>Numéro SAP</label><input type="text" id="addNum" inputmode="numeric"/></div>
+            <div class="field"><label>Désignation</label><input type="text" id="addNom"/></div>
+            <div class="field"><label>Catégorie</label><div class="cat-wrap"><input type="text" id="addCat" placeholder="Tapez..."/><div class="cat-sugg" id="addCatSugg"></div></div></div>
+            <div class="field"><label>Mots-clés</label><input type="text" id="addTags"/></div>
+            <div class="field"><label>NPF</label><input type="text" id="addNpf" placeholder="ex: A6284103906"/></div>
+            <div class="field"><label>Fournisseur</label><input type="text" id="addFournisseur" placeholder="ex: EVOBUS"/></div>
+            <div class="field"><label>Emplacement</label><input type="text" id="addLoc"/></div>
+            <div class="field-row"><div class="field"><label>Min</label><input type="number" id="addMin" inputmode="numeric"/></div><div class="field"><label>Max</label><input type="number" id="addMax" inputmode="numeric"/></div></div>
+            <div class="field">
+              <label>Compatibilité bus</label>
+              <div class="bus-btns">
+                <input type="checkbox" id="addBusStd" style="display:none"/>
+                <div class="bus-btn" id="addBusStdBtn" style="background:rgba(46,204,113,0.08);border-color:#2ecc71;" onclick="toggleBusBtn('addBusStd','addBusStdBtn','#2ecc71')"><span class="bus-btn-check" id="addBusStdCheck" style="color:#2ecc71;">✓</span><span style="color:#2ecc71;font-size:12px;font-weight:800;">STD</span></div>
+                <input type="checkbox" id="addBusArt" style="display:none"/>
+                <div class="bus-btn" id="addBusArtBtn" style="background:rgba(240,165,0,0.08);border-color:#f0a500;" onclick="toggleBusBtn('addBusArt','addBusArtBtn','#f0a500')"><span class="bus-btn-check" id="addBusArtCheck" style="color:#f0a500;">✓</span><span style="color:#f0a500;font-size:12px;font-weight:800;">ART</span></div>
+                <input type="checkbox" id="addChimique" style="display:none"/>
+                <div class="bus-btn" id="addChimiqueBtn" style="background:rgba(231,76,60,0.08);border-color:#e74c3c;" onclick="toggleBusBtn('addChimique','addChimiqueBtn','#e74c3c')"><span class="bus-btn-check" id="addChimiqueCheck" style="color:#e74c3c;">✓</span><span style="color:#e74c3c;font-size:12px;font-weight:800;">Chim.</span></div>
+                <input type="checkbox" id="addReparable" style="display:none"/>
+                <div class="bus-btn" id="addReparableBtn" style="background:rgba(155,89,182,0.08);border-color:#9b59b6;" onclick="toggleBusBtn('addReparable','addReparableBtn','#9b59b6')"><span class="bus-btn-check" id="addReparableCheck" style="color:#9b59b6;">✓</span><span style="color:#9b59b6;font-size:12px;font-weight:800;">Rép.</span></div>
+              </div>
+            </div>
+            <button class="bsave" id="addBtn">ENREGISTRER</button>
+          </div>
+        </div>
+        <div id="p4" class="admin-panel hidden">
+          <div id="resetDemandesSection" style="display:none;" class="admin-section">
+            <h2 style="color:var(--rd);">🔑 Réinitialisations <span id="badgeDemandes" class="badge-demandes" style="display:none;"></span></h2>
+            <div id="demandesList"></div>
+          </div>
+          <div id="demandesCompteSection" style="display:none;" class="admin-section">
+            <h2>👤 Demandes de compte <span id="badgeDemandesCompte" class="badge-demandes" style="display:none;background:var(--ac);color:#111;"></span></h2>
+            <div id="demandesCompteList"></div>
+          </div>
+          <div class="admin-section">
+            <h2>👑 Gestion utilisateurs</h2>
+            <div class="field"><label>Prénom</label><input type="text" id="newPrenom"/></div>
+            <div class="field"><label>Login</label><input type="text" id="newLogin" autocorrect="off" autocapitalize="none"/></div>
+            <div class="field"><label>Mot de passe</label><input type="password" id="newPwd"/></div>
+            <div class="field"><label>Rôle</label><select id="newRole"><option value="agent">Agent maintenance</option><option value="magasinier">Magasinier</option><option value="brigadier">Brigadier</option><option value="admin">Administrateur</option></select></div>
+            <div class="field" style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="newPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/><label style="margin:0;font-size:13px;cursor:pointer;" for="newPeutModifier">Peut modifier les articles</label></div>
+            <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
+          </div>
+          <div class="admin-section"><h2>Utilisateurs</h2><div id="usersList"></div></div>
+          <div class="admin-section"><h2>Historique des actions</h2><div id="actionsList"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION PANIER -->
+    <div id="sectionPanier" style="display:none;flex:1;overflow:hidden;">
+      <div class="panier-panel">
+        <div class="ordre-block"><label>Numéro d'ordre (8 chiffres)</label><input type="text" id="numeroOrdre" placeholder="ex: 20240503" inputmode="numeric"/></div>
+        <div class="ordre-block hidden" id="agentField"><label>Votre numéro d'agent</label><input type="text" id="numeroAgent" placeholder="ex: 71694" inputmode="numeric"/></div>
+        <div class="panier-actions"><button class="btn-valider" id="validerBtn">Valider et sauvegarder</button><button class="btn-vider" id="viderBtn">Vider</button></div>
+        <div id="panierList"></div>
+        <div id="histoSection">
+          <div class="histo-title">Historique des bons</div>
+          <div id="historiqueList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION OUTILLAGE -->
+    <div id="sectionOutillage" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div style="background:#111422;border-bottom:1px solid var(--br);display:flex;padding:0 18px;flex-shrink:0;">
+        <div id="ot1" style="padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ac);border-bottom:2px solid var(--ac);">🔍 Recherche</div>
+        <div id="ot2" style="padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;display:none;">➕ Ajouter</div>
+      </div>
+      <div id="op1" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
+        <div style="padding:12px 18px 8px;background:#0f1120;border-bottom:1px solid var(--br);flex-shrink:0;">
+          <div style="position:relative;"><input class="search-input" type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch();document.getElementById('clearOutilSearch').style.display=this.value?'block':'none'"/><span id="clearOutilSearch" class="search-clear" onclick="document.getElementById('outilSearch').value='';doOutilSearch();this.style.display='none';">✕</span></div>
+          <div style="font-size:11px;color:var(--mu);margin-top:8px;" id="outilCount"></div>
+        </div>
+        <div style="padding:14px 18px;overflow-y:auto;flex:1;" id="outilRes"></div>
+      </div>
+      <div id="op2" style="display:none;flex:1;overflow:auto;">
+        <div class="add-panel"><div class="form-card">
+          <h2>Nouvel outil</h2>
+          <div class="field"><label>Désignation</label><input type="text" id="outilNom"/></div>
+          <div class="field"><label>Emplacement</label><input type="text" id="outilLoc"/></div>
+          <div class="field"><label>Mots-clés</label><input type="text" id="outilTags"/></div>
+          <div class="field"><label>Photo</label><div id="outilPhotoContainer"></div><div class="edit-photo-btn" onclick="document.getElementById('outilPhotoInput').click()">📷 Ajouter une photo</div><input type="file" id="outilPhotoInput" accept="image/*" capture="environment" style="display:none"/></div>
+          <button class="bsave" id="outilAddBtn">ENREGISTRER</button>
+        </div></div>
+      </div>
+    </div>
+
+  </div>
 </div>
 
-<!-- SECTION PIÈCES -->
-<div id="sectionPieces">
-<main>
-  <div class="tabs">
-    <div class="tab active" id="t1">Recherche</div>
-    <div class="tab" id="t2">Ajouter</div>
-    <div class="tab" id="t3">Panier<span class="badge" id="panierBadge">0</span></div>
-  </div>
-  <div id="p1">
-    <div class="sb"><input type="text" id="si" placeholder="Rechercher..." autocomplete="off"/><span id="clearSearch" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;display:none;">&#x2715;</span></div>
-    <div class="cs" id="catsScroll"></div>
-    <div class="rc" id="rc"></div>
-    <div id="res"></div>
-    <div id="lm" class="lm" style="display:none"></div>
-  </div>
-  <div id="p2" style="display:none">
-    <div class="fc">
-      <h2>Nouvel Article</h2>
-      <div class="field"><label>Numero SAP</label><input type="text" id="addNum" inputmode="numeric"/></div>
-      <div class="field"><label>Designation</label><input type="text" id="addNom"/></div>
-      <div class="field"><label>Categorie</label><div class="cat-wrap"><input type="text" id="addCat" placeholder="Tapez..."/><div class="cat-sugg" id="addCatSugg"></div></div></div>
-      <div class="field"><label>Mots-cles</label><input type="text" id="addTags"/></div>
-      <div class="field"><label>NPF (Numero fournisseur)</label><input type="text" id="addNpf" placeholder="ex: A6284103906"/></div>
-      <div class="field"><label>Fournisseur</label><input type="text" id="addFournisseur" placeholder="ex: EVOBUS ou CBM"/></div>
-      <div class="field"><label>Emplacement</label><input type="text" id="addLoc"/></div>
-      <div class="field-row">
-        <div class="field"><label>Min</label><input type="number" id="addMin" inputmode="numeric"/></div>
-        <div class="field"><label>Max</label><input type="number" id="addMax" inputmode="numeric"/></div>
-      </div>
-      <div class="field">
-        <label>Compatibilite bus</label>
-        <div style="display:flex;gap:10px;margin-top:6px;">
-          <input type="checkbox" id="addBusStd" style="display:none"/>
-          <div id="addBusStdBtn" onclick="toggleBusBtn('addBusStd','addBusStdBtn','#2ecc71')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(46,204,113,0.08);border:2px solid #2ecc71;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-            <span id="addBusStdCheck" style="color:#2ecc71;font-size:16px;display:none;">✕</span>
-            <span style="color:#2ecc71;font-size:13px;font-weight:700;">STD</span>
-          </div>
-          <input type="checkbox" id="addBusArt" style="display:none"/>
-          <div id="addBusArtBtn" onclick="toggleBusBtn('addBusArt','addBusArtBtn','#f0a500')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(240,165,0,0.08);border:2px solid #f0a500;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-            <span id="addBusArtCheck" style="color:#f0a500;font-size:16px;display:none;">✕</span>
-            <span style="color:#f0a500;font-size:13px;font-weight:700;">ART</span>
-          </div>
-          <input type="checkbox" id="addChimique" style="display:none"/>
-          <div id="addChimiqueBtn" onclick="toggleBusBtn('addChimique','addChimiqueBtn','#e74c3c')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(231,76,60,0.08);border:2px solid #e74c3c;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-            <span id="addChimiqueCheck" style="color:#e74c3c;font-size:16px;display:none;">✕</span>
-            <span style="color:#e74c3c;font-size:13px;font-weight:700;">Chimique</span>
-          </div>
-          <input type="checkbox" id="addReparable" style="display:none"/>
-          <div id="addReparableBtn" onclick="toggleBusBtn('addReparable','addReparableBtn','#9b59b6')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(155,89,182,0.08);border:2px solid #9b59b6;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-            <span id="addReparableCheck" style="color:#9b59b6;font-size:16px;display:none;">✕</span>
-            <span style="color:#9b59b6;font-size:13px;font-weight:700;">🔧 Rép.</span>
-          </div>
-        </div>
-      </div>
-      <button class="bsave" id="addBtn">ENREGISTRER</button>
-    </div>
-  </div>
-  <div id="p4" style="display:none">
-    <div id="resetDemandesSection" style="display:none;background:var(--cd);border:2px solid var(--rd);border-radius:12px;padding:18px;margin-bottom:16px;">
-      <div style="font-size:16px;color:var(--rd);margin-bottom:10px;font-weight:700;">🔑 Demandes de reinitialisation <span id="badgeDemandes" class="badge-demandes" style="display:none;"></span></div>
-      <div id="demandesList"></div>
-    </div>
-    <div id="demandesCompteSection" style="display:none;background:var(--cd);border:2px solid #f0a500;border-radius:12px;padding:18px;margin-bottom:16px;">
-      <div style="font-size:16px;color:var(--ac);margin-bottom:10px;font-weight:700;">👤 Demandes de création de compte <span id="badgeDemandesCompte" class="badge-demandes" style="display:none;background:var(--ac);"></span></div>
-      <div id="demandesCompteList"></div>
-    </div>
-    <div style="background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:18px;margin-bottom:16px;">
-      <h2 style="font-size:19px;color:var(--ac);margin-bottom:14px;">👑 Gestion Utilisateurs</h2>
-      <div class="field"><label>Prénom</label><input type="text" id="newPrenom" placeholder="ex: Marc"/></div>
-      <div class="field"><label>Login</label><input type="text" id="newLogin" placeholder="ex: marc123" autocorrect="off" autocapitalize="none"/></div>
-      <div class="field"><label>Mot de passe</label><input type="password" id="newPwd" placeholder="••••••"/></div>
-      <div class="field">
-        <label>Rôle</label>
-        <select id="newRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
-          <option value="agent">Agent maintenance</option>
-          <option value="magasinier">Magasinier</option>
-          <option value="brigadier">Brigadier</option>
-          <option value="admin">Administrateur</option>
-        </select>
-      </div>
-      <div class="field" style="display:flex;align-items:center;gap:10px;">
-        <input type="checkbox" id="newPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/>
-        <label style="margin:0;font-size:14px;color:var(--tx);cursor:pointer;" for="newPeutModifier">Peut modifier les articles</label>
-      </div>
-      <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
-    </div>
-    <div style="margin-bottom:16px;">
-      <div style="font-size:16px;color:var(--mu);margin-bottom:10px;font-weight:600;">UTILISATEURS</div>
-      <div id="usersList"></div>
-    </div>
-    <div>
-      <div style="font-size:16px;color:var(--mu);margin-bottom:10px;font-weight:600;">HISTORIQUE DES ACTIONS</div>
-      <div id="actionsList"></div>
-    </div>
-  </div>
-  <div id="p3" style="display:none">
-    <div class="ordre-field"><label>Numero ordre</label><input type="text" id="numeroOrdre" placeholder="ex: 2024-001"/></div>
-    <div class="ordre-field hidden" id="agentField"><label>Votre numero d'agent</label><input type="text" id="numeroAgent" placeholder="ex: 12345" inputmode="numeric"/></div>
-    <div class="panier-actions">
-      <button class="btn-valider" id="validerBtn">Valider et Sauvegarder</button>
-      <button class="btn-vider" id="viderBtn">Vider</button>
-    </div>
-    <div id="panierList"></div>
-    <div id="histoSection" style="margin-top:20px;border-top:1px solid var(--br);padding-top:14px;">
-      <div style="font-size:16px;color:var(--mu);margin-bottom:10px;">HISTORIQUE BONS</div>
-      <div id="historiqueList"></div>
-    </div>
-  </div>
-</main>
-<div class="mo hidden" id="mo">
-  <div class="modal">
+<!-- MODAL MODIFIER ARTICLE -->
+<div class="modal-overlay hidden" id="mo">
+  <div class="modal-box">
     <h2>Modifier article</h2>
-    <div class="field"><label>Numero SAP</label><input type="text" id="editNum" inputmode="numeric"/></div>
-    <div class="field"><label>Designation</label><input type="text" id="editNom"/></div>
-    <div class="field"><label>Categorie</label><div class="cat-wrap"><input type="text" id="editCat" placeholder="Tapez..."/><div class="cat-sugg" id="editCatSugg"></div></div></div>
-    <div class="field"><label>Mots-cles</label><input type="text" id="editTags"/></div>
-    <div class="field"><label>NPF (Numero fournisseur)</label><input type="text" id="editNpf" placeholder="ex: A6284103906"/></div>
-    <div class="field"><label>Fournisseur</label><input type="text" id="editFournisseur" placeholder="ex: EVOBUS ou CBM"/></div>
+    <div class="field"><label>Numéro SAP</label><input type="text" id="editNum" inputmode="numeric"/></div>
+    <div class="field"><label>Désignation</label><input type="text" id="editNom"/></div>
+    <div class="field"><label>Catégorie</label><div class="cat-wrap"><input type="text" id="editCat" placeholder="Tapez..."/><div class="cat-sugg" id="editCatSugg"></div></div></div>
+    <div class="field"><label>Mots-clés</label><input type="text" id="editTags"/></div>
+    <div class="field"><label>NPF</label><input type="text" id="editNpf"/></div>
+    <div class="field"><label>Fournisseur</label><input type="text" id="editFournisseur"/></div>
     <div class="field"><label>Emplacement</label><input type="text" id="editLoc"/></div>
-    <div class="field-row">
-      <div class="field"><label>Min</label><input type="number" id="editMin" inputmode="numeric"/></div>
-      <div class="field"><label>Max</label><input type="number" id="editMax" inputmode="numeric"/></div>
-    </div>
+    <div class="field-row"><div class="field"><label>Min</label><input type="number" id="editMin" inputmode="numeric"/></div><div class="field"><label>Max</label><input type="number" id="editMax" inputmode="numeric"/></div></div>
     <div class="field">
-      <label>Compatibilite bus</label>
-      <div style="display:flex;gap:10px;margin-top:6px;">
+      <label>Compatibilité bus</label>
+      <div class="bus-btns">
         <input type="checkbox" id="editBusStd" style="display:none"/>
-        <div id="editBusStdBtn" onclick="toggleBusBtn('editBusStd','editBusStdBtn','#2ecc71')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(46,204,113,0.08);border:2px solid #2ecc71;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-          <span id="editBusStdCheck" style="color:#2ecc71;font-size:16px;display:none;">✕</span>
-          <span style="color:#2ecc71;font-size:13px;font-weight:700;">STD</span>
-        </div>
+        <div class="bus-btn" id="editBusStdBtn" style="background:rgba(46,204,113,0.08);border-color:#2ecc71;" onclick="toggleBusBtn('editBusStd','editBusStdBtn','#2ecc71')"><span class="bus-btn-check" id="editBusStdCheck" style="color:#2ecc71;">✓</span><span style="color:#2ecc71;font-size:12px;font-weight:800;">STD</span></div>
         <input type="checkbox" id="editBusArt" style="display:none"/>
-        <div id="editBusArtBtn" onclick="toggleBusBtn('editBusArt','editBusArtBtn','#f0a500')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(240,165,0,0.08);border:2px solid #f0a500;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-          <span id="editBusArtCheck" style="color:#f0a500;font-size:16px;display:none;">✕</span>
-          <span style="color:#f0a500;font-size:13px;font-weight:700;">ART</span>
-        </div>
+        <div class="bus-btn" id="editBusArtBtn" style="background:rgba(240,165,0,0.08);border-color:#f0a500;" onclick="toggleBusBtn('editBusArt','editBusArtBtn','#f0a500')"><span class="bus-btn-check" id="editBusArtCheck" style="color:#f0a500;">✓</span><span style="color:#f0a500;font-size:12px;font-weight:800;">ART</span></div>
         <input type="checkbox" id="editChimique" style="display:none"/>
-        <div id="editChimiqueBtn" onclick="toggleBusBtn('editChimique','editChimiqueBtn','#e74c3c')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(231,76,60,0.08);border:2px solid #e74c3c;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-          <span id="editChimiqueCheck" style="color:#e74c3c;font-size:16px;display:none;">✕</span>
-          <span style="color:#e74c3c;font-size:13px;font-weight:700;">Chimique</span>
-        </div>
+        <div class="bus-btn" id="editChimiqueBtn" style="background:rgba(231,76,60,0.08);border-color:#e74c3c;" onclick="toggleBusBtn('editChimique','editChimiqueBtn','#e74c3c')"><span class="bus-btn-check" id="editChimiqueCheck" style="color:#e74c3c;">✓</span><span style="color:#e74c3c;font-size:12px;font-weight:800;">Chim.</span></div>
         <input type="checkbox" id="editReparable" style="display:none"/>
-        <div id="editReparableBtn" onclick="toggleBusBtn('editReparable','editReparableBtn','#9b59b6')" style="display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;background:rgba(155,89,182,0.08);border:2px solid #9b59b6;border-radius:8px;padding:10px 12px;flex:1;transition:all 0.2s;">
-          <span id="editReparableCheck" style="color:#9b59b6;font-size:16px;display:none;">✕</span>
-          <span style="color:#9b59b6;font-size:13px;font-weight:700;">🔧 Rép.</span>
-        </div>
+        <div class="bus-btn" id="editReparableBtn" style="background:rgba(155,89,182,0.08);border-color:#9b59b6;" onclick="toggleBusBtn('editReparable','editReparableBtn','#9b59b6')"><span class="bus-btn-check" id="editReparableCheck" style="color:#9b59b6;">✓</span><span style="color:#9b59b6;font-size:12px;font-weight:800;">Rép.</span></div>
       </div>
     </div>
     <div class="field">
-      <label>Photo</label>
+      <label>Photos</label>
       <img id="editPhotoPreview" src="" style="display:none"/>
       <div id="editPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
       <div class="edit-photo-btn" id="editPhotoBtn">📷 Ajouter une photo</div>
       <input type="file" id="editPhotoInput" accept="image/*" capture="environment" style="display:none"/>
-      <button id="editPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:13px;cursor:pointer;">🗑 Supprimer toutes les photos</button>
+      <button id="editPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.08);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">🗑 Supprimer toutes les photos</button>
     </div>
-    <div class="ma">
-      <button class="bmc" id="cancelEditBtn">Annuler</button>
-      <button class="bms" id="saveEditBtn">ENREGISTRER</button>
-    </div>
+    <div class="modal-actions"><button class="btn-modal-cancel" id="cancelEditBtn">Annuler</button><button class="btn-modal-save" id="saveEditBtn">ENREGISTRER</button></div>
   </div>
 </div>
+
+<!-- PHOTO LIGHTBOX -->
 <div class="photo-overlay hidden" id="photoOverlay" onclick="closePhotoOverlay(event)">
-  <button class="photo-close" id="photoCloseBtn" onclick="closePhoto()">✕</button>
-  <!-- Flèche gauche -->
-  <div id="photoArrowLeft" onclick="event.stopPropagation();navigatePhoto(-1)" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#fff;z-index:10;user-select:none;">‹</div>
-  <img id="photoFull" src="" alt="Photo" onclick="event.stopPropagation()"/>
-  <!-- Flèche droite -->
-  <div id="photoArrowRight" onclick="event.stopPropagation();navigatePhoto(1)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:50%;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:22px;color:#fff;z-index:10;user-select:none;">›</div>
-  <!-- Compteur -->
-  <div id="photoCounter" style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.6);font-size:13px;display:none;"></div>
+  <button class="photo-close" onclick="closePhoto()">✕</button>
+  <div id="photoArrowLeft" class="photo-arrow" style="left:12px;" onclick="event.stopPropagation();navigatePhoto(-1)">‹</div>
+  <img id="photoFull" src="" alt="" onclick="event.stopPropagation()"/>
+  <div id="photoArrowRight" class="photo-arrow" style="right:12px;" onclick="event.stopPropagation();navigatePhoto(1)">›</div>
+  <div id="photoCounter" class="photo-counter"></div>
 </div>
-<div class="mo hidden" id="editUserModal">
-  <div class="modal">
-    <h2 style="color:var(--ac);font-size:19px;margin-bottom:16px;">✏️ Modifier utilisateur</h2>
+
+<!-- MODAL MODIFIER UTILISATEUR -->
+<div class="modal-overlay hidden" id="editUserModal">
+  <div class="modal-box">
+    <h2>✏️ Modifier utilisateur</h2>
     <input type="hidden" id="editUserId"/>
     <div class="field"><label>Prénom</label><input type="text" id="editUserPrenom"/></div>
     <div class="field"><label>Login</label><input type="text" id="editUserLogin" autocorrect="off" autocapitalize="none"/></div>
-    <div class="field"><label>Nouveau mot de passe (laisser vide pour ne pas changer)</label><input type="password" id="editUserPwd" placeholder="••••••"/></div>
-    <div class="field">
-      <label>Rôle</label>
-      <select id="editUserRole" style="width:100%;background:var(--sf);border:2px solid var(--br);border-radius:8px;padding:12px 13px;font-size:16px;color:var(--tx);-webkit-appearance:none;">
-        <option value="agent">Agent maintenance</option>
-        <option value="magasinier">Magasinier</option>
-        <option value="brigadier">Brigadier</option>
-        <option value="admin">Administrateur</option>
-      </select>
-    </div>
+    <div class="field"><label>Nouveau mot de passe (vide = inchangé)</label><input type="password" id="editUserPwd" placeholder="••••••"/></div>
+    <div class="field"><label>Rôle</label><select id="editUserRole"><option value="agent">Agent maintenance</option><option value="magasinier">Magasinier</option><option value="brigadier">Brigadier</option><option value="admin">Administrateur</option></select></div>
     <div class="field" style="display:flex;align-items:center;justify-content:space-between;background:var(--sf);border-radius:8px;padding:12px;">
-      <label style="margin:0;font-size:14px;color:var(--tx);">Peut modifier les articles</label>
-      <div id="togglePeutModifier" onclick="toggleSwitch('togglePeutModifier','editUserPeutModifier')" style="width:48px;height:26px;border-radius:13px;background:#e74c3c;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
-      </div>
+      <label style="margin:0;font-size:13px;">Peut modifier les articles</label>
+      <div id="togglePeutModifier" class="toggle-sw" onclick="toggleSwitch('togglePeutModifier','editUserPeutModifier')"><div class="toggle-sw-dot"></div></div>
       <input type="hidden" id="editUserPeutModifier" value="false"/>
     </div>
     <div class="field" style="display:flex;align-items:center;justify-content:space-between;background:var(--sf);border-radius:8px;padding:12px;">
-      <label style="margin:0;font-size:14px;color:var(--tx);">Compte actif</label>
-      <div id="toggleActif" onclick="toggleSwitch('toggleActif','editUserActif')" style="width:48px;height:26px;border-radius:13px;background:#e74c3c;cursor:pointer;position:relative;transition:background 0.2s;flex-shrink:0;">
-        <div style="width:22px;height:22px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left 0.2s;"></div>
-      </div>
+      <label style="margin:0;font-size:13px;">Compte actif</label>
+      <div id="toggleActif" class="toggle-sw" onclick="toggleSwitch('toggleActif','editUserActif')"><div class="toggle-sw-dot"></div></div>
       <input type="hidden" id="editUserActif" value="false"/>
     </div>
-    <div class="ma">
-      <button class="bmc" onclick="closeEditUser()">Annuler</button>
-      <button class="bms" onclick="saveEditUser()">ENREGISTRER</button>
-    </div>
+    <div class="modal-actions"><button class="btn-modal-cancel" onclick="closeEditUser()">Annuler</button><button class="btn-modal-save" onclick="saveEditUser()">ENREGISTRER</button></div>
   </div>
 </div>
-<div class="mo hidden" id="resetPwdModal">
-  <div class="modal">
-    <h2 style="color:var(--rd);font-size:19px;margin-bottom:6px;">🔑 Reinitialiser le mot de passe</h2>
+
+<!-- MODAL RESET MDP -->
+<div class="modal-overlay hidden" id="resetPwdModal">
+  <div class="modal-box">
+    <h2 style="color:var(--rd);">🔑 Réinitialiser le mot de passe</h2>
     <div style="font-size:13px;color:var(--mu);margin-bottom:16px;">Utilisateur : <strong id="resetUserLoginLabel" style="color:var(--tx);"></strong></div>
     <input type="hidden" id="resetUserId"/>
     <input type="hidden" id="resetUserLogin"/>
-    <div class="field">
-      <label>Nouveau mot de passe</label>
-      <input type="password" id="resetNouveauPwd" placeholder="••••••"/>
-    </div>
+    <div class="field"><label>Nouveau mot de passe</label><input type="password" id="resetNouveauPwd" placeholder="••••••"/></div>
     <div class="login-err" id="resetPwdErr"></div>
-    <div class="ma">
-      <button class="bmc" onclick="fermerResetModal()">Annuler</button>
-      <button class="bms" style="background:var(--gn);" onclick="validerResetPwd()">VALIDER</button>
-    </div>
+    <div class="modal-actions"><button class="btn-modal-cancel" onclick="fermerResetModal()">Annuler</button><button class="btn-modal-save" style="background:var(--gn);" onclick="validerResetPwd()">VALIDER</button></div>
   </div>
 </div>
-</div><!-- fin sectionPieces -->
 
-<!-- SECTION OUTILLAGE -->
-<div id="sectionOutillage" style="display:none;">
-<main>
-  <div class="tabs">
-    <div class="tab active" id="ot1">🔍 Recherche</div>
-    <div class="tab" id="ot2" style="display:none;">➕ Ajouter</div>
-  </div>
-
-  <!-- Recherche outillage -->
-  <div id="op1">
-    <div class="sb">
-      <input type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch();document.getElementById('clearOutilSearch').style.display=this.value?'block':'none'"/>
-      <span id="clearOutilSearch" onclick="document.getElementById('outilSearch').value='';doOutilSearch();this.style.display='none';" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;display:none;">&#x2715;</span>
-    </div>
-    <div class="rc" id="outilCount"></div>
-    <div id="outilRes"></div>
-  </div>
-
-  <!-- Ajouter outillage -->
-  <div id="op2" style="display:none;">
-    <div class="fc">
-      <h2>Nouvel Outil</h2>
-      <div class="field"><label>Désignation</label><input type="text" id="outilNom" placeholder="ex: Cle dynamometrique Facom"/></div>
-      <div class="field"><label>Emplacement</label><input type="text" id="outilLoc" placeholder="ex: VANAS 1 - Tiroir 22"/></div>
-      <div class="field"><label>Mots-clés</label><input type="text" id="outilTags" placeholder="ex: facom cle"/></div>
-      <div class="field">
-        <label>Photo</label>
-        <div id="outilPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
-        <div class="edit-photo-btn" id="outilPhotoBtn" onclick="document.getElementById('outilPhotoInput').click()">📷 Ajouter une photo</div>
-        <input type="file" id="outilPhotoInput" accept="image/*" capture="environment" style="display:none"/>
-      </div>
-      <button class="bsave" id="outilAddBtn">ENREGISTRER</button>
-    </div>
-  </div>
-</main>
-</div><!-- fin sectionOutillage -->
-
-<!-- Modale modifier outillage -->
-<div class="mo hidden" id="outilEditModal">
-  <div class="modal">
+<!-- MODAL OUTILLAGE -->
+<div class="modal-overlay hidden" id="outilEditModal">
+  <div class="modal-box">
     <h2>Modifier outil</h2>
     <input type="hidden" id="outilEditId"/>
     <div class="field"><label>Désignation</label><input type="text" id="outilEditNom"/></div>
@@ -447,15 +445,12 @@ main{padding:14px;max-width:800px;margin:0 auto;}
     <div class="field"><label>Mots-clés</label><input type="text" id="outilEditTags"/></div>
     <div class="field">
       <label>Photo</label>
-      <div id="outilEditPhotoContainer" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+      <div id="outilEditPhotoContainer"></div>
       <div class="edit-photo-btn" onclick="document.getElementById('outilEditPhotoInput').click()">📷 Ajouter une photo</div>
       <input type="file" id="outilEditPhotoInput" accept="image/*" capture="environment" style="display:none"/>
-      <button id="outilEditPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:13px;cursor:pointer;">🗑 Supprimer la photo</button>
+      <button id="outilEditPhotoRemove" style="display:none;margin-top:8px;width:100%;background:rgba(231,76,60,0.08);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:8px;font-size:12px;cursor:pointer;">🗑 Supprimer la photo</button>
     </div>
-    <div class="ma">
-      <button class="bmc" onclick="closeOutilEdit()">Annuler</button>
-      <button class="bms" id="outilEditSaveBtn">ENREGISTRER</button>
-    </div>
+    <div class="modal-actions"><button class="btn-modal-cancel" onclick="closeOutilEdit()">Annuler</button><button class="btn-modal-save" id="outilEditSaveBtn">ENREGISTRER</button></div>
   </div>
 </div>
 
