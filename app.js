@@ -260,17 +260,29 @@ function getCats() {
 }
 
 function buildSidebar() {
+  var mobile = window.innerWidth <= 700;
   var cats = ['TOUT'].concat(getCats());
   var counts = {TOUT: articles.length};
   for (var i=0;i<articles.length;i++) { var cat=articles[i].categorie||''; if (cat) counts[cat]=(counts[cat]||0)+1; }
+
+  // Sur mobile : items horizontaux (icône + label seulement)
+  // Sur desktop : items verticaux avec cat-info
   var h='';
   for (var i=0;i<cats.length;i++) {
     var c=cats[i], on=(c===selectedCat);
-    h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'">'
-      +'<div class="cat-icon">'+getCatIcon(c)+'</div>'
-      +'<div class="cat-info"><div class="cat-label">'+esc(c==='TOUT'?'Tout':c)+'</div><div class="cat-count">'+(counts[c]||0)+'</div></div>'
-      +'</div>';
-    if (i===0) h+='<div class="cat-sep"></div>';
+    if (mobile) {
+      h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'" style="flex-direction:column;align-items:center;padding:6px 14px 8px;border-left:none;border-bottom:3px solid '+(on?'var(--ac)':'transparent')+';flex-shrink:0;gap:3px;background:transparent;">'
+        +'<div class="cat-icon" style="width:28px;height:28px;font-size:12px;">'+getCatIcon(c)+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(on?'var(--ac)':'var(--mu2)')+';white-space:nowrap;">'+esc(c==='TOUT'?'Tout':c)+'</div>'
+        +'<div style="font-size:9px;color:var(--mu);">'+(counts[c]||0)+'</div>'
+        +'</div>';
+    } else {
+      h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'">'
+        +'<div class="cat-icon">'+getCatIcon(c)+'</div>'
+        +'<div class="cat-info"><div class="cat-label">'+esc(c==='TOUT'?'Tout':c)+'</div><div class="cat-count">'+(counts[c]||0)+'</div></div>'
+        +'</div>';
+      if (i===0) h+='<div class="cat-sep"></div>';
+    }
   }
   document.getElementById('catsList').innerHTML = h;
   document.querySelectorAll('.cat-item').forEach(function(el) {
@@ -282,6 +294,9 @@ function buildSidebar() {
       switchSection('pieces');
     });
   });
+
+  // Appliquer layout mobile après rendu
+  if (mobile) applyMobileLayout();
 }
 
 // ── RECHERCHE ──
@@ -332,10 +347,12 @@ function renderGrid(q) {
     if (a.photo) {
       var firstPhoto = a.photo.split(',')[0].trim();
       if (firstPhoto) {
+    if (firstPhoto) {
         var allPhotos = a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean);
         photoHtml = '<div style="width:100%;height:80px;overflow:hidden;border-radius:10px 10px 0 0;flex-shrink:0;">'
-          +'<img src="'+esc(firstPhoto)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onclick="event.stopPropagation();openPhoto(\''+esc(firstPhoto)+'\','+JSON.stringify(allPhotos)+')" />'
+          +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;" />'
           +'</div>';
+      }
       }
     }
     // Tags
@@ -374,6 +391,13 @@ function renderGrid(q) {
   }
   grid.innerHTML = h;
 
+  // Grille 1 colonne sur mobile
+  if (window.innerWidth <= 700) {
+    grid.style.gridTemplateColumns = '1fr';
+    grid.style.padding = '10px 12px';
+    grid.style.gap = '8px';
+  }
+
   // Events
   grid.querySelectorAll('.btn-add-panier').forEach(function(el) {
     el.addEventListener('click', function(e) { e.stopPropagation(); ajouterPanier(this.getAttribute('data-num')); });
@@ -384,13 +408,13 @@ function renderGrid(q) {
   grid.querySelectorAll('.btn-del-card').forEach(function(el) {
     el.addEventListener('click', function(e) { e.stopPropagation(); delArticle(this.getAttribute('data-num')); });
   });
-  // Clic photo sur la card
-  grid.querySelectorAll('.card-thumb-photo').forEach(function(el) {
+  // Clic photo : tous les img dans les cards pièces
+  grid.querySelectorAll('img[data-num]').forEach(function(el) {
     el.addEventListener('click', function(e) {
       e.stopPropagation();
-      var card = this.closest('.piece-card');
-      var a = articles.filter(function(x) { return x.num===card.getAttribute('data-num'); })[0];
-      if (a&&a.photo) { var photos=a.photo.split(',').filter(function(u){return u.trim();}); openPhoto(photos[0],photos); }
+      var num = this.getAttribute('data-num');
+      var a = articles.filter(function(x){return x.num===num;})[0];
+      if (a && a.photo) { var photos=a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean); openPhoto(photos[0], photos); }
     });
   });
 
@@ -1443,8 +1467,7 @@ function isMobile() { return window.innerWidth <= 700; }
 
 function applyMobileLayout() {
   if (!isMobile()) return;
-
-  // Sidebar : barre horizontale
+  // Sidebar horizontale
   var sb = document.getElementById('sidebarCats');
   if (sb) {
     sb.style.width = '100%';
@@ -1453,77 +1476,23 @@ function applyMobileLayout() {
     sb.style.overflowX = 'auto';
     sb.style.overflowY = 'hidden';
     sb.style.borderRight = 'none';
-    sb.style.borderBottom = '1px solid var(--br)';
+    sb.style.borderBottom = '1px solid #1e2235';
     sb.style.padding = '0';
     sb.style.flexShrink = '0';
   }
-
-  // Titre sidebar caché
+  // Titre et séparateur cachés
   var sbTitle = document.querySelector('.sidebar-title');
   if (sbTitle) sbTitle.style.display = 'none';
-
-  // Séparateur caché
-  document.querySelectorAll('.cat-sep').forEach(function(el) { el.style.display = 'none'; });
-
+  document.querySelectorAll('.cat-sep').forEach(function(el){el.style.display='none';});
   // Section pièces en colonne
   var sp = document.getElementById('sectionPieces');
   if (sp) sp.style.flexDirection = 'column';
-
-  // Grille 1 colonne
-  var grid = document.getElementById('p1');
-  if (grid) {
-    grid.style.gridTemplateColumns = '1fr';
-    grid.style.padding = '10px 12px';
-    grid.style.gap = '8px';
-  }
-
   // Outillage grille 1 col
-  var outilRes = document.getElementById('outilRes');
-  if (outilRes) outilRes.style.gridTemplateColumns = '1fr';
+  var or2 = document.getElementById('outilRes');
+  if (or2) or2.style.gridTemplateColumns = '1fr';
 }
 
-// Appliquer après chaque rendu
-var _origBuildSidebar = buildSidebar;
-buildSidebar = function() {
-  _origBuildSidebar();
-  applyMobileLayout();
-  // Styles cat-item horizontaux sur mobile
-  if (isMobile()) {
-    document.querySelectorAll('.cat-item').forEach(function(el) {
-      el.style.flexDirection = 'column';
-      el.style.alignItems = 'center';
-      el.style.padding = '6px 14px 8px';
-      el.style.borderLeft = 'none';
-      el.style.borderBottom = '3px solid transparent';
-      el.style.flexShrink = '0';
-      el.style.gap = '3px';
-    });
-    document.querySelectorAll('.cat-item.on').forEach(function(el) {
-      el.style.borderBottom = '3px solid var(--ac)';
-      el.style.background = 'transparent';
-    });
-  }
-};
-
-var _origRenderGrid = renderGrid;
-renderGrid = function(q) {
-  _origRenderGrid(q);
-  if (isMobile()) {
-    var grid = document.getElementById('p1');
-    if (grid) { grid.style.gridTemplateColumns = '1fr'; grid.style.padding = '10px 12px'; grid.style.gap = '8px'; }
-  }
-};
-
-var _origDoOutilSearch = doOutilSearch;
-doOutilSearch = function() {
-  _origDoOutilSearch();
-  if (isMobile()) {
-    var outilRes = document.getElementById('outilRes');
-    if (outilRes) outilRes.style.gridTemplateColumns = '1fr';
-  }
-};
-
-window.addEventListener('resize', applyMobileLayout);
+window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
 
 initRealtime();
 checkAuth();
