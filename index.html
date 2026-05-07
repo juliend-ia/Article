@@ -70,7 +70,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .pieces-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:14px 18px;overflow-y:auto;flex:1;align-content:start;}
 .pieces-grid::-webkit-scrollbar{width:4px;}
 .pieces-grid::-webkit-scrollbar-thumb{background:var(--br2);border-radius:2px;}
-.piece-card{background:var(--sf);border:1px solid var(--br);border-radius:12px;overflow:hidden;cursor:pointer;transition:border-color 0.15s;}
+.piece-card{background:var(--sf);border:1px solid var(--br);border-radius:12px;cursor:pointer;transition:border-color 0.15s;display:flex;flex-direction:column;}
 .piece-card:hover{border-color:var(--br2);}
 .card-thumb{height:90px;background:#0d0f18;display:flex;align-items:center;justify-content:center;position:relative;}
 .card-thumb-icon{font-size:34px;line-height:1;}
