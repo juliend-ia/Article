@@ -213,7 +213,7 @@ function initUI() {
     document.getElementById('sidebarCats').parentElement.appendChild(sidebarFooter);
   }
   if (window._canEdit) {
-    sidebarFooter.innerHTML = '<div onclick="switchSection(''ajouter'')" style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-left:3px solid transparent;border-radius:0 8px 8px 0;background:rgba(240,165,0,0.06);border-left-color:var(--ac);margin:-12px;"><div style="width:32px;height:32px;border-radius:8px;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;">➕</div><div style="font-size:12px;font-weight:700;color:var(--ac);">Ajouter article</div></div>';
+    sidebarFooter.innerHTML = '<div onclick="switchSection(\'ajouter\')" style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-left:3px solid var(--ac);background:rgba(240,165,0,0.06);"><div style="width:32px;height:32px;border-radius:8px;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;">&#x2795;</div><div style="font-size:12px;font-weight:700;color:var(--ac);">Ajouter article</div></div>';
   } else sidebarFooter.innerHTML = '';
   updateBadgeAttente();
 }
