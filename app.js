@@ -1438,11 +1438,92 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// Onglet Ajouter dans la sidebar (bouton spécial pour canEdit)
-document.addEventListener('DOMContentLoaded', function() {
-  // Injecter bouton Ajouter dans la sidebar quand canEdit
-  // Géré via initUI après auth
-});
+// ── LAYOUT MOBILE ──
+function isMobile() { return window.innerWidth <= 700; }
+
+function applyMobileLayout() {
+  if (!isMobile()) return;
+
+  // Sidebar : barre horizontale
+  var sb = document.getElementById('sidebarCats');
+  if (sb) {
+    sb.style.width = '100%';
+    sb.style.height = 'auto';
+    sb.style.flexDirection = 'row';
+    sb.style.overflowX = 'auto';
+    sb.style.overflowY = 'hidden';
+    sb.style.borderRight = 'none';
+    sb.style.borderBottom = '1px solid var(--br)';
+    sb.style.padding = '0';
+    sb.style.flexShrink = '0';
+  }
+
+  // Titre sidebar caché
+  var sbTitle = document.querySelector('.sidebar-title');
+  if (sbTitle) sbTitle.style.display = 'none';
+
+  // Séparateur caché
+  document.querySelectorAll('.cat-sep').forEach(function(el) { el.style.display = 'none'; });
+
+  // Section pièces en colonne
+  var sp = document.getElementById('sectionPieces');
+  if (sp) sp.style.flexDirection = 'column';
+
+  // Grille 1 colonne
+  var grid = document.getElementById('p1');
+  if (grid) {
+    grid.style.gridTemplateColumns = '1fr';
+    grid.style.padding = '10px 12px';
+    grid.style.gap = '8px';
+  }
+
+  // Outillage grille 1 col
+  var outilRes = document.getElementById('outilRes');
+  if (outilRes) outilRes.style.gridTemplateColumns = '1fr';
+}
+
+// Appliquer après chaque rendu
+var _origBuildSidebar = buildSidebar;
+buildSidebar = function() {
+  _origBuildSidebar();
+  applyMobileLayout();
+  // Styles cat-item horizontaux sur mobile
+  if (isMobile()) {
+    document.querySelectorAll('.cat-item').forEach(function(el) {
+      el.style.flexDirection = 'column';
+      el.style.alignItems = 'center';
+      el.style.padding = '6px 14px 8px';
+      el.style.borderLeft = 'none';
+      el.style.borderBottom = '3px solid transparent';
+      el.style.flexShrink = '0';
+      el.style.gap = '3px';
+    });
+    document.querySelectorAll('.cat-item.on').forEach(function(el) {
+      el.style.borderBottom = '3px solid var(--ac)';
+      el.style.background = 'transparent';
+    });
+  }
+};
+
+var _origRenderGrid = renderGrid;
+renderGrid = function(q) {
+  _origRenderGrid(q);
+  if (isMobile()) {
+    var grid = document.getElementById('p1');
+    if (grid) { grid.style.gridTemplateColumns = '1fr'; grid.style.padding = '10px 12px'; grid.style.gap = '8px'; }
+  }
+};
+
+var _origDoOutilSearch = doOutilSearch;
+doOutilSearch = function() {
+  _origDoOutilSearch();
+  if (isMobile()) {
+    var outilRes = document.getElementById('outilRes');
+    if (outilRes) outilRes.style.gridTemplateColumns = '1fr';
+  }
+};
+
+window.addEventListener('resize', applyMobileLayout);
 
 initRealtime();
 checkAuth();
