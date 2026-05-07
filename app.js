@@ -265,38 +265,66 @@ function buildSidebar() {
   var counts = {TOUT: articles.length};
   for (var i=0;i<articles.length;i++) { var cat=articles[i].categorie||''; if (cat) counts[cat]=(counts[cat]||0)+1; }
 
-  // Sur mobile : items horizontaux (icône + label seulement)
-  // Sur desktop : items verticaux avec cat-info
-  var h='';
-  for (var i=0;i<cats.length;i++) {
-    var c=cats[i], on=(c===selectedCat);
-    if (mobile) {
-      h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'" style="flex-direction:column;align-items:center;padding:6px 14px 8px;border-left:none;border-bottom:3px solid '+(on?'var(--ac)':'transparent')+';flex-shrink:0;gap:3px;background:transparent;">'
-        +'<div class="cat-icon" style="width:28px;height:28px;font-size:12px;">'+getCatIcon(c)+'</div>'
-        +'<div style="font-size:10px;font-weight:700;color:'+(on?'var(--ac)':'var(--mu2)')+';white-space:nowrap;">'+esc(c==='TOUT'?'Tout':c)+'</div>'
-        +'<div style="font-size:9px;color:var(--mu);">'+(counts[c]||0)+'</div>'
+  if (mobile) {
+    // ── MODE MOBILE : sidebar cachée, barre horizontale dans main-content ──
+    var sb = document.getElementById('sidebarCats');
+    if (sb) sb.style.display = 'none';
+
+    var bar = document.getElementById('mobileCatsBar');
+    if (!bar) return;
+    bar.style.display = 'flex';
+
+    var h = '';
+    for (var i=0;i<cats.length;i++) {
+      var c=cats[i], on=(c===selectedCat);
+      h += '<div data-cat="'+esc(c)+'" style="display:inline-flex;flex-direction:column;align-items:center;padding:8px 14px 6px;cursor:pointer;border-bottom:3px solid '+(on?'var(--ac)':'transparent')+';flex-shrink:0;gap:3px;">'
+        +'<div style="width:30px;height:30px;border-radius:8px;background:'+(on?'rgba(240,165,0,0.12)':'#1a1d2e')+';border:1px solid '+(on?'rgba(240,165,0,0.3)':'#1e2235')+';display:flex;align-items:center;justify-content:center;font-size:13px;">'+getCatIcon(c)+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(on?'var(--ac)':'#6a6d82')+';margin-top:1px;">'+esc(c==='TOUT'?'Tout':c)+'</div>'
+        +'<div style="font-size:9px;color:#4a5068;">'+(counts[c]||0)+'</div>'
         +'</div>';
-    } else {
+    }
+    bar.innerHTML = h;
+    bar.querySelectorAll('[data-cat]').forEach(function(el) {
+      el.addEventListener('click', function() {
+        selectedCat = this.getAttribute('data-cat');
+        displayCount = 30;
+        buildSidebar();
+        doSearch();
+      });
+    });
+
+    // Grille 1 colonne
+    var grid = document.getElementById('p1');
+    if (grid) { grid.style.gridTemplateColumns='1fr'; grid.style.padding='10px 12px'; grid.style.gap='8px'; }
+
+  } else {
+    // ── MODE DESKTOP : sidebar verticale, barre mobile cachée ──
+    var bar = document.getElementById('mobileCatsBar');
+    if (bar) bar.style.display = 'none';
+
+    var sb = document.getElementById('sidebarCats');
+    if (sb) sb.style.display = '';
+
+    var h = '';
+    for (var i=0;i<cats.length;i++) {
+      var c=cats[i], on=(c===selectedCat);
       h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'">'
         +'<div class="cat-icon">'+getCatIcon(c)+'</div>'
         +'<div class="cat-info"><div class="cat-label">'+esc(c==='TOUT'?'Tout':c)+'</div><div class="cat-count">'+(counts[c]||0)+'</div></div>'
         +'</div>';
       if (i===0) h+='<div class="cat-sep"></div>';
     }
-  }
-  document.getElementById('catsList').innerHTML = h;
-  document.querySelectorAll('.cat-item').forEach(function(el) {
-    el.addEventListener('click', function() {
-      selectedCat = this.getAttribute('data-cat');
-      displayCount = 30;
-      buildSidebar();
-      doSearch();
-      switchSection('pieces');
+    document.getElementById('catsList').innerHTML = h;
+    document.querySelectorAll('.cat-item').forEach(function(el) {
+      el.addEventListener('click', function() {
+        selectedCat = this.getAttribute('data-cat');
+        displayCount = 30;
+        buildSidebar();
+        doSearch();
+        switchSection('pieces');
+      });
     });
-  });
-
-  // Appliquer layout mobile après rendu
-  if (mobile) applyMobileLayout();
+  }
 }
 
 // ── RECHERCHE ──
@@ -1463,30 +1491,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ── LAYOUT MOBILE ──
-function isMobile() { return window.innerWidth <= 700; }
-
 function applyMobileLayout() {
-  if (!isMobile()) return;
-  // Sidebar horizontale
-  var sb = document.getElementById('sidebarCats');
-  if (sb) {
-    sb.style.width = '100%';
-    sb.style.height = 'auto';
-    sb.style.flexDirection = 'row';
-    sb.style.overflowX = 'auto';
-    sb.style.overflowY = 'hidden';
-    sb.style.borderRight = 'none';
-    sb.style.borderBottom = '1px solid #1e2235';
-    sb.style.padding = '0';
-    sb.style.flexShrink = '0';
-  }
-  // Titre et séparateur cachés
-  var sbTitle = document.querySelector('.sidebar-title');
-  if (sbTitle) sbTitle.style.display = 'none';
-  document.querySelectorAll('.cat-sep').forEach(function(el){el.style.display='none';});
-  // Section pièces en colonne
-  var sp = document.getElementById('sectionPieces');
-  if (sp) sp.style.flexDirection = 'column';
+  if (window.innerWidth > 700) return;
   // Outillage grille 1 col
   var or2 = document.getElementById('outilRes');
   if (or2) or2.style.gridTemplateColumns = '1fr';
