@@ -183,96 +183,21 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 
 /* ── RESPONSIVE MOBILE ── */
 @media (max-width:700px){
-  /* Topbar compacte */
-  .topbar{padding:0 12px;height:52px;}
-  .tb-logo{margin-right:10px;}
-  .tb-logo-name{font-size:14px;}
+  .topbar{padding:0 10px;height:50px;}
+  .tb-logo-name{font-size:13px;}
   .tb-logo-sub{display:none;}
-  .tb-nav-item{padding:0 10px;font-size:12px;gap:4px;}
-  .tb-user-name{display:none;}
-  .tb-user-role{display:none;}
+  .tb-nav-item{padding:0 8px;font-size:11px;gap:3px;}
+  .tb-user-name,.tb-user-role{display:none;}
   .tb-sound{display:none!important;}
-  .tb-admin-btn{padding:5px 8px;font-size:11px;}
-  .tb-logout{padding:5px 8px;font-size:11px;}
-
-  /* Layout : sidebar disparait, tout en colonne */
-  .app-body{flex-direction:column;}
-  #sectionPieces{flex-direction:column!important;}
-
-  /* Sidebar devient une barre horizontale scrollable en haut */
-  .sidebar{
-    width:100%!important;
-    height:auto!important;
-    flex-direction:row!important;
-    padding:8px 0 0!important;
-    border-right:none!important;
-    border-bottom:1px solid var(--br)!important;
-    overflow-x:auto!important;
-    overflow-y:hidden!important;
-    flex-shrink:0!important;
-  }
-  .sidebar-title{display:none;}
-  .cat-sep{display:none;}
-  .cat-item{
-    flex-direction:column!important;
-    align-items:center!important;
-    gap:4px!important;
-    padding:6px 12px 8px!important;
-    border-left:none!important;
-    border-bottom:3px solid transparent!important;
-    white-space:nowrap!important;
-    flex-shrink:0!important;
-  }
-  .cat-item.on{
-    border-left:none!important;
-    border-bottom-color:var(--ac)!important;
-    background:transparent!important;
-  }
-  .cat-icon{width:28px;height:28px;font-size:12px;}
-  .cat-label{font-size:11px;}
-  .cat-count{font-size:9px;}
-
-  /* Barre de recherche */
-  .searchbar{padding:10px 12px 8px;}
-  .search-input{font-size:15px;padding:11px 40px 11px 14px;}
-
-  /* Grille : 1 colonne sur mobile */
-  .pieces-grid{
-    grid-template-columns:1fr!important;
-    padding:10px 12px!important;
-    gap:8px!important;
-  }
-
-  /* Cards plus compactes */
-  .card-body{padding:10px 12px 10px;}
-  .card-name{font-size:13px;}
-
-  /* Panier / Historique */
-  .panier-panel{padding:12px;}
-  .histo-btns{gap:4px;}
-  .histo-btn{padding:5px 8px;font-size:10px;}
-
-  /* Bouton Ajouter article — fixé en bas */
-  #sidebarFooter{
-    position:fixed!important;
-    bottom:16px!important;
-    right:16px!important;
-    left:auto!important;
-    border-top:none!important;
-    padding:0!important;
-    margin-top:0!important;
-    z-index:400!important;
-  }
-
-  /* Modales full screen sur mobile */
+  .tb-admin-btn{padding:4px 7px;font-size:11px;}
+  .tb-logout{padding:4px 7px;font-size:11px;}
+  .searchbar{padding:8px 10px 6px;}
+  .search-input{font-size:14px;padding:10px 36px 10px 12px;}
+  .panier-panel{padding:10px;}
+  .histo-btns{gap:3px;}
+  .histo-btn{padding:4px 7px;font-size:10px;}
   .modal-overlay{align-items:flex-end;}
-  .modal-box{max-height:85vh;border-radius:16px 16px 0 0;}
-
-  /* Section outillage grille 1 col */
-  #outilRes{grid-template-columns:1fr!important;}
-
-  /* Section panier full width */
-  #sectionPanier{width:100%;}
+  .modal-box{max-height:88vh;border-radius:16px 16px 0 0;}
 }
 </style>
 </head>
