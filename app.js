@@ -274,6 +274,10 @@ function buildSidebar() {
     var sp = document.getElementById('sectionPieces');
     if (sp) sp.style.flexDirection = 'column';
 
+    // Cacher le bouton Ajouter de la sidebar (il sera accessible via Admin sur mobile)
+    var sf = document.getElementById('sidebarFooter');
+    if (sf) sf.style.display = 'none';
+
     var bar = document.getElementById('mobileCatsBar');
     if (!bar) return;
     bar.style.display = 'flex';
@@ -311,6 +315,9 @@ function buildSidebar() {
 
     var sp = document.getElementById('sectionPieces');
     if (sp) sp.style.flexDirection = 'row';
+
+    var sf = document.getElementById('sidebarFooter');
+    if (sf) sf.style.display = '';
 
     var h = '';
     for (var i=0;i<cats.length;i++) {
