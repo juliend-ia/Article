@@ -327,13 +327,12 @@ function renderGrid(q) {
   var h = '';
   for (var i=0;i<n;i++) {
     var a = filtered[i];
-    // Thumbnail
-    var thumb = '';
+    // Photo (optionnelle, affichée en haut seulement si présente)
+    var photoHtml = '';
     if (a.photo) {
       var firstPhoto = a.photo.split(',')[0].trim();
-      if (firstPhoto) thumb = '<img class="card-thumb-photo" src="'+esc(firstPhoto)+'" alt="" loading="lazy"/>';
+      if (firstPhoto) photoHtml = '<img class="card-thumb-photo" src="'+esc(firstPhoto)+'" alt="" loading="lazy" style="width:100%;height:100px;object-fit:cover;border-radius:8px 8px 0 0;display:block;cursor:pointer;"/>';
     }
-    if (!thumb) thumb = '<div class="card-thumb-icon">'+getCatIcon(a.categorie)+'</div>';
     // Tags
     var tags = '';
     if (a.bus_std) tags += '<span class="tag tag-std">STD</span>';
@@ -341,21 +340,24 @@ function renderGrid(q) {
     if (a.chimique) tags += '<span class="tag tag-chim">CHIM.</span>';
     if (a.reparable) tags += '<span class="tag tag-rep">🔧 RÉP.</span>';
     if (a.interne) tags += '<span class="tag tag-int">INTERNE</span>';
-    // Edit btns
+    // Boutons modifier/supprimer
     var editBtns = window._canEdit
       ? '<div class="card-edit-btns"><div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️ Modifier</div><div class="btn-del-card" data-num="'+esc(a.num)+'">🗑 Supprimer</div></div>'
       : '';
-    // NPF / Fournisseur (canEdit seulement)
+    // Infos admin
     var extra = '';
     if (window._canEdit) {
-      if (a.npf) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">NPF: <span style="color:var(--mu2);">'+esc(a.npf)+'</span></div>';
-      if (a.fournisseur) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:4px;">'+esc(a.fournisseur)+'</div>';
-      if (a.min||a.max) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:4px;">Min/Max: <span style="color:var(--mu2);">'+(a.min||0)+'/'+(a.max||0)+'</span></div>';
+      if (a.npf) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:2px;">NPF: <span style="color:var(--mu2);">'+esc(a.npf)+'</span></div>';
+      if (a.fournisseur) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">'+esc(a.fournisseur)+'</div>';
+      if (a.min||a.max) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">Min/Max: <span style="color:var(--mu2);">'+(a.min||0)+'/'+(a.max||0)+'</span></div>';
     }
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
-      +'<div class="card-thumb">'+thumb+'<div class="card-thumb-cat">'+esc(a.categorie||'')+'</div></div>'
+      + photoHtml
       +'<div class="card-body">'
-        +'<div class="card-num">'+hl(a.num,q)+'</div>'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
+          +'<div class="card-num">'+hl(a.num,q)+'</div>'
+          +(a.categorie?'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;padding-top:2px;text-align:right;line-height:1.2;">'+esc(a.categorie)+'</div>':'')
+        +'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
         +(tags?'<div class="card-tags">'+tags+'</div>':'')
@@ -1269,36 +1271,56 @@ function doOutilSearch() {
   var res=document.getElementById('outilRes'); if (!res) return;
   if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;"><div style="font-size:36px;margin-bottom:10px;">🔧</div>Aucun outil trouvé</div>'; return; }
 
+  // Grille 3 colonnes comme les pièces
+  res.style.display='grid';
+  res.style.gridTemplateColumns='repeat(3,1fr)';
+  res.style.gap='10px';
+  res.style.alignContent='start';
+
   res.innerHTML=fil.map(function(o) {
-    var isPret=!!o.agent_pret, borderColor=isPret?'#e74c3c':'var(--br)';
+    var isPret=!!o.agent_pret;
     var canRetour=currentUser.role==='admin'||currentUser.role==='magasinier'||currentUser.role==='brigadier';
-    var pretPanel=isPret
-      ?'<div style="background:rgba(231,76,60,0.1);border:1px solid #e74c3c;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:10px;" onclick="event.stopPropagation()">'
-        +'<div><div style="font-size:12px;font-weight:700;color:#e74c3c;">🔴 EN PRÊT — Agent '+esc(o.agent_pret)+'</div>'
-        +(o.date_pret?'<div style="font-size:10px;color:var(--mu);margin-top:2px;">Depuis le '+formatDateBelge(o.date_pret)+'</div>':'')
-        +'</div>'+(canRetour?'<div onclick="retourOutil(\''+o.id+'\')" style="background:#2ecc71;color:#111;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">✓ Retour</div>':'')
+    // Photo
+    var photoHtml='';
+    if (o.photo) photoHtml='<img src="'+esc(o.photo)+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px 8px 0 0;display:block;cursor:pointer;" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])"/>';
+    // Badge statut prêt
+    var pretBadge=isPret
+      ?'<div style="background:rgba(231,76,60,0.12);border:1px solid #e74c3c;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:#e74c3c;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
+          +'<div>🔴 EN PRÊT<br><span style="font-size:9px;color:var(--mu);">Agent '+esc(o.agent_pret)+(o.date_pret?' · '+formatDateBelge(o.date_pret):'')+'</span></div>'
+          +(canRetour?'<div onclick="retourOutil(\''+o.id+'\')" style="background:#2ecc71;color:#111;border-radius:5px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">✓ Retour</div>':'')
         +'</div>'
-      :'<div id="pretPanel-'+o.id+'" style="display:none;background:var(--sf);border:1px solid var(--ac);border-radius:8px;padding:8px 12px;margin-top:8px;">'
-        +'<div style="display:flex;gap:8px;align-items:center;">'
-          +'<input type="text" id="pret-'+o.id+'" placeholder="N° agent..." style="flex:1;background:var(--bg);border:1px solid var(--br2);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);-webkit-appearance:none;outline:none;" inputmode="numeric"/>'
-          +'<div onclick="confirmerPret(\''+o.id+'\')" style="background:#e74c3c;color:#fff;border-radius:6px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;">Confirmer prêt</div>'
-          +'<div onclick="document.getElementById(\'pretPanel-'+o.id+'\').style.display=\'none\'" style="color:var(--mu);cursor:pointer;padding:4px 8px;font-size:16px;">✕</div>'
-        +'</div></div>';
-    var photoHtml=o.photo?'<img src="'+esc(o.photo)+'" style="width:100%;max-height:160px;object-fit:cover;border-radius:8px;margin-top:8px;cursor:pointer;display:none;" class="outil-photo" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])">':'';
+      :'';
+    // Panneau enregistrer prêt
+    var pretPanel=isPret?''
+      :'<div id="pretPanel-'+o.id+'" style="display:none;background:var(--sf);border:1px solid var(--ac);border-radius:6px;padding:7px;margin-bottom:6px;" onclick="event.stopPropagation()">'
+          +'<div style="display:flex;gap:6px;align-items:center;">'
+            +'<input type="text" id="pret-'+o.id+'" placeholder="N° agent..." style="flex:1;background:var(--bg);border:1px solid var(--br2);border-radius:5px;padding:6px 8px;font-size:12px;color:var(--tx);-webkit-appearance:none;outline:none;" inputmode="numeric"/>'
+            +'<div onclick="confirmerPret(\''+o.id+'\')" style="background:#e74c3c;color:#fff;border-radius:5px;padding:6px 9px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">OK</div>'
+            +'<div onclick="document.getElementById(\'pretPanel-'+o.id+'\').style.display=\'none\'" style="color:var(--mu);cursor:pointer;font-size:14px;">✕</div>'
+          +'</div></div>';
+    // Boutons action
     var pretBtnAction=isPret?'':'togglePretPanel(\''+o.id+'\')';
-    return '<div class="outil-card'+(isPret?' pret':'')+'" style="border-left:4px solid '+borderColor+';" onclick="toggleOutilCard(this)">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
-        +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-size:14px;font-weight:700;color:var(--tx);">'+esc(o.nom)+(o.photo?' <span style="font-size:12px;color:var(--mu);">📷</span>':'')+'</div>'
-          +(o.location&&currentUser.role!=='agent'?'<div style="font-size:11px;color:var(--mu);margin-top:3px;font-family:monospace;">📍 '+esc(o.location)+'</div>':'')
-          +(o.tags?'<div style="font-size:10px;color:var(--mu);margin-top:2px;">'+esc(o.tags)+'</div>':'')
+    var pretBtnStyle='background:rgba('+(isPret?'231,76,60':'46,204,113')+',0.1);border:1px solid '+(isPret?'#e74c3c':'#2ecc71')+';';
+    var editBtns=window._canEdit
+      ?'<div class="card-edit-btns" onclick="event.stopPropagation()">'
+          +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?'🔴 Prêt':'🟢 Prêt')+'</div>'
+          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">✏️ Modifier</div>'
+          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">🗑 Suppr.</div>'
         +'</div>'
-        +(window._canEdit?'<div style="display:flex;gap:5px;flex-shrink:0;" onclick="event.stopPropagation()">'
-          +'<div onclick="'+pretBtnAction+'" style="background:rgba('+(isPret?'231,76,60':'46,204,113')+',0.1);border:1px solid '+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">'+(isPret?'🔴':'🟢')+'</div>'
-          +'<div onclick="openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">✏️</div>'
-          +'<div onclick="deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;">🗑</div>'
-          +'</div>':'')
-      +'</div>'+pretPanel+photoHtml+'</div>';
+      :'';
+    return '<div class="piece-card" style="border-left:3px solid '+(isPret?'#e74c3c':'var(--br)')+';cursor:default;">'
+      +photoHtml
+      +'<div class="card-body">'
+        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
+          +'<div class="card-name" style="margin-bottom:0;">'+esc(o.nom)+'</div>'
+        +'</div>'
+        +(o.location&&currentUser.role!=='agent'?'<div class="card-loc">📍 '+esc(o.location)+'</div>':'')
+        +(o.tags?'<div style="font-size:10px;color:var(--mu);margin-bottom:6px;">'+esc(o.tags)+'</div>':'')
+        +pretBadge
+        +pretPanel
+        +editBtns
+      +'</div>'
+    +'</div>';
   }).join('');
   updateBadgePretsOutillage();
 }
