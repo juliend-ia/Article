@@ -582,6 +582,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     bus_art:document.getElementById('addBusArt').checked,
     chimique:document.getElementById('addChimique').checked,
     reparable:document.getElementById('addReparable').checked,
+    entretien:document.getElementById('addEntretien').checked,
     interne:false, stock_securite:0
   };
   try {
@@ -589,6 +590,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf','addFournisseur'].forEach(function(id) { document.getElementById(id).value=''; });
     setBusBtn('addBusStd','addBusStdBtn',false); setBusBtn('addBusArt','addBusArtBtn',false);
     setBusBtn('addChimique','addChimiqueBtn',false); setBusBtn('addReparable','addReparableBtn',false);
+    setBusBtn('addEntretien','addEntretienBtn',false);
     showToast('Article enregistré !','success'); buildSidebar(); switchSection('pieces'); doSearch();
   } catch(e) { showToast('Erreur sauvegarde','err'); console.error(e); }
 });
@@ -621,6 +623,7 @@ function openEdit(num) {
       setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
       setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
       setBusBtn('editReparable','editReparableBtn',a.reparable||false);
+      setBusBtn('editEntretien','editEntretienBtn',a.entretien||false);
       _editPhotos=a.photo?a.photo.split(',').filter(function(u){return u.trim();}):[]; _editPhoto=a.photo||null;
       document.getElementById('editPhotoPreview').style.display='none';
       renderEditPhotos();
@@ -648,6 +651,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     bus_art:document.getElementById('editBusArt').checked,
     chimique:document.getElementById('editChimique').checked,
     reparable:document.getElementById('editReparable').checked,
+    entretien:document.getElementById('editEntretien')?document.getElementById('editEntretien').checked:false,
     interne:false, stock_securite:0
   };
   try {
@@ -723,7 +727,7 @@ function ajouterPanier(num) {
   var a=articles.filter(function(x) { return x.num===num; })[0]; if (!a) return;
   var ex=panier.filter(function(x) { return x.num===num; })[0];
   if (ex) { ex.qty++; showToast('Quantité mise à jour !','success'); }
-  else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false}); showToast('Ajouté au panier !','success'); }
+  else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false,entretien:a.entretien||false}); showToast('Ajouté au panier !','success'); }
   updateBadge();
 }
 
@@ -745,6 +749,7 @@ function renderPanier() {
         +'<div class="panier-item-num">'+esc(p.num)+'</div>'
         +'<div class="panier-item-nom">'+esc(p.nom)+'</div>'
         +(p.location?'<div class="panier-item-loc">📍 '+esc(p.location)+'</div>':'')
+        +(p.entretien?'<div style="margin-top:4px;background:rgba(52,152,219,0.12);border:1px solid #3498db;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:800;color:#3498db;display:inline-block;">⚙ Sortie en ZLMM2</div>':'')
       +'</div>'
       +'<div class="qty-wrap">'
         +'<div class="qty-btn" data-i="'+i+'" data-d="-1">−</div>'
@@ -773,16 +778,10 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   if (!num) { showToast('Saisis un numéro d\'ordre','err'); return; }
   if (!/^\d{8}$/.test(num)) { showToast('Le numéro doit avoir 8 chiffres','err'); return; }
   if (!panier.length) { showToast('Panier vide','err'); return; }
-  var numAgent='';
-  if (currentUser.role==='agent') {
-    numAgent=document.getElementById('numeroAgent').value.trim();
-    if (!numAgent) { showToast('Saisis ton numéro d\'agent','err'); return; }
-  }
   try {
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:numAgent||null}]);
+    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null}]);
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
     panier=[]; document.getElementById('numeroOrdre').value='';
-    if (currentUser.role==='agent') document.getElementById('numeroAgent').value='';
     updateBadge(); renderPanier(); loadHistorique();
     if (currentUser.role==='agent') showConfirmAgent(num,nbArts,totalQty);
     else showToast('Bon sauvegardé !','success');
@@ -873,7 +872,7 @@ async function loadHistorique() {
             +'SAP fait'
           +'</label>'
           +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">📋 Copier</div>'
-          +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'">Excel</div>'
+          +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;">🖨️ Bon</div>'
           +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">✏️ Modifier</div>'
           +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">Supprimer</div>'
         +'</div>'
@@ -922,7 +921,7 @@ async function rouvrirBon(id, sapFait) {
     var data=await supa('GET','bons_commande?id=eq.'+id+'&select=*');
     if (!data||!data.length) { showToast('Bon introuvable','err'); return; }
     var bon=data[0];
-    panier=(bon.articles||[]).map(function(a) { return {num:a.num,nom:a.nom,location:a.location||'',qty:a.qty,reparable:a.reparable||false,interne:a.interne||false}; });
+    panier=(bon.articles||[]).map(function(a) { return {num:a.num,nom:a.nom,location:a.location||'',qty:a.qty,reparable:a.reparable||false,interne:a.interne||false,entretien:a.entretien||false}; });
     document.getElementById('numeroOrdre').value=bon.numero_ordre||'';
     var agentInput=document.getElementById('numeroAgent');
     if (agentInput&&bon.numero_agent) agentInput.value=bon.numero_agent;
@@ -949,12 +948,116 @@ async function exportBon(id) {
   try {
     var data=await supa('GET','bons_commande?id=eq.'+id+'&select=*');
     if (!data||!data.length) return;
-    var bon=data[0], arts=bon.articles||[], csv='\ufeff;article;quantite;;magasin;;ordre;op\n';
-    for (var i=0;i<arts.length;i++) { var a=arts[i]; csv+=';'+a.num+';'+a.qty+';;2K;;'+bon.numero_ordre+';10\n'; }
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'}), url=URL.createObjectURL(blob), link=document.createElement('a');
-    link.href=url; link.download='bon_'+bon.numero_ordre+'.csv'; link.click(); URL.revokeObjectURL(url);
-    showToast('Export OK !','success');
-  } catch(e) { showToast('Erreur export','err'); }
+    var bon=data[0], arts=bon.articles||[];
+
+    // Date heure belge
+    var dtBelge=new Date(new Date(bon.date_creation).getTime()+2*60*60*1000);
+    var dateStr=dtBelge.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
+    var heureStr=dtBelge.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+
+    // Lignes articles
+    var lignes='';
+    var hasEntretien=false;
+    for (var i=0;i<arts.length;i++) {
+      var a=arts[i];
+      if (a.entretien) hasEntretien=true;
+      var special='';
+      if (a.chimique) special='<div style="color:#e74c3c;font-size:11px;margin-top:3px;font-weight:600;">⚠ Produit chimique — manipulation avec précaution</div>';
+      if (a.reparable) special='<div style="color:#9b59b6;font-size:11px;margin-top:3px;font-weight:600;">🔧 Réparable — retour atelier requis</div>';
+      if (a.entretien) special+='<div style="color:#3498db;font-size:11px;margin-top:3px;font-weight:600;">⚙ Sortie en ZLMM2</div>';
+      lignes+='<tr style="border-bottom:1px solid #e8e8e8;">'
+        +'<td style="padding:10px 8px;font-weight:700;font-family:monospace;font-size:13px;color:#111;white-space:nowrap;">'+esc(a.num)+'</td>'
+        +'<td style="padding:10px 8px;"><div style="font-weight:700;font-size:13px;color:#111;">'+esc(a.nom)+'</div>'+special+'</td>'
+        +'<td style="padding:10px 8px;font-size:12px;color:#555;font-family:monospace;">'+esc(a.location||'—')+'</td>'
+        +'<td style="padding:10px 8px;text-align:center;font-weight:800;font-size:15px;color:#111;">'+a.qty+'</td>'
+        +'</tr>';
+    }
+
+    var totalQty=arts.reduce(function(s,x){return s+x.qty;},0);
+    var sapStatut=bon.sap_effectue?'<span style="color:#2ecc71;font-weight:700;">✓ Effectué</span>':'<span style="color:#e74c3c;font-weight:700;">En attente</span>';
+
+    var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Bon '+esc(bon.numero_ordre)+'</title>'
+      +'<style>'
+      +'*{box-sizing:border-box;margin:0;padding:0;}'
+      +'body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#fff;color:#111;padding:32px;}'
+      +'@media print{'
+        +'body{padding:16px;}'
+        +'.no-print{display:none!important;}'
+        +'@page{margin:1cm;size:A4;}'
+      +'}'
+      +'</style></head><body>'
+
+      // Bouton imprimer
+      +'<div class="no-print" style="margin-bottom:24px;text-align:right;">'
+        +'<button onclick="window.print()" style="background:#f0a500;color:#111;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;">🖨️ Imprimer</button>'
+        +'<button onclick="window.close()" style="margin-left:10px;background:#eee;color:#555;border:none;border-radius:8px;padding:12px 20px;font-size:15px;cursor:pointer;">✕ Fermer</button>'
+      +'</div>'
+
+      // En-tête
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">'
+        +'<div>'
+          +'<div style="font-size:26px;font-weight:900;color:#f0a500;letter-spacing:1px;">MAGASIN 2K</div>'
+          +'<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:2px;margin-top:2px;">Dépôt Bus Citaro</div>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="font-size:20px;font-weight:900;color:#111;text-transform:uppercase;">Bon de commande</div>'
+          +'<div style="font-size:14px;color:#555;margin-top:4px;">Ordre <strong style="color:#f0a500;font-size:18px;">'+esc(bon.numero_ordre)+'</strong></div>'
+        +'</div>'
+      +'</div>'
+      +'<div style="height:3px;background:#f0a500;border-radius:2px;margin-bottom:20px;"></div>'
+
+      // Métadonnées
+      +'<div style="display:flex;gap:12px;margin-bottom:20px;">'
+        +'<div style="flex:1;background:#f7f7f7;border-left:3px solid #f0a500;border-radius:4px;padding:10px 14px;">'
+          +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Date</div>'
+          +'<div style="font-size:15px;font-weight:700;">'+dateStr+'</div>'
+          +'<div style="font-size:11px;color:#888;">'+heureStr+' — heure belge</div>'
+        +'</div>'
+        +'<div style="flex:1;background:#f7f7f7;border-left:3px solid #f0a500;border-radius:4px;padding:10px 14px;">'
+          +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Agent</div>'
+          +'<div style="font-size:15px;font-weight:700;">'+esc(bon.login||'—')+'</div>'
+          +(bon.numero_agent?'<div style="font-size:11px;color:#888;">N° '+esc(bon.numero_agent)+'</div>':'')
+        +'</div>'
+        +'<div style="flex:1;background:#f7f7f7;border-left:3px solid #f0a500;border-radius:4px;padding:10px 14px;">'
+          +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">SAP</div>'
+          +'<div style="font-size:14px;font-weight:700;">'+sapStatut+'</div>'
+        +'</div>'
+      +'</div>'
+
+      // Alerte ZLMM2 si entretien
+      +(hasEntretien?'<div style="background:#eaf4fd;border:1px solid #3498db;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#2471a3;font-weight:600;">⚙ Certains articles doivent être sortis en <strong>ZLMM2</strong> — voir détail ci-dessous.</div>':'')
+
+      // Tableau
+      +'<table style="width:100%;border-collapse:collapse;margin-bottom:24px;">'
+        +'<thead>'
+          +'<tr style="background:#111;color:#f0a500;">'
+            +'<th style="padding:10px 8px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-radius:4px 0 0 0;">N° SAP</th>'
+            +'<th style="padding:10px 8px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Désignation</th>'
+            +'<th style="padding:10px 8px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:1px;">Emplacement</th>'
+            +'<th style="padding:10px 8px;text-align:center;font-size:11px;text-transform:uppercase;letter-spacing:1px;border-radius:0 4px 0 0;">Qté</th>'
+          +'</tr>'
+        +'</thead>'
+        +'<tbody>'+lignes+'</tbody>'
+      +'</table>'
+
+      // Pied
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-end;">'
+        +'<div style="font-size:12px;color:#888;">'
+          +'Total articles : <strong style="color:#111;">'+arts.length+'</strong>'
+          +' &nbsp;·&nbsp; Total pièces : <strong style="color:#111;">'+totalQty+'</strong>'
+        +'</div>'
+        +'<div style="text-align:right;">'
+          +'<div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:1px;margin-bottom:28px;">Signature magasinier</div>'
+          +'<div style="width:180px;border-top:1.5px solid #bbb;"></div>'
+        +'</div>'
+      +'</div>'
+
+      +'</body></html>';
+
+    var w=window.open('','_blank','width=900,height=700');
+    w.document.write(html);
+    w.document.close();
+  } catch(e) { showToast('Erreur','err'); console.error(e); }
 }
 
 // ── PHOTO LIGHTBOX ──
