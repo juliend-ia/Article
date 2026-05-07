@@ -331,7 +331,12 @@ function renderGrid(q) {
     var photoHtml = '';
     if (a.photo) {
       var firstPhoto = a.photo.split(',')[0].trim();
-      if (firstPhoto) photoHtml = '<img class="card-thumb-photo" src="'+esc(firstPhoto)+'" alt="" loading="lazy" style="width:100%;height:100px;object-fit:cover;border-radius:8px 8px 0 0;display:block;cursor:pointer;"/>';
+      if (firstPhoto) {
+        var allPhotos = a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean);
+        photoHtml = '<div style="width:100%;height:80px;overflow:hidden;border-radius:10px 10px 0 0;flex-shrink:0;">'
+          +'<img src="'+esc(firstPhoto)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onclick="event.stopPropagation();openPhoto(\''+esc(firstPhoto)+'\','+JSON.stringify(allPhotos)+')" />'
+          +'</div>';
+      }
     }
     // Tags
     var tags = '';
@@ -1282,7 +1287,7 @@ function doOutilSearch() {
     var canRetour=currentUser.role==='admin'||currentUser.role==='magasinier'||currentUser.role==='brigadier';
     // Photo
     var photoHtml='';
-    if (o.photo) photoHtml='<img src="'+esc(o.photo)+'" style="width:100%;height:100px;object-fit:cover;border-radius:8px 8px 0 0;display:block;cursor:pointer;" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])"/>';
+    if (o.photo) photoHtml='<div style="width:100%;height:80px;overflow:hidden;border-radius:10px 10px 0 0;flex-shrink:0;"><img src="'+esc(o.photo)+'" style="width:100%;height:100%;object-fit:cover;display:block;cursor:pointer;" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])"/></div>';
     // Badge statut prêt
     var pretBadge=isPret
       ?'<div style="background:rgba(231,76,60,0.12);border:1px solid #e74c3c;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:#e74c3c;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
