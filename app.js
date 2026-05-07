@@ -350,7 +350,7 @@ function doSearch() {
   for (var i=0;i<articles.length;i++) {
     var a=articles[i];
     if (selectedCat!=='TOUT' && a.categorie!==selectedCat) continue;
-    if (q && (normalize(a.nom)+'|'+normalize(a.num)+'|'+normalize(a.tags)+'|'+normalize(a.location)).indexOf(q)<0) continue;
+    if (q && (normalize(a.nom)+'|'+normalize(a.num)+'|'+normalize(a.tags)+'|'+normalize(a.location)+'|'+normalize(a.npf)).indexOf(q)<0) continue;
     filtered.push(a);
   }
   if (Object.keys(_sortiesCount).length>0) {
