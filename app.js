@@ -408,12 +408,12 @@ function renderGrid(q) {
     var editBtns = window._canEdit
       ? '<div class="card-edit-btns"><div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️ Modifier</div><div class="btn-del-card" data-num="'+esc(a.num)+'">🗑 Supprimer</div></div>'
       : '';
-    // Infos admin
+    // Infos admin — toujours affichées pour éviter le décalage entre cards
     var extra = '';
     if (window._canEdit) {
-      if (a.npf) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:2px;">NPF: <span style="color:var(--mu2);">'+esc(a.npf)+'</span></div>';
-      if (a.fournisseur) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">'+esc(a.fournisseur)+'</div>';
-      if (a.min||a.max) extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">Min/Max: <span style="color:var(--mu2);">'+(a.min||0)+'/'+(a.max||0)+'</span></div>';
+      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:2px;">NPF: <span style="color:var(--mu2);">'+(a.npf ? esc(a.npf) : '—')+'</span></div>';
+      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">'+(a.fournisseur ? esc(a.fournisseur) : '—')+'</div>';
+      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">Min/Max: <span style="color:var(--mu2);">'+(a.min||0)+'/'+(a.max||0)+'</span></div>';
     }
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
@@ -1336,6 +1336,8 @@ async function loadOutillage() {
 function doOutilSearch() {
   var q=normalize(document.getElementById('outilSearch').value.trim());
   var fil=outillage.filter(function(o) { if (!q) return true; return (normalize(o.nom)+'|'+normalize(o.location||'')+'|'+normalize(o.tags||'')).indexOf(q)>=0; });
+  // Réservés en haut
+  fil.sort(function(a,b) { return (b.agent_pret?1:0)-(a.agent_pret?1:0); });
   var count=document.getElementById('outilCount');
   var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
   if (count) count.textContent=fil.length+' outil(s)'+(enPret?' · ⚠️ '+enPret+' en prêt':'');
