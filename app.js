@@ -270,6 +270,10 @@ function buildSidebar() {
     var sb = document.getElementById('sidebarCats');
     if (sb) sb.style.display = 'none';
 
+    // Forcer sectionPieces en colonne pour que main-content prenne 100%
+    var sp = document.getElementById('sectionPieces');
+    if (sp) sp.style.flexDirection = 'column';
+
     var bar = document.getElementById('mobileCatsBar');
     if (!bar) return;
     bar.style.display = 'flex';
@@ -304,6 +308,9 @@ function buildSidebar() {
 
     var sb = document.getElementById('sidebarCats');
     if (sb) sb.style.display = '';
+
+    var sp = document.getElementById('sectionPieces');
+    if (sp) sp.style.flexDirection = 'row';
 
     var h = '';
     for (var i=0;i<cats.length;i++) {
