@@ -855,17 +855,24 @@ async function loadHistorique() {
           +'</div>';
       }
 
+      // Badges entretien / réparable détectés dans le bon
+      var hasEntretien = arts.some(function(a){return a.entretien;});
+      var hasReparable = arts.some(function(a){return a.reparable;});
+      var alertBadges = '';
+      if (hasEntretien) alertBadges += '<div style="background:rgba(52,152,219,0.12);border:1.5px solid #3498db;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#3498db;display:flex;align-items:center;gap:8px;margin-bottom:6px;">⚙ Certains articles doivent être sortis en <strong>ZLMM2</strong></div>';
+      if (hasReparable) alertBadges += '<div style="background:rgba(155,89,182,0.12);border:1.5px solid #9b59b6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#9b59b6;display:flex;align-items:center;gap:8px;margin-bottom:6px;">🔧 Certains articles sont réparables — sortie en réparable</div>';
+
       h+='<div class="histo-item" style="'+(sapDone?'opacity:0.55;':'')+'">'
         +'<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
           +'<div>'
             +'<div class="histo-num">Ordre '+esc(b.numero_ordre)+'</div>'
             +'<div class="histo-date">'+dateStr+'</div>'
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+'</div>':'')
-            +(b.numero_agent?'<div style="font-size:11px;color:var(--gn);margin-top:2px;">🪪 Agent: '+esc(b.numero_agent)+'</div>':'')
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
           +'</div>'
           +'<div style="color:var(--mu);font-size:16px;padding-top:2px;">▼</div>'
         +'</div>'
+        +alertBadges
         +'<div class="histo-btns">'
           +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(sapDone?'var(--gn)':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
             +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
