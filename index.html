@@ -303,6 +303,8 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
                 <div class="bus-btn" id="addChimiqueBtn" style="background:rgba(231,76,60,0.08);border-color:#e74c3c;" onclick="toggleBusBtn('addChimique','addChimiqueBtn','#e74c3c')"><span class="bus-btn-check" id="addChimiqueCheck" style="color:#e74c3c;">✓</span><span style="color:#e74c3c;font-size:12px;font-weight:800;">Chim.</span></div>
                 <input type="checkbox" id="addReparable" style="display:none"/>
                 <div class="bus-btn" id="addReparableBtn" style="background:rgba(155,89,182,0.08);border-color:#9b59b6;" onclick="toggleBusBtn('addReparable','addReparableBtn','#9b59b6')"><span class="bus-btn-check" id="addReparableCheck" style="color:#9b59b6;">✓</span><span style="color:#9b59b6;font-size:12px;font-weight:800;">Rép.</span></div>
+                <input type="checkbox" id="addEntretien" style="display:none"/>
+                <div class="bus-btn" id="addEntretienBtn" style="background:rgba(52,152,219,0.08);border-color:#3498db;" onclick="toggleBusBtn('addEntretien','addEntretienBtn','#3498db')"><span class="bus-btn-check" id="addEntretienCheck" style="color:#3498db;">✓</span><span style="color:#3498db;font-size:12px;font-weight:800;">Entr.</span></div>
               </div>
             </div>
             <button class="bsave" id="addBtn">ENREGISTRER</button>
@@ -336,7 +338,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     <div id="sectionPanier" style="display:none;flex:1;overflow:hidden;">
       <div class="panier-panel">
         <div class="ordre-block"><label>Numéro d'ordre (8 chiffres)</label><input type="text" id="numeroOrdre" placeholder="ex: 20240503" inputmode="numeric"/></div>
-        <div class="ordre-block hidden" id="agentField"><label>Votre numéro d'agent</label><input type="text" id="numeroAgent" placeholder="ex: 71694" inputmode="numeric"/></div>
+        <div class="ordre-block hidden" id="agentField" style="display:none!important;"></div>
         <div class="panier-actions"><button class="btn-valider" id="validerBtn">Valider et sauvegarder</button><button class="btn-vider" id="viderBtn">Vider</button></div>
         <div id="panierList"></div>
         <div id="histoSection">
@@ -397,6 +399,8 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
         <div class="bus-btn" id="editChimiqueBtn" style="background:rgba(231,76,60,0.08);border-color:#e74c3c;" onclick="toggleBusBtn('editChimique','editChimiqueBtn','#e74c3c')"><span class="bus-btn-check" id="editChimiqueCheck" style="color:#e74c3c;">✓</span><span style="color:#e74c3c;font-size:12px;font-weight:800;">Chim.</span></div>
         <input type="checkbox" id="editReparable" style="display:none"/>
         <div class="bus-btn" id="editReparableBtn" style="background:rgba(155,89,182,0.08);border-color:#9b59b6;" onclick="toggleBusBtn('editReparable','editReparableBtn','#9b59b6')"><span class="bus-btn-check" id="editReparableCheck" style="color:#9b59b6;">✓</span><span style="color:#9b59b6;font-size:12px;font-weight:800;">Rép.</span></div>
+        <input type="checkbox" id="editEntretien" style="display:none"/>
+        <div class="bus-btn" id="editEntretienBtn" style="background:rgba(52,152,219,0.08);border-color:#3498db;" onclick="toggleBusBtn('editEntretien','editEntretienBtn','#3498db')"><span class="bus-btn-check" id="editEntretienCheck" style="color:#3498db;">✓</span><span style="color:#3498db;font-size:12px;font-weight:800;">Entr.</span></div>
       </div>
     </div>
     <div class="field">
