@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Magasin 2K</title>
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png">
+<meta name="theme-color" content="#f0a500">
+<meta name="description" content="Magasin 2K — Dépôt Bus Citaro">
 <style>
 :root{--bg:#0d0f18;--sf:#151826;--cd:#1a1d2e;--br:#1e2235;--br2:#2a2d42;--ac:#f0a500;--tx:#e8eaf0;--mu:#4a5068;--mu2:#6a6d82;--gn:#2ecc71;--rd:#e74c3c;--pu:#9b59b6;--bl:#6495ed;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -343,7 +348,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
       <div class="panier-panel">
         <div class="ordre-block"><label>Numéro d'ordre (8 chiffres)</label><input type="text" id="numeroOrdre" placeholder="ex: 20240503" inputmode="numeric"/></div>
         <div class="ordre-block hidden" id="agentField" style="display:none!important;"></div>
-        <div class="ordre-block">
+        <div class="ordre-block" id="messageField">
           <label>Message pour le magasinier <span style="color:var(--mu);font-weight:400;">(optionnel)</span></label>
           <textarea id="panierMessage" placeholder="Message..." rows="2"
             style="width:100%;background:var(--sf);border:1.5px solid var(--br2);border-radius:8px;padding:11px 13px;font-size:14px;color:var(--tx);-webkit-appearance:none;outline:none;resize:none;font-family:inherit;"></textarea>
