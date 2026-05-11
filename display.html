@@ -311,7 +311,6 @@ body::before {
 
   <!-- GRILLE 3 COLONNES -->
   <div class="body">
-    </div>
 
     <!-- EN PRÉPARATION -->
     <div class="col col-prep">
@@ -380,10 +379,13 @@ function formatTime(ts) {
 }
 
 function timeSince(ts) {
+  // Supabase stocke en UTC — Date() le convertit automatiquement en local
   var diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
   if (diff < 1) return 'À l\'instant';
   if (diff === 1) return 'Il y a 1 min';
-  return 'Il y a '+diff+' min';
+  if (diff < 60) return 'Il y a '+diff+' min';
+  var h = Math.floor(diff/60);
+  return 'Il y a '+h+'h'+(diff%60 > 0 ? (diff%60)+'min' : '');
 }
 
 function renderCard(b, isNewPret) {
