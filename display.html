@@ -405,19 +405,23 @@ function renderEmpty(msg) {
 }
 
 function render(bons) {
-  var today = new Date().toISOString().slice(0,10);
+  // Date locale (pas UTC) pour éviter le décalage de fuseau
+  var now = new Date();
+  var today = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
 
   // Filtrer seulement aujourd'hui + non SAP + statut valide
   var filtered = bons.filter(function(b) {
     if (b.statut === 'annule') return false;
     if (b.sap_effectue) return false;
-    var dateBon = new Date(b.date_creation).toISOString().slice(0,10);
+    // Date locale du bon
+    var d = new Date(b.date_creation);
+    var dateBon = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     return dateBon === today;
   });
 
-  var attente = filtered.filter(function(b){ return (b.preparation_statut||'en_attente')==='en_attente'; });
-  var enPrep  = filtered.filter(function(b){ return b.preparation_statut==='en_prep'; });
-  var prets   = filtered.filter(function(b){ return b.preparation_statut==='pret'; });
+  // Tout ce qui n'est pas "pret" va dans En préparation
+  var enPrep = filtered.filter(function(b){ return b.preparation_statut !== 'pret'; });
+  var prets  = filtered.filter(function(b){ return b.preparation_statut === 'pret'; });
 
   // Détection nouvelles commandes prêtes → son
   var newPretIds = prets.map(function(b){return b.id;});
@@ -443,7 +447,7 @@ async function load() {
     _bons = data||[];
     render(_bons);
     document.getElementById('loading').style.display='none';
-    document.getElementById('appRoot').style.display='flex';
+    document.getElementById('appRoot').style.cssText='display:flex;flex-direction:column;height:100vh;';
   } catch(e) {
     console.error(e);
     setTimeout(load, 3000);
