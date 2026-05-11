@@ -187,6 +187,9 @@ function initUI() {
   var agentField = document.getElementById('agentField');
   if (agentField) agentField.classList.toggle('hidden', role!=='agent');
 
+  var messageField = document.getElementById('messageField');
+  if (messageField) messageField.style.display = (role==='agent' || role==='brigadier') ? '' : 'none';
+
   // Historique caché pour agent
   var histoSection = document.getElementById('histoSection');
   if (histoSection) histoSection.style.display = 'block'; // Tous voient leur historique
@@ -811,7 +814,7 @@ async function loadHistorique() {
   try {
     // Agents : seulement leurs propres bons
     var url = 'bons_commande?select=*&order=date_creation.desc&limit=200';
-    if (currentUser.role === 'agent') {
+    if (currentUser.role === 'agent' || currentUser.role === 'brigadier') {
       url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&select=*&order=date_creation.desc&limit=200';
     }
     var data=await supa('GET', url);
@@ -915,7 +918,7 @@ async function loadHistorique() {
         +'</div>'
         +statutBtns
         +alertBadges
-        +(currentUser.role==='agent' ? '' :
+        +(currentUser.role==='agent' || currentUser.role==='brigadier' ? '' :
           '<div class="histo-btns">'
             +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(sapDone?'var(--gn)':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
               +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
