@@ -1,5 +1,5 @@
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
-var SKEY = 'sb_publishable_OJ5OohS5l1xhDlkjbNLbqA_bqBwlV-4';
+var SKEY = 'sb_publishable_wQA67lDiVnp4AxNTqSJbNQ_L55rwOY5';
 var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0','35a85085a9ccd1440acb20cca15b78b0353f4f354bfcf8dd5d2f3d36734ca7be'];
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'',prenom:'',role:'user',token:''};
@@ -1902,6 +1902,13 @@ function applyMobileLayout() {
 }
 
 window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
+
+// ── SERVICE WORKER (PWA) ──
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/Article/sw.js').catch(function() {});
+  });
+}
 
 initRealtime();
 checkAuth();
