@@ -850,29 +850,30 @@ async function loadHistorique() {
       var dtBrussels=new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
       var dateStr=dtBrussels.toLocaleDateString('fr-FR')+' '+dtBrussels.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone=b.sap_effectue||false;
-      var prepStatut = b.preparation_statut || 'en_attente';
+      var prepStatut = b.preparation_statut || 'en_prep';
       var statutCfg = {
-        'en_attente': {label:'⏳ En attente',     bg:'rgba(240,165,0,0.1)',   border:'#f0a500', color:'#f0a500'},
+        'en_attente': {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
         'en_prep':    {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
         'pret':       {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
       };
-      var sc = statutCfg[prepStatut] || statutCfg['en_attente'];
+      var sc = statutCfg[prepStatut] || statutCfg['en_prep'];
 
       // Boutons statut — uniquement pour magasinier/admin
       var canChangeStatut = currentUser.role==='admin' || currentUser.role==='magasinier';
       var statutBtns = '';
       if (canChangeStatut) {
-        var statuts = ['en_attente','en_prep','pret'];
-        var labels  = ['⏳','🔧','✅'];
-        var titles  = ['En attente','En préparation','Prête'];
+        var statuts = ['en_prep','pret'];
+        var labels  = ['🔧','✅'];
+        var titles  = ['En préparation','Prête'];
         statutBtns = '<div style="display:flex;gap:4px;margin-bottom:8px;">';
         for (var si=0;si<statuts.length;si++) {
-          var isActive = prepStatut === statuts[si];
+          var isActive = prepStatut === statuts[si] || (si===0 && prepStatut==='en_attente');
+          var activeSc = statutCfg[statuts[si]];
           statutBtns += '<div class="btn-statut" data-id="'+b.id+'" data-statut="'+statuts[si]+'" '
             +'style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;'
-            +'border:1.5px solid '+(isActive?sc.border:'var(--br)')+';'
-            +'background:'+(isActive?sc.bg:'var(--sf)')+';'
-            +'color:'+(isActive?sc.color:'var(--mu)')+';">'
+            +'border:1.5px solid '+(isActive?activeSc.border:'var(--br)')+';'
+            +'background:'+(isActive?activeSc.bg:'var(--sf)')+';'
+            +'color:'+(isActive?activeSc.color:'var(--mu)')+';">'
             +labels[si]+' '+titles[si]
             +'</div>';
         }
@@ -941,7 +942,7 @@ async function loadHistorique() {
         var item = this.closest('.histo-item');
         var allBtns = item.querySelectorAll('.btn-statut');
         var cfgMap = {
-          'en_attente':{label:'⏳ En attente',     bg:'rgba(240,165,0,0.1)',   border:'#f0a500',color:'#f0a500'},
+          'en_attente':{label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
           'en_prep':   {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
           'pret':      {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
         };
@@ -960,7 +961,7 @@ async function loadHistorique() {
           await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
           if (statut==='pret') showToast('✅ Commande marquée prête !','success');
           else if (statut==='en_prep') showToast('🔧 En préparation','success');
-          else showToast('⏳ En attente','success');
+          else showToast('🔧 En préparation','success');
           updateBadgeAttente();
         } catch(e2) { showToast('Erreur','err'); }
       });
