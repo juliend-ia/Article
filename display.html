@@ -106,7 +106,7 @@ body::before {
 .body {
   flex:1;
   display:grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap:0;
   overflow:hidden;
 }
@@ -137,11 +137,6 @@ body::before {
   font-size:20px;font-weight:700;
 }
 
-/* Attente */
-.col-attente .col-header { background:var(--ac-dim); }
-.col-attente .col-dot    { background:var(--ac);box-shadow:0 0 8px var(--ac); }
-.col-attente .col-label  { color:var(--ac); }
-.col-attente .col-count  { color:var(--ac); }
 
 /* En préparation */
 .col-prep .col-header { background:var(--bl-dim); }
@@ -256,31 +251,7 @@ body::before {
 }
 .col-empty-icon { font-size:32px;opacity:0.2; }
 
-/* ── TICKER BAS ── */
-.ticker {
-  height:40px;
-  background:var(--ac);
-  display:flex;align-items:center;
-  overflow:hidden;
-  flex-shrink:0;
-  position:relative;
-}
-.ticker-track {
-  display:flex;gap:60px;
-  white-space:nowrap;
-  animation:ticker 30s linear infinite;
-}
-@keyframes ticker {
-  from{transform:translateX(0);}
   to{transform:translateX(-50%);}
-}
-.ticker-item {
-  font-family:'DM Mono',monospace;
-  font-size:13px;
-  font-weight:700;
-  color:#111;
-  letter-spacing:2px;
-  text-transform:uppercase;
 }
 
 /* ── LOADING ── */
@@ -336,15 +307,6 @@ body::before {
 
   <!-- GRILLE 3 COLONNES -->
   <div class="body">
-
-    <!-- EN ATTENTE -->
-    <div class="col col-attente">
-      <div class="col-header">
-        <div class="col-dot"></div>
-        <div class="col-label">En attente</div>
-        <div class="col-count" id="count-attente">0</div>
-      </div>
-      <div class="col-list" id="list-attente"></div>
     </div>
 
     <!-- EN PRÉPARATION -->
@@ -367,20 +329,6 @@ body::before {
       <div class="col-list" id="list-pret"></div>
     </div>
 
-  </div>
-
-  <!-- TICKER -->
-  <div class="ticker">
-    <div class="ticker-track" id="tickerTrack">
-      <span class="ticker-item">🚌 Magasin 2K — Dépôt Bus Citaro</span>
-      <span class="ticker-item">⚡ Votre commande prête = colonne verte</span>
-      <span class="ticker-item">📋 Présentez-vous au comptoir avec votre N° d'ordre</span>
-      <span class="ticker-item">🔔 Mise à jour automatique en temps réel</span>
-      <span class="ticker-item">🚌 Magasin 2K — Dépôt Bus Citaro</span>
-      <span class="ticker-item">⚡ Votre commande prête = colonne verte</span>
-      <span class="ticker-item">📋 Présentez-vous au comptoir avec votre N° d'ordre</span>
-      <span class="ticker-item">🔔 Mise à jour automatique en temps réel</span>
-    </div>
   </div>
 
 </div>
@@ -423,7 +371,7 @@ function esc(s) {
 }
 
 function formatTime(ts) {
-  var d = new Date(new Date(ts).getTime()+2*60*60*1000);
+  var d = new Date(ts);
   return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
 
@@ -451,13 +399,13 @@ function renderEmpty(msg) {
 }
 
 function render(bons) {
-  var today = new Date(Date.now()+2*60*60*1000).toISOString().slice(0,10);
+  var today = new Date().toISOString().slice(0,10);
 
   // Filtrer seulement aujourd'hui + non SAP + statut valide
   var filtered = bons.filter(function(b) {
     if (b.statut === 'annule') return false;
     if (b.sap_effectue) return false;
-    var dateBon = new Date(new Date(b.date_creation).getTime()+2*60*60*1000).toISOString().slice(0,10);
+    var dateBon = new Date(b.date_creation).toISOString().slice(0,10);
     return dateBon === today;
   });
 
@@ -472,16 +420,13 @@ function render(bons) {
   _prevPrets = newPretIds;
 
   // Compteurs
-  document.getElementById('count-attente').textContent = attente.length;
-  document.getElementById('count-prep').textContent    = enPrep.length;
+  document.getElementById('count-prep').textContent = enPrep.length;
   document.getElementById('count-pret').textContent    = prets.length;
 
   // Rendu colonnes
-  var la = document.getElementById('list-attente');
   var lp = document.getElementById('list-prep');
   var lr = document.getElementById('list-pret');
 
-  la.innerHTML = attente.length ? attente.map(function(b){ return renderCard(b,false); }).join('') : renderEmpty('Aucune commande en attente');
   lp.innerHTML = enPrep.length  ? enPrep.map(function(b){  return renderCard(b,false); }).join('') : renderEmpty('Aucune commande en cours');
   lr.innerHTML = prets.length   ? prets.map(function(b,i){ return renderCard(b, wasNew.indexOf(b.id)>=0); }).join('') : renderEmpty('Aucune commande prête');
 }
@@ -501,7 +446,7 @@ async function load() {
 
 // ── HORLOGE ──
 function updateClock() {
-  var now = new Date(Date.now()+2*60*60*1000);
+  var now = new Date();
   document.getElementById('clock').textContent = now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
   document.getElementById('dateDisp').textContent = now.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long'});
 }
