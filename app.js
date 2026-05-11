@@ -1,5 +1,5 @@
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
-var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5ZmxxdHlzcXB5d2lreGd6eGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNzYxOTQsImV4cCI6MjA5Mjc1MjE5NH0.OUjtRRrKIHqLeWFiw1-CEZS3AAJrMTAeiQ8dNd21IP8';
+var SKEY = 'sb_publishable_F0Gcdx4mHDbvAAcuXwYbhA_QSlPD8aC';
 var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0','35a85085a9ccd1440acb20cca15b78b0353f4f354bfcf8dd5d2f3d36734ca7be'];
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'',prenom:'',role:'user',token:''};
