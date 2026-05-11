@@ -1251,7 +1251,7 @@ async function updateBadgeAttente() {
       var badge=document.getElementById('badgeAttente');
       if (!badge) {
         badge=document.createElement('div'); badge.id='badgeAttente';
-        badge.style.cssText='position:fixed;bottom:24px;right:16px;z-index:800;cursor:pointer;';
+        badge.style.cssText='position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
         badge.onclick=function() { switchSection('panier'); };
         document.body.appendChild(badge);
       }
@@ -1270,7 +1270,7 @@ async function updateBadgeAttente() {
       var badge=document.getElementById('badgeAttente');
       if (!badge) {
         badge=document.createElement('div'); badge.id='badgeAttente';
-        badge.style.cssText='position:fixed;bottom:24px;right:16px;z-index:800;cursor:pointer;';
+        badge.style.cssText='position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
         badge.onclick=function() { switchSection('panier'); };
         document.body.appendChild(badge);
       }
@@ -1807,7 +1807,7 @@ function updateBadgePretsOutillage() {
   var nb=outillage.filter(function(o){return o.agent_pret;}).length;
   var badge=document.getElementById('badgePrets');
   if (!badge) {
-    badge=document.createElement('div'); badge.id='badgePrets'; badge.style.cssText='position:fixed;bottom:76px;right:16px;z-index:800;cursor:pointer;';
+    badge=document.createElement('div'); badge.id='badgePrets'; badge.style.cssText='position:fixed;bottom:150px;right:16px;z-index:800;cursor:pointer;';
     badge.onclick=function(){switchSection('outillage');}; document.body.appendChild(badge);
   }
   if (nb>0) { badge.innerHTML='<div style="background:#e74c3c;color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(231,76,60,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">🔧</span>'+nb+' outil'+(nb>1?'s':'')+' en prêt</div>'; badge.style.display='block'; }
