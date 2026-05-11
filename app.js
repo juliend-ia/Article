@@ -203,6 +203,7 @@ function initUI() {
   document.getElementById('navPieces').addEventListener('click', function() { switchSection('pieces'); });
   document.getElementById('navOutillage').addEventListener('click', function() { switchSection('outillage'); });
   document.getElementById('navPanier').addEventListener('click', function() { switchSection('panier'); });
+  document.getElementById('navChat').addEventListener('click', function() { switchSection('chat'); });
 
   // Onglet Ajouter dans sidebar
   var sidebarFooter = document.getElementById('sidebarFooter');
@@ -508,12 +509,12 @@ var _currentSection = 'pieces';
 function switchSection(section) {
   _currentSection = section;
   // Masquer tout
-  ['sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
+  ['sectionPieces','sectionPanier','sectionOutillage','sectionChat'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display='none';
   });
   // Nav active
-  ['navPieces','navOutillage','navPanier'].forEach(function(id) {
+  ['navPieces','navOutillage','navPanier','navChat'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('on');
   });
@@ -537,6 +538,13 @@ function switchSection(section) {
     document.getElementById('navPanier').classList.add('on');
     renderPanier();
     if (currentUser.role!=='agent') loadHistorique();
+  } else if (section==='chat') {
+    document.getElementById('sectionChat').style.display='flex';
+    document.getElementById('navChat').classList.add('on');
+    loadChat();
+    // Reset badge
+    document.getElementById('chatBadge').classList.add('hidden');
+    _unreadChat = 0;
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
@@ -842,6 +850,34 @@ async function loadHistorique() {
       var dtBrussels=new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
       var dateStr=dtBrussels.toLocaleDateString('fr-FR')+' '+dtBrussels.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone=b.sap_effectue||false;
+      var prepStatut = b.preparation_statut || 'en_attente';
+      var statutCfg = {
+        'en_attente': {label:'⏳ En attente',     bg:'rgba(240,165,0,0.1)',   border:'#f0a500', color:'#f0a500'},
+        'en_prep':    {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
+        'pret':       {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
+      };
+      var sc = statutCfg[prepStatut] || statutCfg['en_attente'];
+
+      // Boutons statut — uniquement pour magasinier/admin
+      var canChangeStatut = currentUser.role==='admin' || currentUser.role==='magasinier';
+      var statutBtns = '';
+      if (canChangeStatut) {
+        var statuts = ['en_attente','en_prep','pret'];
+        var labels  = ['⏳','🔧','✅'];
+        var titles  = ['En attente','En préparation','Prête'];
+        statutBtns = '<div style="display:flex;gap:4px;margin-bottom:8px;">';
+        for (var si=0;si<statuts.length;si++) {
+          var isActive = prepStatut === statuts[si];
+          statutBtns += '<div class="btn-statut" data-id="'+b.id+'" data-statut="'+statuts[si]+'" '
+            +'style="flex:1;text-align:center;padding:7px 4px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;'
+            +'border:1.5px solid '+(isActive?sc.border:'var(--br)')+';'
+            +'background:'+(isActive?sc.bg:'var(--sf)')+';'
+            +'color:'+(isActive?sc.color:'var(--mu)')+';">'
+            +labels[si]+' '+titles[si]
+            +'</div>';
+        }
+        statutBtns += '</div>';
+      }
 
       var detailRows='';
       for (var j=0;j<arts.length;j++) {
@@ -870,8 +906,12 @@ async function loadHistorique() {
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+'</div>':'')
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
           +'</div>'
-          +'<div style="color:var(--mu);font-size:16px;padding-top:2px;">▼</div>'
+          +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
+            +'<div style="color:var(--mu);font-size:16px;">▼</div>'
+            +'<div style="background:'+sc.bg+';border:1.5px solid '+sc.border+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;color:'+sc.color+';">'+sc.label+'</div>'
+          +'</div>'
         +'</div>'
+        +statutBtns
         +alertBadges
         +'<div class="histo-btns">'
           +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(sapDone?'var(--gn)':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
@@ -890,6 +930,17 @@ async function loadHistorique() {
     list.innerHTML=h;
     list.querySelectorAll('.histo-tab').forEach(function(el) { el.addEventListener('click', function() { _histoFiltre=this.getAttribute('data-f'); loadHistorique(); }); });
     list.querySelectorAll('.btn-dl').forEach(function(el) { el.addEventListener('click', function() { exportBon(this.getAttribute('data-id')); }); });
+    list.querySelectorAll('.btn-statut').forEach(function(el) {
+      el.addEventListener('click', async function(e) {
+        e.stopPropagation();
+        var id=this.getAttribute('data-id'), statut=this.getAttribute('data-statut');
+        try {
+          await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
+          showToast(statut==='pret'?'✅ Commande marquée prête !':statut==='en_prep'?'🔧 En préparation':'⏳ En attente','success');
+          loadHistorique(); updateBadgeAttente();
+        } catch(e) { showToast('Erreur','err'); }
+      });
+    });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) {
       el.addEventListener('click', async function() {
         var id=this.getAttribute('data-id'), sapFait=this.getAttribute('data-sap')==='true';
@@ -1168,22 +1219,46 @@ function showNotifCommande(record) {
 function fermerNotif() { var el=document.getElementById('notifCommande'); if (el) el.style.top='-120px'; }
 
 async function updateBadgeAttente() {
-  if (currentUser.role!=='admin'&&currentUser.role!=='magasinier') return;
-  try {
-    var data=await supa('GET','bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
-    var nb=data?data.length:0;
-    var badge=document.getElementById('badgeAttente');
-    if (!badge) {
-      badge=document.createElement('div'); badge.id='badgeAttente';
-      badge.style.cssText='position:fixed;bottom:24px;right:16px;z-index:800;cursor:pointer;';
-      badge.onclick=function() { switchSection('panier'); };
-      document.body.appendChild(badge);
-    }
-    if (nb>0) {
-      badge.innerHTML='<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">📋</span>'+nb+' commande'+(nb>1?'s':'')+' en attente SAP</div>';
-      badge.style.display='block';
-    } else badge.style.display='none';
-  } catch(e) {}
+  // Badge magasinier — commandes en attente SAP
+  if (currentUser.role==='admin' || currentUser.role==='magasinier') {
+    try {
+      var data=await supa('GET','bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
+      var nb=data?data.length:0;
+      var badge=document.getElementById('badgeAttente');
+      if (!badge) {
+        badge=document.createElement('div'); badge.id='badgeAttente';
+        badge.style.cssText='position:fixed;bottom:24px;right:16px;z-index:800;cursor:pointer;';
+        badge.onclick=function() { switchSection('panier'); };
+        document.body.appendChild(badge);
+      }
+      if (nb>0) {
+        badge.innerHTML='<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">📋</span>'+nb+' commande'+(nb>1?'s':'')+' en attente SAP</div>';
+        badge.style.display='block';
+      } else badge.style.display='none';
+    } catch(e) {}
+  }
+
+  // Badge agent — commande prête à retirer
+  if (currentUser.role==='agent') {
+    try {
+      var data=await supa('GET','bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&preparation_statut=eq.pret&sap_effectue=eq.false&select=id,numero_ordre');
+      var nb=data?data.length:0;
+      var badge=document.getElementById('badgeAttente');
+      if (!badge) {
+        badge=document.createElement('div'); badge.id='badgeAttente';
+        badge.style.cssText='position:fixed;bottom:24px;right:16px;z-index:800;cursor:pointer;';
+        badge.onclick=function() { switchSection('panier'); };
+        document.body.appendChild(badge);
+      }
+      if (nb>0) {
+        var ordre = data[0].numero_ordre || '';
+        badge.innerHTML='<div style="background:#2ecc71;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(46,204,113,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">✅</span>Ta commande est prête !</div>';
+        badge.style.display='block';
+        // Notification sonore si nouvelle
+        playDing();
+      } else badge.style.display='none';
+    } catch(e) {}
+  }
 }
 
 // ── ADMIN ──
@@ -1448,7 +1523,21 @@ function doOutilSearch() {
   var q=normalize(document.getElementById('outilSearch').value.trim());
   var fil=outillage.filter(function(o) { if (!q) return true; return (normalize(o.nom)+'|'+normalize(o.location||'')+'|'+normalize(o.tags||'')).indexOf(q)>=0; });
   // Réservés en haut
-  fil.sort(function(a,b) { return (b.agent_pret?1:0)-(a.agent_pret?1:0); });
+  fil.sort(function(a,b) {
+    // 1. En prêt en premier
+    var ap = a.agent_pret ? 1 : 0, bp = b.agent_pret ? 1 : 0;
+    if (bp !== ap) return bp - ap;
+    // 2. Parmi les en-prêt : le plus ancien prêt en premier (attente la plus longue)
+    if (ap && bp) {
+      var da = a.date_pret ? new Date(a.date_pret) : 0;
+      var db = b.date_pret ? new Date(b.date_pret) : 0;
+      return da - db;
+    }
+    // 3. Parmi les disponibles : par nb_prets desc si dispo, sinon alpha
+    var na = a.nb_prets || 0, nb2 = b.nb_prets || 0;
+    if (nb2 !== na) return nb2 - na;
+    return (a.nom||'').localeCompare(b.nom||'');
+  });
   var count=document.getElementById('outilCount');
   var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
   if (count) count.textContent=fil.length+' outil(s)'+(enPret?' · ⚠️ '+enPret+' en prêt':'');
@@ -1625,6 +1714,172 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// ── CHAT INTERNE ──
+var _chatMessages = [];
+var _chatFiltre = 'tous';
+var _unreadChat = 0;
+var _chatLastId = null;
+
+var ROLE_COLORS = {
+  admin:      { bg:'9b59b6', label:'Admin' },
+  magasinier: { bg:'f0a500', label:'Magasinier' },
+  brigadier:  { bg:'3498db', label:'Brigadier' },
+  agent:      { bg:'2ecc71', label:'Agent' },
+};
+
+function getRoleColor(role) { return ROLE_COLORS[role] || { bg:'7a8099', label:role||'?' }; }
+
+function chatAvatarLetter(prenom) { return (prenom||'?').charAt(0).toUpperCase(); }
+
+function formatChatTime(ts) {
+  var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
+  return d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+}
+function formatChatDate(ts) {
+  var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
+  var today = new Date(Date.now() + 2*60*60*1000);
+  if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
+  var yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+  if (d.toDateString() === yesterday.toDateString()) return "Hier";
+  return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'long'});
+}
+
+function highlightMentions(txt) {
+  return esc(txt).replace(/@(magasinier|brigadier|agent|admin|[A-Za-z0-9_]+)/gi, function(m) {
+    return '<span class="chat-mention">'+m+'</span>';
+  });
+}
+
+async function loadChat() {
+  try {
+    var data = await supa('GET','messages?select=*&order=created_at.asc&limit=200');
+    _chatMessages = data || [];
+    _chatLastId = _chatMessages.length ? _chatMessages[_chatMessages.length-1].id : null;
+    renderChat();
+  } catch(e) { console.error('loadChat:', e); }
+}
+
+function renderChat() {
+  var container = document.getElementById('chatMessages');
+  if (!container) return;
+
+  var msgs = _chatMessages.filter(function(m) {
+    if (_chatFiltre === 'tous') return true;
+    return m.role === _chatFiltre;
+  });
+
+  if (!msgs.length) {
+    container.innerHTML = '<div style="text-align:center;color:var(--mu);padding:40px 20px;font-size:13px;">💬 Aucun message — soyez le premier !</div>';
+    return;
+  }
+
+  var h = '', lastDate = '';
+  for (var i=0;i<msgs.length;i++) {
+    var m = msgs[i];
+    var isMine = m.login === currentUser.login;
+    var rc = getRoleColor(m.role);
+    var dateLabel = formatChatDate(m.created_at);
+    if (dateLabel !== lastDate) {
+      h += '<div class="chat-date-sep">'+esc(dateLabel)+'</div>';
+      lastDate = dateLabel;
+    }
+    h += '<div class="chat-msg'+(isMine?' mine':'')+'">'
+      +'<div class="chat-avatar" style="background:#'+rc.bg+';">'+chatAvatarLetter(m.prenom)+'</div>'
+      +'<div style="max-width:100%;">'
+        +'<div class="chat-meta">'
+          +(isMine ? '' : '<strong style="font-size:11px;color:var(--tx);">'+esc(m.prenom)+'</strong>')
+          +'<span class="chat-role-badge" style="background:rgba('+hexToRgb(rc.bg)+',0.15);color:#'+rc.bg+';">'+esc(rc.label)+'</span>'
+          +'<span>'+formatChatTime(m.created_at)+'</span>'
+        +'</div>'
+        +'<div class="chat-bubble"><div class="chat-text">'+highlightMentions(m.texte)+'</div></div>'
+      +'</div>'
+    +'</div>';
+  }
+  container.innerHTML = h;
+  container.scrollTop = container.scrollHeight;
+}
+
+function hexToRgb(hex) {
+  var r=parseInt(hex.slice(0,2),16), g=parseInt(hex.slice(2,4),16), b=parseInt(hex.slice(4,6),16);
+  return r+','+g+','+b;
+}
+
+async function sendChatMessage() {
+  var input = document.getElementById('chatInput');
+  var txt = (input.value||'').trim();
+  if (!txt) return;
+  input.value = '';
+  input.style.height = 'auto';
+  try {
+    await supa('POST','messages',[{
+      login: currentUser.login,
+      prenom: currentUser.prenom,
+      role: currentUser.role,
+      texte: txt
+    }]);
+    await loadChat();
+  } catch(e) { showToast('Erreur envoi message','err'); console.error(e); }
+}
+
+// Filtres chat
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.chat-filter').forEach(function(el) {
+    el.addEventListener('click', function() {
+      document.querySelectorAll('.chat-filter').forEach(function(f) { f.classList.remove('on'); });
+      this.classList.add('on');
+      _chatFiltre = this.getAttribute('data-role');
+      renderChat();
+    });
+  });
+
+  var sendBtn = document.getElementById('chatSendBtn');
+  if (sendBtn) sendBtn.addEventListener('click', sendChatMessage);
+
+  var chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
+    });
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    });
+  }
+});
+
+// Polling nouveaux messages
+function initChatPolling() {
+  setInterval(async function() {
+    try {
+      var data = await supa('GET','messages?select=*&order=created_at.asc&limit=200');
+      if (!data) return;
+      var newMsgs = data.filter(function(m) {
+        return !_chatMessages.find(function(x) { return x.id===m.id; });
+      });
+      if (newMsgs.length) {
+        _chatMessages = data;
+        // Si on est sur le chat, rafraîchir
+        if (_currentSection === 'chat') {
+          renderChat();
+        } else {
+          // Badge non-lus (seulement messages des autres)
+          var unread = newMsgs.filter(function(m) { return m.login !== currentUser.login; });
+          if (unread.length) {
+            _unreadChat += unread.length;
+            var badge = document.getElementById('chatBadge');
+            if (badge) {
+              badge.classList.remove('hidden');
+              badge.textContent = _unreadChat > 9 ? '9+' : _unreadChat;
+            }
+            // Notif son
+            playDing();
+          }
+        }
+      }
+    } catch(e) {}
+  }, 8000);
+}
+
 // ── LAYOUT MOBILE ──
 function applyMobileLayout() {
   if (window.innerWidth > 700) return;
@@ -1636,4 +1891,5 @@ function applyMobileLayout() {
 window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
 
 initRealtime();
+initChatPolling();
 checkAuth();
