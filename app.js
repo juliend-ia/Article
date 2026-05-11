@@ -1,5 +1,5 @@
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
-var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5ZmxxdHlzcXB5d2lreGd6eGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNzYxOTQsImV4cCI6MjA5Mjc1MjE5NH0.OUjtRRrKIHqLeWFiw1-CEZS3AAJrMTAeiQ8dNd21IP8';
+var SKEY = 'sb_publishable_wQA67lDiVnp4AxNTqSJbNQ_L55rwOY5';
 var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0','35a85085a9ccd1440acb20cca15b78b0353f4f354bfcf8dd5d2f3d36734ca7be'];
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'',prenom:'',role:'user',token:''};
@@ -784,7 +784,7 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   try {
     var msgInput = document.getElementById('panierMessage');
     var msg = msgInput ? msgInput.value.trim() : '';
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null,message:msg||null}]);
+    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null,message:msg||null,preparation_statut:'en_prep'}]);
     if (msgInput) msgInput.value = '';
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
     panier=[]; document.getElementById('numeroOrdre').value='';
