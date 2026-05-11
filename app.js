@@ -203,7 +203,6 @@ function initUI() {
   document.getElementById('navPieces').addEventListener('click', function() { switchSection('pieces'); });
   document.getElementById('navOutillage').addEventListener('click', function() { switchSection('outillage'); });
   document.getElementById('navPanier').addEventListener('click', function() { switchSection('panier'); });
-  document.getElementById('navChat').addEventListener('click', function() { switchSection('chat'); });
 
   // Onglet Ajouter dans sidebar
   var sidebarFooter = document.getElementById('sidebarFooter');
@@ -509,12 +508,12 @@ var _currentSection = 'pieces';
 function switchSection(section) {
   _currentSection = section;
   // Masquer tout
-  ['sectionPieces','sectionPanier','sectionOutillage','sectionChat'].forEach(function(id) {
+  ['sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.style.display='none';
   });
   // Nav active
-  ['navPieces','navOutillage','navPanier','navChat'].forEach(function(id) {
+  ['navPieces','navOutillage','navPanier'].forEach(function(id) {
     var el = document.getElementById(id);
     if (el) el.classList.remove('on');
   });
@@ -538,13 +537,6 @@ function switchSection(section) {
     document.getElementById('navPanier').classList.add('on');
     renderPanier();
     if (currentUser.role!=='agent') loadHistorique();
-  } else if (section==='chat') {
-    document.getElementById('sectionChat').style.display='flex';
-    document.getElementById('navChat').classList.add('on');
-    loadChat();
-    // Reset badge
-    document.getElementById('chatBadge').classList.add('hidden');
-    _unreadChat = 0;
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
@@ -787,7 +779,10 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   if (!/^\d{8}$/.test(num)) { showToast('Le numéro doit avoir 8 chiffres','err'); return; }
   if (!panier.length) { showToast('Panier vide','err'); return; }
   try {
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null}]);
+    var msgInput = document.getElementById('panierMessage');
+    var msg = msgInput ? msgInput.value.trim() : '';
+    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null,message:msg||null}]);
+    if (msgInput) msgInput.value = '';
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
     panier=[]; document.getElementById('numeroOrdre').value='';
     updateBadge(); renderPanier(); loadHistorique();
@@ -910,10 +905,11 @@ async function loadHistorique() {
             +'<div class="histo-date">'+dateStr+'</div>'
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+'</div>':'')
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
+            +(b.message?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(b.message)+'</div>':'')
           +'</div>'
           +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
             +'<div style="color:var(--mu);font-size:16px;">▼</div>'
-            +'<div style="background:'+sc.bg+';border:1.5px solid '+sc.border+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;color:'+sc.color+';">'+sc.label+'</div>'
+            +'<div class="statut-badge" style="background:'+sc.bg+';border:1.5px solid '+sc.border+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;color:'+sc.color+';">'+sc.label+'</div>'
           +'</div>'
         +'</div>'
         +statutBtns
@@ -941,11 +937,32 @@ async function loadHistorique() {
       el.addEventListener('click', async function(e) {
         e.stopPropagation();
         var id=this.getAttribute('data-id'), statut=this.getAttribute('data-statut');
+        // Mise à jour visuelle immédiate
+        var item = this.closest('.histo-item');
+        var allBtns = item.querySelectorAll('.btn-statut');
+        var cfgMap = {
+          'en_attente':{label:'⏳ En attente',     bg:'rgba(240,165,0,0.1)',   border:'#f0a500',color:'#f0a500'},
+          'en_prep':   {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
+          'pret':      {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
+        };
+        var sc = cfgMap[statut]||cfgMap['en_attente'];
+        // Reset tous les boutons du bon
+        allBtns.forEach(function(b) {
+          b.style.color='var(--mu)'; b.style.background='var(--sf)'; b.style.borderColor='var(--br)';
+        });
+        // Activer le bouton cliqué
+        this.style.color=sc.color; this.style.background=sc.bg; this.style.borderColor=sc.border;
+        // Mettre à jour le badge statut en haut du bon
+        var badge = item.querySelector('.statut-badge');
+        if (badge) { badge.style.background=sc.bg; badge.style.borderColor=sc.border; badge.style.color=sc.color; badge.textContent=sc.label; }
+        // Envoyer en base
         try {
           await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
-          showToast(statut==='pret'?'✅ Commande marquée prête !':statut==='en_prep'?'🔧 En préparation':'⏳ En attente','success');
-          loadHistorique(); updateBadgeAttente();
-        } catch(e) { showToast('Erreur','err'); }
+          if (statut==='pret') showToast('✅ Commande marquée prête !','success');
+          else if (statut==='en_prep') showToast('🔧 En préparation','success');
+          else showToast('⏳ En attente','success');
+          updateBadgeAttente();
+        } catch(e2) { showToast('Erreur','err'); }
       });
     });
     list.querySelectorAll('.btn-del-bon').forEach(function(el) {
@@ -1872,189 +1889,6 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
-// ── CHAT INTERNE ──
-var _chatMessages = [];
-var _chatFiltre = 'tous';
-var _unreadChat = 0;
-var _chatLastId = null;
-
-var ROLE_COLORS = {
-  admin:      { bg:'9b59b6', label:'Admin' },
-  magasinier: { bg:'f0a500', label:'Magasinier' },
-  brigadier:  { bg:'3498db', label:'Brigadier' },
-  agent:      { bg:'2ecc71', label:'Agent' },
-};
-
-function getRoleColor(role) { return ROLE_COLORS[role] || { bg:'7a8099', label:role||'?' }; }
-
-function chatAvatarLetter(prenom) { return (prenom||'?').charAt(0).toUpperCase(); }
-
-function formatChatTime(ts) {
-  var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
-  return d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
-}
-function formatChatDate(ts) {
-  var d = new Date(new Date(ts).getTime() + 2*60*60*1000);
-  var today = new Date(Date.now() + 2*60*60*1000);
-  if (d.toDateString() === today.toDateString()) return "Aujourd'hui";
-  var yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
-  if (d.toDateString() === yesterday.toDateString()) return "Hier";
-  return d.toLocaleDateString('fr-FR', {day:'2-digit', month:'long'});
-}
-
-function highlightMentions(txt) {
-  return esc(txt).replace(/@(magasinier|brigadier|agent|admin|[A-Za-z0-9_]+)/gi, function(m) {
-    return '<span class="chat-mention">'+m+'</span>';
-  });
-}
-
-async function loadChat() {
-  try {
-    var data = await supa('GET','messages?select=*&order=created_at.asc&limit=200');
-    _chatMessages = data || [];
-    _chatLastId = _chatMessages.length ? _chatMessages[_chatMessages.length-1].id : null;
-    renderChat();
-  } catch(e) { console.error('loadChat:', e); }
-}
-
-function renderChat() {
-  var container = document.getElementById('chatMessages');
-  if (!container) return;
-
-  var msgs = _chatMessages.filter(function(m) {
-    if (_chatFiltre === 'tous') return true;
-    return m.role === _chatFiltre;
-  });
-
-  if (!msgs.length) {
-    container.innerHTML = '<div style="text-align:center;color:var(--mu);padding:40px 20px;font-size:13px;">💬 Aucun message — soyez le premier !</div>';
-    return;
-  }
-
-  var h = '', lastDate = '';
-  for (var i=0;i<msgs.length;i++) {
-    var m = msgs[i];
-    var isMine = m.login === currentUser.login;
-    var rc = getRoleColor(m.role);
-    var dateLabel = formatChatDate(m.created_at);
-    if (dateLabel !== lastDate) {
-      h += '<div class="chat-date-sep">'+esc(dateLabel)+'</div>';
-      lastDate = dateLabel;
-    }
-    var canDel = currentUser.role === 'admin' || m.login === currentUser.login;
-    h += '<div class="chat-msg'+(isMine?' mine':'')+'">'
-      +'<div class="chat-avatar" style="background:#'+rc.bg+';">'+chatAvatarLetter(m.prenom)+'</div>'
-      +'<div style="max-width:100%;">'
-        +'<div class="chat-meta">'
-          +(isMine ? '' : '<strong style="font-size:11px;color:var(--tx);">'+esc(m.prenom)+'</strong>')
-          +'<span class="chat-role-badge" style="background:rgba('+hexToRgb(rc.bg)+',0.15);color:#'+rc.bg+';">'+esc(rc.label)+'</span>'
-          +'<span>'+formatChatTime(m.created_at)+'</span>'
-          +(canDel ? '<span class="btn-del-msg" data-id="'+esc(m.id)+'" style="color:var(--rd);font-size:11px;cursor:pointer;padding:0 4px;opacity:0.5;" title="Supprimer">✕</span>' : '')
-        +'</div>'
-        +'<div class="chat-bubble"><div class="chat-text">'+highlightMentions(m.texte)+'</div></div>'
-      +'</div>'
-    +'</div>';
-  }
-  container.innerHTML = h;
-  container.scrollTop = container.scrollHeight;
-
-  // Suppression messages
-  container.querySelectorAll('.btn-del-msg').forEach(function(el) {
-    el.addEventListener('click', async function(e) {
-      e.stopPropagation();
-      var id = this.getAttribute('data-id');
-      if (!confirm('Supprimer ce message ?')) return;
-      try {
-        await supa('DELETE','messages?id=eq.'+id);
-        _chatMessages = _chatMessages.filter(function(m){return m.id!==id;});
-        renderChat();
-        showToast('Message supprimé','success');
-      } catch(e) { showToast('Erreur','err'); }
-    });
-  });
-}
-
-function hexToRgb(hex) {
-  var r=parseInt(hex.slice(0,2),16), g=parseInt(hex.slice(2,4),16), b=parseInt(hex.slice(4,6),16);
-  return r+','+g+','+b;
-}
-
-async function sendChatMessage() {
-  var input = document.getElementById('chatInput');
-  var txt = (input.value||'').trim();
-  if (!txt) return;
-  input.value = '';
-  input.style.height = 'auto';
-  try {
-    await supa('POST','messages',[{
-      login: currentUser.login,
-      prenom: currentUser.prenom,
-      role: currentUser.role,
-      texte: txt
-    }]);
-    await loadChat();
-  } catch(e) { showToast('Erreur envoi message','err'); console.error(e); }
-}
-
-// Filtres chat
-document.addEventListener('DOMContentLoaded', function() {
-  document.querySelectorAll('.chat-filter').forEach(function(el) {
-    el.addEventListener('click', function() {
-      document.querySelectorAll('.chat-filter').forEach(function(f) { f.classList.remove('on'); });
-      this.classList.add('on');
-      _chatFiltre = this.getAttribute('data-role');
-      renderChat();
-    });
-  });
-
-  var sendBtn = document.getElementById('chatSendBtn');
-  if (sendBtn) sendBtn.addEventListener('click', sendChatMessage);
-
-  var chatInput = document.getElementById('chatInput');
-  if (chatInput) {
-    chatInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); }
-    });
-    chatInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    });
-  }
-});
-
-// Polling nouveaux messages
-function initChatPolling() {
-  setInterval(async function() {
-    try {
-      var data = await supa('GET','messages?select=*&order=created_at.asc&limit=200');
-      if (!data) return;
-      var newMsgs = data.filter(function(m) {
-        return !_chatMessages.find(function(x) { return x.id===m.id; });
-      });
-      if (newMsgs.length) {
-        _chatMessages = data;
-        // Si on est sur le chat, rafraîchir
-        if (_currentSection === 'chat') {
-          renderChat();
-        } else {
-          // Badge non-lus (seulement messages des autres)
-          var unread = newMsgs.filter(function(m) { return m.login !== currentUser.login; });
-          if (unread.length) {
-            _unreadChat += unread.length;
-            var badge = document.getElementById('chatBadge');
-            if (badge) {
-              badge.classList.remove('hidden');
-              badge.textContent = _unreadChat > 9 ? '9+' : _unreadChat;
-            }
-            // Notif son
-            playDing();
-          }
-        }
-      }
-    } catch(e) {}
-  }, 8000);
-}
-
 // ── LAYOUT MOBILE ──
 function applyMobileLayout() {
   if (window.innerWidth > 700) return;
@@ -2066,5 +1900,4 @@ function applyMobileLayout() {
 window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
 
 initRealtime();
-initChatPolling();
 checkAuth();
