@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Magasin 2K — Commandes</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@500;700&display=swap');
+
+:root {
+  --bg:       #080a12;
+  --panel:    #0d0f1a;
+  --border:   #1a1d2e;
+  --ac:       #f0a500;
+  --tx:       #e8eaf0;
+  --mu:       #3a3d52;
+  --mu2:      #5a5d72;
+  --gn:       #00d68f;
+  --bl:       #3d9cf0;
+  --rd:       #f03d4e;
+  --gn-dim:   rgba(0,214,143,0.10);
+  --bl-dim:   rgba(61,156,240,0.10);
+  --ac-dim:   rgba(240,165,0,0.10);
+  --rd-dim:   rgba(240,61,78,0.08);
+}
+
+* { box-sizing:border-box; margin:0; padding:0; }
+
+body {
+  background: var(--bg);
+  color: var(--tx);
+  font-family: 'DM Sans', sans-serif;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ── SCANLINES atmosphère ── */
+body::before {
+  content:'';
+  position:fixed;inset:0;
+  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+  pointer-events:none;z-index:9999;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  height:72px;
+  background: var(--panel);
+  border-bottom: 2px solid var(--ac);
+  display: flex;
+  align-items: center;
+  padding: 0 36px;
+  gap: 0;
+  position: relative;
+  flex-shrink:0;
+}
+.tb-logo {
+  display:flex;align-items:baseline;gap:10px;
+}
+.tb-logo-name {
+  font-size: 26px;
+  font-weight: 900;
+  color: var(--ac);
+  letter-spacing: 2px;
+  font-family:'DM Mono',monospace;
+}
+.tb-logo-sub {
+  font-size: 11px;
+  color: var(--mu2);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+}
+.tb-title {
+  position:absolute;left:50%;transform:translateX(-50%);
+  font-size:18px;font-weight:700;color:var(--tx);
+  text-transform:uppercase;letter-spacing:4px;
+}
+.tb-right {
+  margin-left:auto;
+  display:flex;align-items:center;gap:20px;
+}
+.tb-clock {
+  font-family:'DM Mono',monospace;
+  font-size:28px;font-weight:700;
+  color:var(--ac);
+  letter-spacing:2px;
+}
+.tb-date {
+  font-size:11px;color:var(--mu2);text-align:right;
+  text-transform:uppercase;letter-spacing:1px;
+  margin-top:2px;
+}
+.tb-pulse {
+  width:10px;height:10px;border-radius:50%;background:var(--gn);
+  box-shadow:0 0 10px var(--gn);
+  animation:pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+
+/* ── LAYOUT ── */
+.app {
+  display:flex;
+  flex-direction:column;
+  height:100vh;
+}
+.body {
+  flex:1;
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap:0;
+  overflow:hidden;
+}
+
+/* ── COLONNE ── */
+.col {
+  display:flex;flex-direction:column;overflow:hidden;
+  border-right:1px solid var(--border);
+}
+.col:last-child{border-right:none;}
+
+.col-header {
+  padding:16px 20px 14px;
+  display:flex;align-items:center;gap:10px;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.col-dot {
+  width:12px;height:12px;border-radius:50%;flex-shrink:0;
+}
+.col-label {
+  font-size:13px;font-weight:700;
+  text-transform:uppercase;letter-spacing:3px;
+}
+.col-count {
+  margin-left:auto;
+  font-family:'DM Mono',monospace;
+  font-size:20px;font-weight:700;
+}
+
+/* Attente */
+.col-attente .col-header { background:var(--ac-dim); }
+.col-attente .col-dot    { background:var(--ac);box-shadow:0 0 8px var(--ac); }
+.col-attente .col-label  { color:var(--ac); }
+.col-attente .col-count  { color:var(--ac); }
+
+/* En préparation */
+.col-prep .col-header { background:var(--bl-dim); }
+.col-prep .col-dot    { background:var(--bl);box-shadow:0 0 8px var(--bl); animation:pulse 1.5s ease-in-out infinite; }
+.col-prep .col-label  { color:var(--bl); }
+.col-prep .col-count  { color:var(--bl); }
+
+/* Prête */
+.col-pret .col-header { background:var(--gn-dim); }
+.col-pret .col-dot    { background:var(--gn);box-shadow:0 0 10px var(--gn); }
+.col-pret .col-label  { color:var(--gn); }
+.col-pret .col-count  { color:var(--gn); }
+
+/* ── LISTE COMMANDES ── */
+.col-list {
+  flex:1;overflow-y:auto;padding:12px;
+  display:flex;flex-direction:column;gap:10px;
+  align-content:start;
+}
+.col-list::-webkit-scrollbar{width:3px;}
+.col-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+
+/* ── CARD COMMANDE ── */
+.order-card {
+  background:var(--panel);
+  border-radius:12px;
+  padding:16px 18px;
+  border:1px solid var(--border);
+  animation:slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+  position:relative;overflow:hidden;
+}
+@keyframes slideIn {
+  from{opacity:0;transform:translateY(-12px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* Barre colorée gauche */
+.order-card::before {
+  content:'';position:absolute;left:0;top:0;bottom:0;width:4px;border-radius:12px 0 0 12px;
+}
+.col-attente .order-card::before { background:var(--ac); }
+.col-prep    .order-card::before { background:var(--bl); }
+.col-pret    .order-card::before { background:var(--gn); }
+
+/* Flash vert quand prête */
+.col-pret .order-card {
+  border-color:rgba(0,214,143,0.2);
+  box-shadow:0 0 20px rgba(0,214,143,0.05);
+}
+
+.order-num {
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  color:var(--mu2);
+  margin-bottom:4px;
+  letter-spacing:1px;
+}
+.order-agent {
+  font-size:15px;
+  font-weight:700;
+  color:var(--tx);
+  margin-bottom:6px;
+}
+.order-items {
+  font-size:11px;
+  color:var(--mu2);
+  margin-bottom:8px;
+}
+.order-msg {
+  font-size:11px;
+  color:var(--ac);
+  font-style:italic;
+  background:var(--ac-dim);
+  border-radius:6px;
+  padding:5px 9px;
+  margin-bottom:8px;
+  border-left:2px solid var(--ac);
+}
+.order-time {
+  font-family:'DM Mono',monospace;
+  font-size:10px;
+  color:var(--mu);
+}
+.order-num-big {
+  font-family:'DM Mono',monospace;
+  font-size:28px;
+  font-weight:700;
+  color:var(--ac);
+  margin-bottom:2px;
+  letter-spacing:1px;
+}
+
+/* Card prête — plus grande et voyante */
+.col-pret .order-card {
+  padding:20px 18px;
+}
+.col-pret .order-num-big {
+  font-size:36px;
+  color:var(--gn);
+  text-shadow:0 0 20px rgba(0,214,143,0.4);
+}
+.col-pret .order-agent {
+  font-size:18px;
+}
+
+/* ── VIDE ── */
+.col-empty {
+  flex:1;display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:8px;
+  color:var(--mu);
+  font-size:13px;
+}
+.col-empty-icon { font-size:32px;opacity:0.2; }
+
+/* ── TICKER BAS ── */
+.ticker {
+  height:40px;
+  background:var(--ac);
+  display:flex;align-items:center;
+  overflow:hidden;
+  flex-shrink:0;
+  position:relative;
+}
+.ticker-track {
+  display:flex;gap:60px;
+  white-space:nowrap;
+  animation:ticker 30s linear infinite;
+}
+@keyframes ticker {
+  from{transform:translateX(0);}
+  to{transform:translateX(-50%);}
+}
+.ticker-item {
+  font-family:'DM Mono',monospace;
+  font-size:13px;
+  font-weight:700;
+  color:#111;
+  letter-spacing:2px;
+  text-transform:uppercase;
+}
+
+/* ── LOADING ── */
+.loading {
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;z-index:500;
+}
+.loading-spinner {
+  width:48px;height:48px;
+  border:3px solid var(--border);
+  border-top-color:var(--ac);
+  border-radius:50%;
+  animation:spin 0.7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:13px;color:var(--mu2);letter-spacing:2px;text-transform:uppercase;}
+
+/* Animation flash pour commande prête nouvelle */
+@keyframes flashGreen {
+  0%,100%{background:var(--panel);}
+  25%,75%{background:rgba(0,214,143,0.08);}
+}
+.order-card.new-pret {
+  animation:slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1), flashGreen 1.5s ease-in-out 0.35s 2;
+}
+</style>
+</head>
+<body>
+
+<div class="loading" id="loading">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Connexion au magasin...</div>
+</div>
+
+<div class="app" id="appRoot" style="display:none;">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-logo">
+      <div class="tb-logo-name">MAGASIN 2K</div>
+      <div class="tb-logo-sub">Dépôt Bus Citaro</div>
+    </div>
+    <div class="tb-title">Tableau des commandes</div>
+    <div class="tb-right">
+      <div>
+        <div class="tb-clock" id="clock">--:--:--</div>
+        <div class="tb-date" id="dateDisp"></div>
+      </div>
+      <div class="tb-pulse" title="Connexion active"></div>
+    </div>
+  </div>
+
+  <!-- GRILLE 3 COLONNES -->
+  <div class="body">
+
+    <!-- EN ATTENTE -->
+    <div class="col col-attente">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <div class="col-label">En attente</div>
+        <div class="col-count" id="count-attente">0</div>
+      </div>
+      <div class="col-list" id="list-attente"></div>
+    </div>
+
+    <!-- EN PRÉPARATION -->
+    <div class="col col-prep">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <div class="col-label">En préparation</div>
+        <div class="col-count" id="count-prep">0</div>
+      </div>
+      <div class="col-list" id="list-prep"></div>
+    </div>
+
+    <!-- PRÊTE -->
+    <div class="col col-pret">
+      <div class="col-header">
+        <div class="col-dot"></div>
+        <div class="col-label">✅ Prête à retirer</div>
+        <div class="col-count" id="count-pret">0</div>
+      </div>
+      <div class="col-list" id="list-pret"></div>
+    </div>
+
+  </div>
+
+  <!-- TICKER -->
+  <div class="ticker">
+    <div class="ticker-track" id="tickerTrack">
+      <span class="ticker-item">🚌 Magasin 2K — Dépôt Bus Citaro</span>
+      <span class="ticker-item">⚡ Votre commande prête = colonne verte</span>
+      <span class="ticker-item">📋 Présentez-vous au comptoir avec votre N° d'ordre</span>
+      <span class="ticker-item">🔔 Mise à jour automatique en temps réel</span>
+      <span class="ticker-item">🚌 Magasin 2K — Dépôt Bus Citaro</span>
+      <span class="ticker-item">⚡ Votre commande prête = colonne verte</span>
+      <span class="ticker-item">📋 Présentez-vous au comptoir avec votre N° d'ordre</span>
+      <span class="ticker-item">🔔 Mise à jour automatique en temps réel</span>
+    </div>
+  </div>
+
+</div>
+
+<script>
+var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
+var SKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd5ZmxxdHlzcXB5d2lreGd6eGNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcxNzYxOTQsImV4cCI6MjA5Mjc1MjE5NH0.OUjtRRrKIHqLeWFiw1-CEZS3AAJrMTAeiQ8dNd21IP8';
+
+var _bons = [];
+var _prevPrets = [];
+var _audioCtx = null;
+
+// Initialiser audio au premier clic
+document.addEventListener('click', function() {
+  if (!_audioCtx) { try { _audioCtx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+}, { once:false });
+
+function ding() {
+  if (!_audioCtx) return;
+  try {
+    var o=_audioCtx.createOscillator(), g=_audioCtx.createGain();
+    o.connect(g); g.connect(_audioCtx.destination);
+    o.frequency.setValueAtTime(523, _audioCtx.currentTime);
+    o.frequency.setValueAtTime(659, _audioCtx.currentTime+0.12);
+    o.frequency.setValueAtTime(784, _audioCtx.currentTime+0.24);
+    g.gain.setValueAtTime(0.25, _audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, _audioCtx.currentTime+0.8);
+    o.start(_audioCtx.currentTime); o.stop(_audioCtx.currentTime+0.8);
+  } catch(e){}
+}
+
+function supa(path) {
+  return fetch(SURL+'/rest/v1/'+path, {
+    headers:{ 'apikey':SKEY, 'Authorization':'Bearer '+SKEY }
+  }).then(function(r){ return r.json(); });
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatTime(ts) {
+  var d = new Date(new Date(ts).getTime()+2*60*60*1000);
+  return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+}
+
+function timeSince(ts) {
+  var diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+  if (diff < 1) return 'À l\'instant';
+  if (diff === 1) return 'Il y a 1 min';
+  return 'Il y a '+diff+' min';
+}
+
+function renderCard(b, isNewPret) {
+  var arts = b.articles||[];
+  var agents = b.login || '—';
+  return '<div class="order-card'+(isNewPret?' new-pret':'')+'">'
+    +'<div class="order-num-big">'+esc(b.numero_ordre)+'</div>'
+    +'<div class="order-agent">👤 '+esc(agents)+'</div>'
+    +'<div class="order-items">'+arts.length+' article'+(arts.length>1?'s':'')+'</div>'
+    +(b.message?'<div class="order-msg">💬 '+esc(b.message)+'</div>':'')
+    +'<div class="order-time">'+timeSince(b.date_creation)+'</div>'
+  +'</div>';
+}
+
+function renderEmpty(msg) {
+  return '<div class="col-empty"><div class="col-empty-icon">—</div>'+msg+'</div>';
+}
+
+function render(bons) {
+  var today = new Date(Date.now()+2*60*60*1000).toISOString().slice(0,10);
+
+  // Filtrer seulement aujourd'hui + non SAP + statut valide
+  var filtered = bons.filter(function(b) {
+    if (b.statut === 'annule') return false;
+    if (b.sap_effectue) return false;
+    var dateBon = new Date(new Date(b.date_creation).getTime()+2*60*60*1000).toISOString().slice(0,10);
+    return dateBon === today;
+  });
+
+  var attente = filtered.filter(function(b){ return (b.preparation_statut||'en_attente')==='en_attente'; });
+  var enPrep  = filtered.filter(function(b){ return b.preparation_statut==='en_prep'; });
+  var prets   = filtered.filter(function(b){ return b.preparation_statut==='pret'; });
+
+  // Détection nouvelles commandes prêtes → son
+  var newPretIds = prets.map(function(b){return b.id;});
+  var wasNew = newPretIds.filter(function(id){ return _prevPrets.indexOf(id)<0; });
+  if (wasNew.length > 0 && _prevPrets.length > 0) { ding(); }
+  _prevPrets = newPretIds;
+
+  // Compteurs
+  document.getElementById('count-attente').textContent = attente.length;
+  document.getElementById('count-prep').textContent    = enPrep.length;
+  document.getElementById('count-pret').textContent    = prets.length;
+
+  // Rendu colonnes
+  var la = document.getElementById('list-attente');
+  var lp = document.getElementById('list-prep');
+  var lr = document.getElementById('list-pret');
+
+  la.innerHTML = attente.length ? attente.map(function(b){ return renderCard(b,false); }).join('') : renderEmpty('Aucune commande en attente');
+  lp.innerHTML = enPrep.length  ? enPrep.map(function(b){  return renderCard(b,false); }).join('') : renderEmpty('Aucune commande en cours');
+  lr.innerHTML = prets.length   ? prets.map(function(b,i){ return renderCard(b, wasNew.indexOf(b.id)>=0); }).join('') : renderEmpty('Aucune commande prête');
+}
+
+async function load() {
+  try {
+    var data = await supa('bons_commande?select=*&order=date_creation.asc&limit=100');
+    _bons = data||[];
+    render(_bons);
+    document.getElementById('loading').style.display='none';
+    document.getElementById('appRoot').style.display='flex';
+  } catch(e) {
+    console.error(e);
+    setTimeout(load, 3000);
+  }
+}
+
+// ── HORLOGE ──
+function updateClock() {
+  var now = new Date(Date.now()+2*60*60*1000);
+  document.getElementById('clock').textContent = now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('dateDisp').textContent = now.toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'long'});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── RAFRAÎCHISSEMENT ── toutes les 8 secondes
+load();
+setInterval(load, 8000);
+
+// ── REALTIME WEBSOCKET ──
+try {
+  var ws = new WebSocket(SURL.replace('https://','wss://')+'/realtime/v1/websocket?apikey='+SKEY+'&vsn=1.0.0');
+  ws.onopen = function() {
+    ws.send(JSON.stringify({topic:'realtime:public:bons_commande',event:'phx_join',payload:{},ref:'1'}));
+  };
+  ws.onmessage = function() { load(); };
+  ws.onclose = function() { setTimeout(function(){ location.reload(); }, 3000); };
+} catch(e){}
+</script>
+</body>
+</html>
