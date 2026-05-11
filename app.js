@@ -189,7 +189,7 @@ function initUI() {
 
   // Historique caché pour agent
   var histoSection = document.getElementById('histoSection');
-  if (histoSection) histoSection.style.display = role==='agent'?'none':'block';
+  if (histoSection) histoSection.style.display = 'block'; // Tous voient leur historique
 
   // Infos user header
   document.getElementById('userInfo').textContent = currentUser.prenom||'';
@@ -814,7 +814,12 @@ var _histoFiltre='today';
 
 async function loadHistorique() {
   try {
-    var data=await supa('GET','bons_commande?select=*&order=date_creation.desc&limit=200');
+    // Agents : seulement leurs propres bons
+    var url = 'bons_commande?select=*&order=date_creation.desc&limit=200';
+    if (currentUser.role === 'agent') {
+      url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&select=*&order=date_creation.desc&limit=200';
+    }
+    var data=await supa('GET', url);
     var list=document.getElementById('historiqueList');
     var OFFSET=2*60*60*1000;
     function dateBelge(ts) { return new Date(ts+OFFSET).toISOString().slice(0,10); }
@@ -1263,7 +1268,158 @@ async function updateBadgeAttente() {
 
 // ── ADMIN ──
 async function loadAdminPage() {
-  await loadDemandes(); await loadDemandesCompte(); await loadUtilisateurs(); await loadHistoriqueActions();
+  await loadDemandes();
+  await loadDemandesCompte();
+  await loadUtilisateurs();
+  await loadHistoriqueActions();
+  await loadAdminHistoBons();
+  await loadAdminHistoOutillage();
+}
+
+// ── ADMIN : Historique complet des bons ──
+async function loadAdminHistoBons() {
+  var el = document.getElementById('adminHistoBons');
+  if (!el) return;
+  try {
+    var data = await supa('GET','bons_commande?select=*&order=date_creation.desc&limit=500');
+    if (!data||!data.length) { el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">Aucun bon</div>'; return; }
+
+    // Stats rapides
+    var total = data.length;
+    var sapFait = data.filter(function(b){return b.sap_effectue;}).length;
+    var prets = data.filter(function(b){return b.preparation_statut==='pret';}).length;
+    var parAgent = {};
+    data.forEach(function(b) { parAgent[b.login]=(parAgent[b.login]||0)+1; });
+    var topAgent = Object.entries(parAgent).sort(function(a,b){return b[1]-a[1];}).slice(0,3);
+
+    var h = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">';
+    [
+      {v:total,      l:'Bons total',      c:'f0a500'},
+      {v:sapFait,    l:'SAP effectués',   c:'2ecc71'},
+      {v:total-sapFait, l:'En attente SAP', c:'e74c3c'},
+    ].forEach(function(s) {
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;text-align:center;">'
+        +'<div style="font-size:28px;font-weight:900;color:#'+s.c+';">'+s.v+'</div>'
+        +'<div style="font-size:10px;color:var(--mu);margin-top:3px;text-transform:uppercase;letter-spacing:1px;">'+s.l+'</div>'
+        +'</div>';
+    });
+    h += '</div>';
+
+    // Top agents
+    if (topAgent.length) {
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:14px;">'
+        +'<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Top demandeurs</div>';
+      topAgent.forEach(function(a,i) {
+        h += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--br);">'
+          +'<span style="font-size:12px;color:var(--tx);">'+['🥇','🥈','🥉'][i]+' '+esc(a[0])+'</span>'
+          +'<span style="font-size:12px;font-weight:700;color:var(--ac);">'+a[1]+' bons</span>'
+          +'</div>';
+      });
+      h += '</div>';
+    }
+
+    // Filtres
+    h += '<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;">'
+      +'<div class="admin-bon-filter on" data-f="all" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;color:var(--ac);background:rgba(240,165,0,0.08);border:1.5px solid var(--ac);white-space:nowrap;">Tous ('+total+')</div>'
+      +'<div class="admin-bon-filter" data-f="attente" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mu);background:var(--sf);border:1.5px solid var(--br);white-space:nowrap;">En attente SAP</div>'
+      +'<div class="admin-bon-filter" data-f="fait" style="padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;color:var(--mu);background:var(--sf);border:1.5px solid var(--br);white-space:nowrap;">SAP fait</div>'
+      +'</div>';
+
+    // Liste bons
+    h += '<div id="adminBonsList">';
+    data.slice(0,50).forEach(function(b) {
+      var arts = b.articles||[];
+      var dt = new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
+      var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+      var sapDone = b.sap_effectue;
+      var sc = {en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+        +'<div>'
+          +'<div style="font-size:13px;font-weight:700;color:var(--ac);">Ordre '+esc(b.numero_ordre)+'</div>'
+          +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' · 👤 '+esc(b.login)+'</div>'
+          +'<div style="font-size:10px;color:var(--mu);">'+arts.length+' article(s)</div>'
+        +'</div>'
+        +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
+          +'<div style="font-size:10px;color:#'+sc.c+';">'+sc.l+'</div>'
+          +(sapDone?'<div style="font-size:10px;color:var(--gn);font-weight:700;">✓ SAP</div>':'<div style="font-size:10px;color:var(--rd);">SAP en attente</div>')
+        +'</div>'
+        +'</div>';
+    });
+    h += '</div>';
+    el.innerHTML = h;
+
+    // Filtres clics
+    el.querySelectorAll('.admin-bon-filter').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        el.querySelectorAll('.admin-bon-filter').forEach(function(b){ b.style.color='var(--mu)'; b.style.background='var(--sf)'; b.style.borderColor='var(--br)'; b.classList.remove('on'); });
+        this.style.color='var(--ac)'; this.style.background='rgba(240,165,0,0.08)'; this.style.borderColor='var(--ac)'; this.classList.add('on');
+        var f = this.getAttribute('data-f');
+        var filtered = f==='attente' ? data.filter(function(b){return !b.sap_effectue;}) : f==='fait' ? data.filter(function(b){return b.sap_effectue;}) : data;
+        var list = el.querySelector('#adminBonsList');
+        list.innerHTML = filtered.slice(0,50).map(function(b) {
+          var arts=b.articles||[];
+          var dt=new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
+          var dateStr=dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+          var sc={en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
+          return '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+            +'<div><div style="font-size:13px;font-weight:700;color:var(--ac);">Ordre '+esc(b.numero_ordre)+'</div>'
+            +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' · 👤 '+esc(b.login)+'</div>'
+            +'<div style="font-size:10px;color:var(--mu);">'+arts.length+' article(s)</div></div>'
+            +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
+            +'<div style="font-size:10px;color:#'+sc.c+';">'+sc.l+'</div>'
+            +(b.sap_effectue?'<div style="font-size:10px;color:var(--gn);font-weight:700;">✓ SAP</div>':'<div style="font-size:10px;color:var(--rd);">SAP en attente</div>')
+            +'</div></div>';
+        }).join('');
+      });
+    });
+  } catch(e) { console.error(e); }
+}
+
+// ── ADMIN : Historique outils ──
+async function loadAdminHistoOutillage() {
+  var el = document.getElementById('adminHistoOutil');
+  if (!el) return;
+  try {
+    var data = await supa('GET','outillage?select=*&order=nom.asc');
+    if (!data||!data.length) { el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">Aucun outil</div>'; return; }
+    var enPret = data.filter(function(o){return o.agent_pret;});
+    var dispo = data.filter(function(o){return !o.agent_pret;});
+
+    var h = '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;">';
+    [{v:data.length,l:'Outils total',c:'6495ed'},{v:enPret.length,l:'En prêt',c:'e74c3c'}].forEach(function(s){
+      h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;text-align:center;">'
+        +'<div style="font-size:28px;font-weight:900;color:#'+s.c+';">'+s.v+'</div>'
+        +'<div style="font-size:10px;color:var(--mu);margin-top:3px;text-transform:uppercase;letter-spacing:1px;">'+s.l+'</div>'
+        +'</div>';
+    });
+    h += '</div>';
+
+    if (enPret.length) {
+      h += '<div style="background:rgba(231,76,60,0.06);border:1.5px solid #e74c3c;border-radius:10px;padding:12px;margin-bottom:12px;">'
+        +'<div style="font-size:11px;color:#e74c3c;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🔴 Outils actuellement en prêt</div>';
+      enPret.forEach(function(o) {
+        h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(231,76,60,0.15);">'
+          +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
+          +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
+          +'<div style="text-align:right;"><div style="font-size:11px;color:#e74c3c;font-weight:700;">Agent '+esc(o.agent_pret)+'</div>'
+          +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+new Date(new Date(o.date_pret).getTime()+2*60*60*1000).toLocaleDateString('fr-FR')+'</div>':'')
+          +'</div></div>';
+      });
+      h += '</div>';
+    }
+
+    h += '<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Tous les outils</div>';
+    data.forEach(function(o) {
+      var isPret = !!o.agent_pret;
+      h += '<div style="background:var(--sf);border:1px solid '+(isPret?'#e74c3c':'var(--br)')+';border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
+        +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
+        +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
+        +'<div style="font-size:11px;font-weight:700;color:'+(isPret?'#e74c3c':'#2ecc71')+';text-align:right;">'
+        +(isPret?'🔴 Agent '+esc(o.agent_pret):'🟢 Disponible')+'</div>'
+        +'</div>';
+    });
+    el.innerHTML = h;
+  } catch(e) { console.error(e); }
 }
 
 async function loadDemandesCompte() {
@@ -1783,6 +1939,7 @@ function renderChat() {
       h += '<div class="chat-date-sep">'+esc(dateLabel)+'</div>';
       lastDate = dateLabel;
     }
+    var canDel = currentUser.role === 'admin' || m.login === currentUser.login;
     h += '<div class="chat-msg'+(isMine?' mine':'')+'">'
       +'<div class="chat-avatar" style="background:#'+rc.bg+';">'+chatAvatarLetter(m.prenom)+'</div>'
       +'<div style="max-width:100%;">'
@@ -1790,6 +1947,7 @@ function renderChat() {
           +(isMine ? '' : '<strong style="font-size:11px;color:var(--tx);">'+esc(m.prenom)+'</strong>')
           +'<span class="chat-role-badge" style="background:rgba('+hexToRgb(rc.bg)+',0.15);color:#'+rc.bg+';">'+esc(rc.label)+'</span>'
           +'<span>'+formatChatTime(m.created_at)+'</span>'
+          +(canDel ? '<span class="btn-del-msg" data-id="'+esc(m.id)+'" style="color:var(--rd);font-size:11px;cursor:pointer;padding:0 4px;opacity:0.5;" title="Supprimer">✕</span>' : '')
         +'</div>'
         +'<div class="chat-bubble"><div class="chat-text">'+highlightMentions(m.texte)+'</div></div>'
       +'</div>'
@@ -1797,6 +1955,21 @@ function renderChat() {
   }
   container.innerHTML = h;
   container.scrollTop = container.scrollHeight;
+
+  // Suppression messages
+  container.querySelectorAll('.btn-del-msg').forEach(function(el) {
+    el.addEventListener('click', async function(e) {
+      e.stopPropagation();
+      var id = this.getAttribute('data-id');
+      if (!confirm('Supprimer ce message ?')) return;
+      try {
+        await supa('DELETE','messages?id=eq.'+id);
+        _chatMessages = _chatMessages.filter(function(m){return m.id!==id;});
+        renderChat();
+        showToast('Message supprimé','success');
+      } catch(e) { showToast('Erreur','err'); }
+    });
+  });
 }
 
 function hexToRgb(hex) {
