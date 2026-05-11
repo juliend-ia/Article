@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=1920, initial-scale=1.0">
 <title>Magasin 2K — Commandes</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@500;700&display=swap');
@@ -32,6 +32,7 @@ body {
   font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
   overflow: hidden;
+  min-width: 800px;
 }
 
 /* ── SCANLINES atmosphère ── */
@@ -109,12 +110,15 @@ body::before {
   grid-template-columns: 1fr 1fr;
   gap:0;
   overflow:hidden;
+  min-width:0;
+  min-height:0;
 }
 
 /* ── COLONNE ── */
 .col {
   display:flex;flex-direction:column;overflow:hidden;
   border-right:1px solid var(--border);
+  min-width:0;
 }
 .col:last-child{border-right:none;}
 
