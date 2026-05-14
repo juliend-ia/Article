@@ -368,31 +368,23 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     </div>
 
     <!-- SECTION OUTILLAGE -->
-    <div id="sectionOutillage" style="display:none;flex:1;overflow:hidden;">
-      <div class="sidebar" id="sidebarOutillage">
-        <div class="sidebar-title">Filtres</div>
-        <div id="outilFilterList"></div>
-      </div>
-      <div class="main-content">
-        <div id="outilMobileBar" style="display:none;overflow-x:auto;overflow-y:hidden;background:#111422;border-bottom:1px solid #1e2235;flex-shrink:0;white-space:nowrap;padding:0 4px;"></div>
-        <div class="searchbar">
-          <div class="search-wrap">
-            <input class="search-input" type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off"/>
-            <span class="search-clear" id="clearOutilSearch">✕</span>
-          </div>
-          <div class="search-count" id="outilCount"></div>
+    <div id="sectionOutillage" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
+      <div class="searchbar">
+        <div class="search-wrap">
+          <input class="search-input" type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off"/>
+          <span class="search-clear" id="clearOutilSearch">✕</span>
         </div>
-        <div id="outilRes" class="pieces-grid"></div>
-        <div id="outilLoadMore" class="load-more hidden">Afficher plus</div>
-        <div id="outilAddPanel" class="add-panel hidden">
-          <div class="form-card">
-            <h2>Nouvel outil</h2>
-            <div class="field"><label>Désignation</label><input type="text" id="outilNom"/></div>
-            <div class="field"><label>Emplacement</label><input type="text" id="outilLoc"/></div>
-            <div class="field"><label>Mots-clés</label><input type="text" id="outilTags"/></div>
-            <div class="field"><label>Photo</label><div id="outilPhotoContainer"></div><div class="edit-photo-btn" onclick="document.getElementById('outilPhotoInput').click()">📷 Ajouter une photo</div><input type="file" id="outilPhotoInput" accept="image/*" capture="environment" style="display:none"/></div>
-            <button class="bsave" id="outilAddBtn">ENREGISTRER</button>
-          </div>
+        <div class="search-count" id="outilCount"></div>
+      </div>
+      <div id="outilRes" class="pieces-grid"></div>
+      <div id="outilAddPanel" class="add-panel hidden">
+        <div class="form-card">
+          <h2>Nouvel outil</h2>
+          <div class="field"><label>Désignation</label><input type="text" id="outilNom"/></div>
+          <div class="field"><label>Emplacement</label><input type="text" id="outilLoc"/></div>
+          <div class="field"><label>Mots-clés</label><input type="text" id="outilTags"/></div>
+          <div class="field"><label>Photo</label><div id="outilPhotoContainer"></div><div class="edit-photo-btn" onclick="document.getElementById('outilPhotoInput').click()">📷 Ajouter une photo</div><input type="file" id="outilPhotoInput" accept="image/*" capture="environment" style="display:none"/></div>
+          <button class="bsave" id="outilAddBtn">ENREGISTRER</button>
         </div>
       </div>
     </div>
@@ -503,6 +495,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
+<div id="outilFab" onclick="showOutilAddForm()" style="display:none;position:fixed;bottom:24px;right:24px;background:var(--ac);color:#111;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:800;cursor:pointer;z-index:200;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.35);">➕ Ajouter outil</div>
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
