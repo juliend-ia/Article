@@ -813,12 +813,21 @@ function showConfirmAgent(ordre, nbArts, totalQty) {
 // ── HISTORIQUE ──
 var _histoFiltre='today';
 
+async function autoArchiverBons() {
+  try {
+    var limite = new Date(Date.now() - 7*86400000).toISOString();
+    await supa('PATCH', 'bons_commande?sap_effectue=eq.true&statut=eq.valide&date_creation=lt.'+limite, {statut:'archive'});
+  } catch(e) {}
+}
+
 async function loadHistorique() {
   try {
+    if (currentUser.role==='admin' || currentUser.role==='magasinier') autoArchiverBons();
     // Agents : seulement leurs propres bons
     var url = 'bons_commande?select=*&order=date_creation.desc&limit=200';
     if (currentUser.role === 'agent' || currentUser.role === 'brigadier') {
-      url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&select=*&order=date_creation.desc&limit=200';
+      var il30j = new Date(Date.now()-30*86400000).toISOString();
+      url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&date_creation=gte.'+il30j+'&select=*&order=date_creation.desc&limit=200';
     }
     var data=await supa('GET', url);
     var list=document.getElementById('historiqueList');
@@ -830,7 +839,7 @@ async function loadHistorique() {
     var lundi=dateBelge(maintenant+offsetLundi*86400000);
 
     var filtrés=(data||[]).filter(function(b) {
-      if (b.statut==='annule') return false;
+      if (b.statut==='annule' || b.statut==='archive') return false;
       var dateBon=dateBelge(new Date(b.date_creation).getTime());
       if (_histoFiltre==='today') return dateBon===aujourdhui;
       if (_histoFiltre==='week') return dateBon>=lundi;
