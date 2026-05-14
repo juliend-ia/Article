@@ -4,7 +4,7 @@ var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0
 var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
 var currentUser = {login:'',prenom:'',role:'user',token:''};
 var SKEY2 = 'bus-auth-v1';
-var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [];
+var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
 var _editPhoto = null, _editPhotos = [], _sortiesCount = {};
 
 // ── ICÔNES PAR CATÉGORIE ──
@@ -347,19 +347,33 @@ function buildSidebar() {
 // ── RECHERCHE ──
 function normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
+function toggleBusFilter(f) {
+  _busFilter = (_busFilter === f) ? '' : f;
+  displayCount = 30;
+  doSearch();
+}
+
 function doSearch() {
   var q = normalize(document.getElementById('si').value.trim());
   filtered = [];
   for (var i=0;i<articles.length;i++) {
     var a=articles[i];
     if (selectedCat!=='TOUT' && a.categorie!==selectedCat) continue;
+    if (_busFilter==='std' && !a.bus_std) continue;
+    if (_busFilter==='art' && !a.bus_art) continue;
     if (q && (normalize(a.nom)+'|'+normalize(a.num)+'|'+normalize(a.tags)+'|'+normalize(a.location)+'|'+normalize(a.npf)).indexOf(q)<0) continue;
     filtered.push(a);
   }
   if (Object.keys(_sortiesCount).length>0) {
     filtered.sort(function(a,b) { return (_sortiesCount[b.num]||0)-(_sortiesCount[a.num]||0); });
   }
-  document.getElementById('rc').textContent = (q||selectedCat!=='TOUT') ? (filtered.length+' résultat(s)') : (articles.length+' articles au total');
+  var hasFilter = q || selectedCat!=='TOUT' || _busFilter;
+  document.getElementById('rc').textContent = hasFilter ? (filtered.length+' résultat(s)') : (articles.length+' articles au total');
+  // Mettre à jour l'état visuel des boutons filtres bus
+  ['std','art'].forEach(function(f) {
+    var btn=document.getElementById('busFilter-'+f);
+    if (btn) btn.classList.toggle('on', _busFilter===f);
+  });
   renderGrid(q);
 }
 
