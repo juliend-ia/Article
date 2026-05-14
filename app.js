@@ -1688,19 +1688,93 @@ async function loadArticlesSilent() {
 }
 
 // ── OUTILLAGE ──
-var outillage=[], _outilPhoto=null, _outilEditPhoto=null;
+var outillage=[], _outilPhoto=null, _outilEditPhoto=null, _outilFilter='tous';
 
 async function loadOutillage() {
   try {
     var data=await supa('GET','outillage?select=*&order=nom.asc');
-    outillage=data||[]; doOutilSearch(); updateBadgePretsOutillage();
-    var tab2=document.getElementById('ot2'); if (tab2) tab2.style.display=window._canEdit?'':'none';
+    outillage=data||[]; buildOutilSidebar(); doOutilSearch(); updateBadgePretsOutillage();
   } catch(e) { showToast('Erreur chargement outillage','err'); }
+}
+
+function buildOutilSidebar() {
+  var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
+  var dispo=outillage.length-enPret;
+  var filters=[
+    {key:'tous', label:'Tous les outils', count:outillage.length, icon:'🔧'},
+    {key:'dispo', label:'Disponibles', count:dispo, icon:'🟢'},
+    {key:'pret', label:'En prêt', count:enPret, icon:'🔴'},
+  ];
+  var isDesktop=window.innerWidth>700;
+  var sb=document.getElementById('sidebarOutillage');
+  var bar=document.getElementById('outilMobileBar');
+  if (sb) sb.style.display=isDesktop?'flex':'none';
+  if (bar) bar.style.display=isDesktop?'none':'block';
+
+  var h='<div class="sidebar-title">Filtres</div>';
+  for (var i=0;i<filters.length;i++) {
+    var f=filters[i], on=f.key===_outilFilter;
+    h+='<div class="cat-item'+(on?' on':'')+'" data-filter="'+f.key+'">'
+      +'<div class="cat-icon">'+f.icon+'</div>'
+      +'<div class="cat-info"><div class="cat-label">'+f.label+'</div><div class="cat-count">'+f.count+'</div></div>'
+      +'</div>';
+  }
+  if (window._canEdit) {
+    h+='<div style="padding:12px;border-top:1px solid var(--br);margin-top:auto;">'
+      +'<div onclick="showOutilAddForm()" style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-left:3px solid var(--ac);background:rgba(240,165,0,0.06);">'
+        +'<div style="width:32px;height:32px;border-radius:8px;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;">&#x2795;</div>'
+        +'<div style="font-size:12px;font-weight:700;color:var(--ac);">Ajouter outil</div>'
+      +'</div></div>';
+  }
+  if (sb) {
+    sb.innerHTML=h;
+    sb.querySelectorAll('.cat-item').forEach(function(el) {
+      el.addEventListener('click', function() { _outilFilter=this.getAttribute('data-filter'); buildOutilSidebar(); doOutilSearch(); });
+    });
+  }
+
+  if (bar) {
+    var mh='';
+    for (var j=0;j<filters.length;j++) {
+      var f2=filters[j], on2=f2.key===_outilFilter;
+      mh+='<span data-filter="'+f2.key+'" style="display:inline-block;padding:8px 14px;margin:6px 3px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;'
+        +'border:1px solid '+(on2?'var(--ac)':'var(--br)')+';color:'+(on2?'var(--ac)':'var(--mu)')+';background:'+(on2?'rgba(240,165,0,0.1)':'var(--sf)')+';">'
+        +f2.icon+' '+f2.label+'</span>';
+    }
+    bar.innerHTML=mh;
+    bar.querySelectorAll('span').forEach(function(el) {
+      el.addEventListener('click', function() { _outilFilter=this.getAttribute('data-filter'); buildOutilSidebar(); doOutilSearch(); });
+    });
+  }
+}
+
+function showOutilAddForm() {
+  var grid=document.getElementById('outilRes');
+  var form=document.getElementById('outilAddPanel');
+  var lm=document.getElementById('outilLoadMore');
+  if (grid) grid.style.display='none';
+  if (lm) lm.style.display='none';
+  if (form) form.classList.remove('hidden');
+}
+
+function hideOutilAddForm() {
+  var grid=document.getElementById('outilRes');
+  var form=document.getElementById('outilAddPanel');
+  var lm=document.getElementById('outilLoadMore');
+  if (grid) grid.style.display='';
+  if (form) form.classList.add('hidden');
+  if (lm) lm.style.display='';
+  doOutilSearch();
 }
 
 function doOutilSearch() {
   var q=normalize(document.getElementById('outilSearch').value.trim());
-  var fil=outillage.filter(function(o) { if (!q) return true; return (normalize(o.nom)+'|'+normalize(o.location||'')+'|'+normalize(o.tags||'')).indexOf(q)>=0; });
+  var fil=outillage.filter(function(o) {
+    if (_outilFilter==='pret' && !o.agent_pret) return false;
+    if (_outilFilter==='dispo' && o.agent_pret) return false;
+    if (!q) return true;
+    return (normalize(o.nom)+'|'+normalize(o.location||'')+'|'+normalize(o.tags||'')).indexOf(q)>=0;
+  });
   // Réservés en haut
   fil.sort(function(a,b) {
     // 1. En prêt en premier
@@ -1812,14 +1886,6 @@ function updateBadgePretsOutillage() {
   else badge.style.display='none';
 }
 
-function switchOutilTab(id) {
-  ['ot1','ot2'].forEach(function(t) {
-    var el=document.getElementById(t); if (!el) return;
-    el.classList.toggle('on', t===id);
-  });
-  document.getElementById('op1').style.display=id==='ot1'?'flex':'none';
-  document.getElementById('op2').style.display=id==='ot2'?'flex':'none';
-}
 
 function openOutilEdit(id) {
   var o=outillage.filter(function(x){return x.id===id;})[0]; if (!o) return;
@@ -1844,10 +1910,6 @@ async function uploadPhoto(file, bucket) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  var ot1=document.getElementById('ot1'), ot2=document.getElementById('ot2');
-  if (ot1) ot1.addEventListener('click', function(){switchOutilTab('ot1');});
-  if (ot2) ot2.addEventListener('click', function(){switchOutilTab('ot2');});
-
   var outilSearchEl=document.getElementById('outilSearch');
   var clearOutilEl=document.getElementById('clearOutilSearch');
   if (outilSearchEl) outilSearchEl.addEventListener('input', function(){ doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
@@ -1861,7 +1923,7 @@ document.addEventListener('DOMContentLoaded', function() {
       await supa('POST','outillage',[obj]); showToast('Outil enregistré !','success');
       document.getElementById('outilNom').value=''; document.getElementById('outilLoc').value=''; document.getElementById('outilTags').value='';
       _outilPhoto=null; document.getElementById('outilPhotoContainer').innerHTML='';
-      loadOutillage(); switchOutilTab('ot1');
+      loadOutillage(); hideOutilAddForm();
     } catch(e) { showToast('Erreur','err'); }
   });
 
@@ -1899,7 +1961,7 @@ function applyMobileLayout() {
   if (or2) or2.style.gridTemplateColumns = '1fr';
 }
 
-window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
+window.addEventListener('resize', function() { buildSidebar(); doSearch(); buildOutilSidebar(); });
 
 // ── SERVICE WORKER (PWA) ──
 if ('serviceWorker' in navigator) {
