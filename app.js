@@ -539,7 +539,7 @@ function switchSection(section) {
     document.getElementById('sectionPanier').style.display='flex';
     document.getElementById('navPanier').classList.add('on');
     renderPanier();
-    if (currentUser.role!=='agent') loadHistorique();
+    loadHistorique();
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
