@@ -1359,7 +1359,134 @@ async function loadAdminPage() {
   await loadDemandesCompte();
   await loadUtilisateurs();
   await loadHistoriqueActions();
+  await loadAdminDashboard();
   await loadAdminHistoBons();
+}
+
+async function loadAdminDashboard() {
+  var el = document.getElementById('adminDashboard');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--mu);font-size:12px;">Chargement...</div>';
+  try {
+    var OFFSET = 2*60*60*1000;
+    function dateBelge(ts) { return new Date(ts+OFFSET).toISOString().slice(0,10); }
+    var now = Date.now();
+    var nowB = new Date(now+OFFSET), dow = nowB.getUTCDay();
+    var offsetLundi = dow===0?-6:1-dow;
+    var lundi = new Date(now+offsetLundi*86400000+OFFSET).toISOString().slice(0,10);
+
+    // Bons des 4 dernières semaines
+    var depuis4s = new Date(now - 28*86400000).toISOString();
+    var data = await supa('GET','bons_commande?date_creation=gte.'+depuis4s+'&select=*&order=date_creation.asc');
+    data = data||[];
+
+    // ── Compteurs articles ──
+    var artCount = {};
+    data.forEach(function(b) {
+      (b.articles||[]).forEach(function(a) {
+        artCount[a.nom] = (artCount[a.nom]||0) + a.qty;
+      });
+    });
+    var topArts = Object.keys(artCount).map(function(n){return {nom:n,qty:artCount[n]};})
+      .sort(function(a,b){return b.qty-a.qty;}).slice(0,5);
+
+    // ── Bons par semaine (4 semaines) ──
+    var semaines = [];
+    for (var w=3;w>=0;w--) {
+      var debutS = dateBelge(now+(offsetLundi-w*7)*86400000);
+      var finS   = dateBelge(now+(offsetLundi-w*7+6)*86400000);
+      var label  = w===0?'Cette sem.':'S-'+(w);
+      var count  = data.filter(function(b) {
+        var d = dateBelge(new Date(b.date_creation).getTime());
+        return d>=debutS && d<=finS;
+      }).length;
+      semaines.push({label:label, count:count});
+    }
+    var maxS = Math.max.apply(null, semaines.map(function(s){return s.count;})) || 1;
+
+    // ── Agents actifs (cette semaine) ──
+    var bonsSemaine = data.filter(function(b){ return dateBelge(new Date(b.date_creation).getTime())>=lundi; });
+    var agentsActifs = {};
+    bonsSemaine.forEach(function(b){ agentsActifs[b.login]=(agentsActifs[b.login]||0)+1; });
+    var nbAgents = Object.keys(agentsActifs).length;
+
+    var h = '';
+
+    // Compteurs KPI
+    h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">';
+    [{v:data.length,l:'Bons (4 sem.)',c:'f0a500'},{v:bonsSemaine.length,l:'Cette semaine',c:'2ecc71'},{v:nbAgents,l:'Agents actifs',c:'6495ed'}].forEach(function(s){
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;text-align:center;">'
+        +'<div style="font-size:26px;font-weight:900;color:#'+s.c+';">'+s.v+'</div>'
+        +'<div style="font-size:10px;color:var(--mu);margin-top:3px;text-transform:uppercase;letter-spacing:1px;">'+s.l+'</div>'
+        +'</div>';
+    });
+    h += '</div>';
+
+    // Graphe barres semaines
+    h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:14px;">'
+      +'<div style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">Bons par semaine</div>'
+      +'<div style="display:flex;align-items:flex-end;gap:8px;height:70px;">';
+    semaines.forEach(function(s){
+      var pct = Math.round((s.count/maxS)*100);
+      h += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;">'
+        +'<div style="font-size:10px;color:var(--ac);font-weight:700;">'+s.count+'</div>'
+        +'<div style="width:100%;background:rgba(240,165,0,0.15);border-radius:4px 4px 0 0;height:'+Math.max(pct*0.5,4)+'px;border-top:2px solid var(--ac);"></div>'
+        +'<div style="font-size:9px;color:var(--mu);">'+s.label+'</div>'
+        +'</div>';
+    });
+    h += '</div></div>';
+
+    // Top 5 articles
+    if (topArts.length) {
+      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:14px;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+          +'<div style="font-size:10px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;">Top articles commandés (4 sem.)</div>'
+        +'</div>';
+      var maxQ = topArts[0].qty || 1;
+      topArts.forEach(function(a,i){
+        var pct = Math.round((a.qty/maxQ)*100);
+        h += '<div style="margin-bottom:8px;">'
+          +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">'
+            +'<span style="color:var(--tx);font-weight:600;">'+['🥇','🥈','🥉','4.','5.'][i]+' '+esc(a.nom)+'</span>'
+            +'<span style="color:var(--ac);font-weight:700;">×'+a.qty+'</span>'
+          +'</div>'
+          +'<div style="height:4px;background:var(--br);border-radius:2px;">'
+            +'<div style="height:4px;width:'+pct+'%;background:var(--ac);border-radius:2px;"></div>'
+          +'</div></div>';
+      });
+      h += '</div>';
+    }
+
+    // Bouton export semaine
+    h += '<button onclick="exportSemaine()" style="width:100%;background:rgba(46,204,113,0.1);border:1.5px solid var(--gn);color:var(--gn);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">📥 Exporter les bons de cette semaine (CSV)</button>';
+
+    el.innerHTML = h;
+  } catch(e) { el.innerHTML='<div style="color:var(--rd);font-size:12px;">Erreur chargement dashboard</div>'; console.error(e); }
+}
+
+async function exportSemaine() {
+  var OFFSET = 2*60*60*1000;
+  var now = Date.now();
+  var dow = new Date(now+OFFSET).getUTCDay();
+  var offsetLundi = dow===0?-6:1-dow;
+  var lundi = new Date(now+offsetLundi*86400000).toISOString();
+  try {
+    var data = await supa('GET','bons_commande?date_creation=gte.'+lundi+'&select=*&order=date_creation.asc');
+    if (!data||!data.length) { showToast('Aucun bon cette semaine','err'); return; }
+    var nl='\n', sep=';';
+    var csv = '﻿Date;Login;Ordre;Num SAP;Article;Qté;Emplacement;SAP\n';
+    data.forEach(function(b) {
+      var dt = new Date(new Date(b.date_creation).getTime()+OFFSET).toLocaleDateString('fr-FR');
+      (b.articles||[]).forEach(function(a) {
+        csv += dt+sep+b.login+sep+b.numero_ordre+sep+a.num+sep+a.nom+sep+a.qty+sep+(a.location||'')+sep+(b.sap_effectue?'OUI':'NON')+nl;
+      });
+    });
+    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    var url=URL.createObjectURL(blob), link=document.createElement('a');
+    link.href=url; link.download='bons_semaine_'+new Date().toISOString().slice(0,10)+'.csv'; link.click();
+    URL.revokeObjectURL(url);
+    showToast('Export OK — '+data.length+' bons','success');
+  } catch(e) { showToast('Erreur export','err'); }
 }
 
 // ── ADMIN : Historique complet des bons ──
