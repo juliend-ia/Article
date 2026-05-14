@@ -1721,13 +1721,7 @@ function doOutilSearch() {
   var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
   if (count) count.textContent=fil.length+' outil(s)'+(enPret?' · ⚠️ '+enPret+' en prêt':'');
   var res=document.getElementById('outilRes'); if (!res) return;
-  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;"><div style="font-size:36px;margin-bottom:10px;">🔧</div>Aucun outil trouvé</div>'; return; }
-
-  // Grille 3 colonnes comme les pièces
-  res.style.display='grid';
-  res.style.gridTemplateColumns='repeat(3,1fr)';
-  res.style.gap='10px';
-  res.style.alignContent='start';
+  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;grid-column:1/-1;"><div style="font-size:36px;margin-bottom:10px;">🔧</div>Aucun outil trouvé</div>'; return; }
 
   res.innerHTML=fil.map(function(o) {
     var isPret=!!o.agent_pret;
@@ -1821,8 +1815,7 @@ function updateBadgePretsOutillage() {
 function switchOutilTab(id) {
   ['ot1','ot2'].forEach(function(t) {
     var el=document.getElementById(t); if (!el) return;
-    el.style.color=t===id?'var(--ac)':'var(--mu)';
-    el.style.borderBottom=t===id?'2px solid var(--ac)':'2px solid transparent';
+    el.classList.toggle('on', t===id);
   });
   document.getElementById('op1').style.display=id==='ot1'?'flex':'none';
   document.getElementById('op2').style.display=id==='ot2'?'flex':'none';
@@ -1854,6 +1847,11 @@ document.addEventListener('DOMContentLoaded', function() {
   var ot1=document.getElementById('ot1'), ot2=document.getElementById('ot2');
   if (ot1) ot1.addEventListener('click', function(){switchOutilTab('ot1');});
   if (ot2) ot2.addEventListener('click', function(){switchOutilTab('ot2');});
+
+  var outilSearchEl=document.getElementById('outilSearch');
+  var clearOutilEl=document.getElementById('clearOutilSearch');
+  if (outilSearchEl) outilSearchEl.addEventListener('input', function(){ doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
+  if (clearOutilEl) clearOutilEl.addEventListener('click', function(){ if (outilSearchEl) outilSearchEl.value=''; doOutilSearch(); this.style.display='none'; });
 
   var addBtn=document.getElementById('outilAddBtn');
   if (addBtn) addBtn.addEventListener('click', async function() {

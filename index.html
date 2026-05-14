@@ -370,15 +370,18 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     <!-- SECTION OUTILLAGE -->
     <div id="sectionOutillage" style="display:none;flex:1;overflow:hidden;flex-direction:column;">
       <div style="background:#111422;border-bottom:1px solid var(--br);display:flex;padding:0 18px;flex-shrink:0;">
-        <div id="ot1" style="padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--ac);border-bottom:2px solid var(--ac);">🔍 Recherche</div>
-        <div id="ot2" style="padding:12px 16px;font-size:13px;font-weight:700;cursor:pointer;color:var(--mu);border-bottom:2px solid transparent;display:none;">➕ Ajouter</div>
+        <div id="ot1" class="tb-nav-item on">🔍 Recherche</div>
+        <div id="ot2" class="tb-nav-item" style="display:none;">➕ Ajouter</div>
       </div>
       <div id="op1" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
-        <div style="padding:12px 18px 8px;background:#0f1120;border-bottom:1px solid var(--br);flex-shrink:0;">
-          <div style="position:relative;"><input class="search-input" type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off" oninput="doOutilSearch();document.getElementById('clearOutilSearch').style.display=this.value?'block':'none'"/><span id="clearOutilSearch" class="search-clear" onclick="document.getElementById('outilSearch').value='';doOutilSearch();this.style.display='none';">✕</span></div>
-          <div style="font-size:11px;color:var(--mu);margin-top:8px;" id="outilCount"></div>
+        <div class="searchbar">
+          <div class="search-wrap">
+            <input class="search-input" type="text" id="outilSearch" placeholder="Rechercher un outil..." autocomplete="off"/>
+            <span class="search-clear" id="clearOutilSearch">✕</span>
+          </div>
+          <div class="search-count" id="outilCount"></div>
         </div>
-        <div style="padding:14px 18px;overflow-y:auto;flex:1;" id="outilRes"></div>
+        <div id="outilRes" class="pieces-grid"></div>
       </div>
       <div id="op2" style="display:none;flex:1;overflow:auto;">
         <div class="add-panel"><div class="form-card">
