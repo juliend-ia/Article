@@ -171,6 +171,8 @@ function initUI() {
   if (navAjouter) navAjouter.style.display = window._canEdit ? '' : 'none';
 
   // Son
+  // Charger la préférence son propre à cet utilisateur
+  _soundEnabled = localStorage.getItem('soundEnabled_'+currentUser.login) !== 'false';
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
     if (role !== 'agent') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'🔔':'🔕'; }
@@ -314,13 +316,14 @@ function buildSidebar() {
     if (bar) bar.style.display = 'none';
 
     var sb = document.getElementById('sidebarCats');
-    if (sb) sb.style.display = '';
+    var inAdmin = (_currentSection==='admin' || _currentSection==='ajouter');
+    if (sb) sb.style.display = inAdmin ? 'none' : '';
 
     var sp = document.getElementById('sectionPieces');
     if (sp) sp.style.flexDirection = 'row';
 
     var sf = document.getElementById('sidebarFooter');
-    if (sf) sf.style.display = '';
+    if (sf) sf.style.display = inAdmin ? 'none' : '';
 
     var h = '';
     for (var i=0;i<cats.length;i++) {
@@ -1263,7 +1266,7 @@ function setSwitch(toggleId, inputId, value) {
 }
 
 // ── NOTIFICATIONS ──
-var _soundEnabled=localStorage.getItem('soundEnabled')!=='false';
+var _soundEnabled=true;
 var _audioCtx=null;
 document.addEventListener('click', function() {
   if (!_audioCtx) { try { _audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e) {} }
@@ -1283,7 +1286,8 @@ function playDing() {
 }
 
 function toggleSound() {
-  _soundEnabled=!_soundEnabled; localStorage.setItem('soundEnabled',_soundEnabled?'true':'false');
+  _soundEnabled=!_soundEnabled;
+  localStorage.setItem('soundEnabled_'+currentUser.login, _soundEnabled?'true':'false');
   var btn=document.getElementById('btnSound');
   if (btn) { btn.textContent=_soundEnabled?'🔔':'🔕'; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
   showToast(_soundEnabled?'Son activé':'Son coupé','success');
@@ -1356,7 +1360,6 @@ async function loadAdminPage() {
   await loadUtilisateurs();
   await loadHistoriqueActions();
   await loadAdminHistoBons();
-  await loadAdminHistoOutillage();
 }
 
 // ── ADMIN : Historique complet des bons ──
