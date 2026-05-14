@@ -347,6 +347,20 @@ function buildSidebar() {
 // ── RECHERCHE ──
 function normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
+function renderCardQtyHtml(num) {
+  var ex=panier.filter(function(x){return x.num===num;})[0];
+  if (!ex || ex.qty===0) return '<div class="btn-add-panier" data-num="'+num+'">+ Ajouter au panier</div>';
+  return '<div class="card-qty-ctrl" data-num="'+num+'">'
+    +'<div class="cq-btn" data-num="'+num+'" data-d="-1">−</div>'
+    +'<div class="cq-val">'+ex.qty+'</div>'
+    +'<div class="cq-btn" data-num="'+num+'" data-d="1">+</div>'
+    +'</div>';
+}
+
+function renderPanierIfOpen() {
+  if (_currentSection==='panier') renderPanier();
+}
+
 function toggleBusFilter(f) {
   _busFilter = (_busFilter === f) ? '' : f;
   displayCount = 30;
@@ -444,7 +458,7 @@ function renderGrid(q) {
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
         +(tags?'<div class="card-tags">'+tags+'</div>':'')
         +extra
-        +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
+        +renderCardQtyHtml(a.num)
         +editBtns
       +'</div>'
     +'</div>';
@@ -458,9 +472,29 @@ function renderGrid(q) {
     grid.style.gap = '8px';
   }
 
-  // Events
-  grid.querySelectorAll('.btn-add-panier').forEach(function(el) {
-    el.addEventListener('click', function(e) { e.stopPropagation(); ajouterPanier(this.getAttribute('data-num')); });
+  // Délégation d'événements pour les contrôles quantité
+  grid.addEventListener('click', function(e) {
+    var btn=e.target.closest('.cq-btn, .btn-add-panier');
+    if (!btn) return;
+    e.stopPropagation();
+    var num=btn.getAttribute('data-num');
+    if (!num) return;
+    if (btn.classList.contains('btn-add-panier')) {
+      var a=articles.filter(function(x){return x.num===num;})[0]; if (!a) return;
+      panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false,entretien:a.entretien||false});
+    } else {
+      var d=parseInt(btn.getAttribute('data-d'));
+      var ex=panier.filter(function(x){return x.num===num;})[0];
+      if (d>0) {
+        if (ex) ex.qty++; else { var a2=articles.filter(function(x){return x.num===num;})[0]; if(a2) panier.push({num:a2.num,nom:a2.nom,location:a2.location||'',qty:1,reparable:a2.reparable||false,interne:a2.interne||false,entretien:a2.entretien||false}); }
+      } else {
+        if (ex) { ex.qty--; if(ex.qty<=0) panier=panier.filter(function(x){return x.num!==num;}); }
+      }
+    }
+    updateBadge();
+    var ctrl=grid.querySelector('.card-qty-ctrl[data-num="'+num+'"], .btn-add-panier[data-num="'+num+'"]');
+    if (ctrl) ctrl.outerHTML=renderCardQtyHtml(num);
+    renderPanierIfOpen();
   });
   grid.querySelectorAll('.btn-edit-card').forEach(function(el) {
     el.addEventListener('click', function(e) { e.stopPropagation(); openEdit(this.getAttribute('data-num')); });
