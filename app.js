@@ -578,7 +578,8 @@ function showPiecesTab(tab) {
   p1.style.display='none'; if(lm) lm.classList.add('hidden');
   p2.classList.add('hidden'); p4.classList.add('hidden');
   if (tab==='search') {
-    p1.style.display=''; sb.style.display='flex'; sidebar.style.display='flex';
+    p1.style.display=''; sb.style.display='flex';
+    sidebar.style.display = window.innerWidth > 700 ? 'flex' : 'none';
     renderGrid(normalize(document.getElementById('si').value.trim()));
     var lmEl=document.getElementById('lm');
     if (filtered.length>displayCount) lmEl.classList.remove('hidden');
