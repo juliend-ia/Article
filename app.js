@@ -2019,9 +2019,10 @@ async function deleteOutil(id) { if (!confirm('Supprimer cet outil ?')) return; 
 async function uploadPhoto(file, bucket) {
   try {
     var ext=file.name.split('.').pop(), path=Date.now()+'.'+ext;
-    var resp=await fetch(SURL+'/storage/v1/object/'+bucket+'/'+path,{method:'POST',headers:{'Authorization':'Bearer '+SKEY,'Content-Type':file.type},body:file});
-    if (!resp.ok) throw new Error();
-    return SURL+'/storage/v1/object/public/'+bucket+'/'+path;
+    var b=bucket||'outillage';
+    var resp=await fetch(SURL+'/storage/v1/object/'+b+'/'+path,{method:'POST',headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':file.type||'image/jpeg'},body:file});
+    if (!resp.ok) { var t=await resp.text(); throw new Error(t); }
+    return SURL+'/storage/v1/object/public/'+b+'/'+path;
   } catch(e) { showToast('Erreur upload photo','err'); return null; }
 }
 
