@@ -527,16 +527,19 @@ var _currentSection = 'pieces';
 
 function switchSection(section) {
   _currentSection = section;
-  // Masquer tout
   ['sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display='none';
+    var el = document.getElementById(id); if (el) el.style.display='none';
   });
-  // Nav active
   ['navPieces','navOutillage','navPanier'].forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) el.classList.remove('on');
+    var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
+  // Bottom nav sync
+  ['bnPieces','bnOutillage','bnPanier'].forEach(function(id) {
+    var el = document.getElementById(id); if (el) el.classList.remove('on');
+  });
+  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier'};
+  var bnEl = document.getElementById(bnMap[section]||'bnPieces');
+  if (bnEl) bnEl.classList.add('on');
 
   if (section==='pieces') {
     document.getElementById('sectionPieces').style.display='flex';
@@ -755,10 +758,12 @@ function ajouterPanier(num) {
 }
 
 function updateBadge() {
-  var badge=document.getElementById('panierBadge');
   var total=panier.reduce(function(s,x){return s+x.qty;},0);
-  if (total>0) { badge.classList.remove('hidden'); badge.textContent=total; }
-  else badge.classList.add('hidden');
+  var badge=document.getElementById('panierBadge');
+  if (badge) { if (total>0) { badge.classList.remove('hidden'); badge.textContent=total; } else badge.classList.add('hidden'); }
+  // Bottom nav badge panier
+  var bnDot=document.getElementById('bnDotPanier');
+  if (bnDot) { if (total>0) { bnDot.classList.remove('hidden'); bnDot.textContent=total; } else bnDot.classList.add('hidden'); }
 }
 
 function renderPanier() {
@@ -1292,12 +1297,12 @@ async function updateBadgeAttente() {
       var data=await supa('GET','bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
       var nb=data?data.length:0;
       if (nb>0) {
-        badgeSAP.textContent=nb;
-        badgeSAP.style.background='var(--ac)';
-        badgeSAP.style.color='#111';
-        badgeSAP.title=nb+' commande'+(nb>1?'s':'')+' SAP en attente';
-        badgeSAP.classList.remove('hidden');
-      } else badgeSAP.classList.add('hidden');
+        badgeSAP.textContent=nb; badgeSAP.style.background='var(--ac)'; badgeSAP.style.color='#111'; badgeSAP.classList.remove('hidden');
+        var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP){bnSAP.textContent=nb;bnSAP.className='bn-dot bn-dot-orange';}
+      } else {
+        badgeSAP.classList.add('hidden');
+        var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP) bnSAP.className='bn-dot hidden';
+      }
     } catch(e) {}
   }
 
@@ -1307,12 +1312,12 @@ async function updateBadgeAttente() {
       var data=await supa('GET','bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&preparation_statut=eq.pret&sap_effectue=eq.false&select=id');
       var nb=data?data.length:0;
       if (nb>0) {
-        badgeSAP.textContent='✓';
-        badgeSAP.style.background='var(--gn)';
-        badgeSAP.style.color='#111';
-        badgeSAP.title=nb+' commande'+(nb>1?'s':'')+' prête'+(nb>1?'s':'')+'  !';
-        badgeSAP.classList.remove('hidden');
-      } else badgeSAP.classList.add('hidden');
+        badgeSAP.textContent='✓'; badgeSAP.style.background='var(--gn)'; badgeSAP.style.color='#111'; badgeSAP.classList.remove('hidden');
+        var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP){bnSAP.textContent='✓';bnSAP.className='bn-dot bn-dot-green';}
+      } else {
+        badgeSAP.classList.add('hidden');
+        var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP) bnSAP.className='bn-dot hidden';
+      }
     } catch(e) {}
   }
 }
@@ -1990,10 +1995,12 @@ function updateBadgePretsOutillage() {
   var badge=document.getElementById('badgeOutil');
   if (!badge) return;
   if (nb>0) {
-    badge.textContent=nb;
-    badge.title=nb+' outil'+(nb>1?'s':'')+' en prêt';
-    badge.classList.remove('hidden');
-  } else badge.classList.add('hidden');
+    badge.textContent=nb; badge.classList.remove('hidden');
+    var bnO=document.getElementById('bnDotOutil'); if(bnO){bnO.textContent=nb;bnO.classList.remove('hidden');}
+  } else {
+    badge.classList.add('hidden');
+    var bnO=document.getElementById('bnDotOutil'); if(bnO) bnO.classList.add('hidden');
+  }
 }
 
 
