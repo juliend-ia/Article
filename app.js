@@ -405,50 +405,48 @@ function renderGrid(q) {
   var h = '';
   for (var i=0;i<n;i++) {
     var a = filtered[i];
-    // Zone image fixe 100px — photo si dispo, icône catégorie sinon
-    var photoHtml = '';
-    if (a.photo) {
-      var firstPhoto = a.photo.split(',')[0].trim();
-      photoHtml = '<div class="card-photo-wrap">'
-        +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy"/>'
-        +'</div>';
-    } else {
-      photoHtml = '<div class="card-photo-placeholder">'
-        +'<div style="font-size:28px;opacity:0.15;">'+getCatIcon(a.categorie)+'</div>'
-        +'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;opacity:0.5;">'+esc(a.categorie||'')+'</div>'
-        +'</div>';
-    }
-    // Tags
+    // Tags (overlay sur photo)
     var tags = '';
     if (a.bus_std) tags += '<span class="tag tag-std">STD</span>';
     if (a.bus_art) tags += '<span class="tag tag-art">ART</span>';
     if (a.chimique) tags += '<span class="tag tag-chim">CHIM.</span>';
     if (a.reparable) tags += '<span class="tag tag-rep">🔧 RÉP.</span>';
     if (a.interne) tags += '<span class="tag tag-int">INTERNE</span>';
-    // Boutons modifier/supprimer
-    var editBtns = window._canEdit
-      ? '<div class="card-edit-btns"><div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️ Modifier</div><div class="btn-del-card" data-num="'+esc(a.num)+'">🗑 Supprimer</div></div>'
-      : '';
-    // Infos admin — toujours affichées pour éviter le décalage entre cards
-    var extra = '';
-    if (window._canEdit) {
-      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:2px;">NPF: <span style="color:var(--mu2);">'+(a.npf ? esc(a.npf) : '—')+'</span></div>';
-      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">'+(a.fournisseur ? esc(a.fournisseur) : '—')+'</div>';
-      extra += '<div style="font-size:10px;color:var(--mu);margin-bottom:3px;">Min/Max: <span style="color:var(--mu2);">'+(a.min||0)+'/'+(a.max||0)+'</span></div>';
+    var badgeHtml = tags ? '<div class="card-photo-badge">'+tags+'</div>' : '';
+    // Zone image 170px — photo si dispo, placeholder sinon
+    var photoHtml = '';
+    if (a.photo) {
+      var firstPhoto = a.photo.split(',')[0].trim();
+      photoHtml = '<div class="card-photo-wrap">'
+        +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy"/>'
+        +badgeHtml
+        +'</div>';
+    } else {
+      photoHtml = '<div class="card-photo-placeholder">'
+        +'<div style="font-size:36px;opacity:0.12;">'+getCatIcon(a.categorie)+'</div>'
+        +'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;opacity:0.5;">'+esc(a.categorie||'')+'</div>'
+        +badgeHtml
+        +'</div>';
     }
+    // Boutons bas de card : panier + icônes modifier/supprimer
+    var editIconBtns = window._canEdit
+      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️</div>'
+        +'<div class="btn-del-card" data-num="'+esc(a.num)+'">🗑</div>'
+      : '';
+    var bottomRow = '<div class="card-bottom-row">'
+      +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
+      +editIconBtns
+      +'</div>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
       +'<div class="card-body">'
         +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
           +'<div class="card-num">'+hl(a.num,q)+'</div>'
-          +(a.categorie?'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;padding-top:2px;text-align:right;line-height:1.2;">'+esc(a.categorie)+'</div>':'')
+          +(a.categorie?'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;padding-top:2px;text-align:right;line-height:1.2;max-width:90px;">'+esc(a.categorie)+'</div>':'')
         +'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
-        +(tags?'<div class="card-tags">'+tags+'</div>':'')
-        +extra
-        +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
-        +editBtns
+        +bottomRow
       +'</div>'
     +'</div>';
   }
