@@ -1284,44 +1284,36 @@ function showNotifCommande(record) {
 function fermerNotif() { var el=document.getElementById('notifCommande'); if (el) el.style.top='-120px'; }
 
 async function updateBadgeAttente() {
-  // Badge magasinier — commandes en attente SAP
+  var badgeSAP = document.getElementById('badgeSAP');
+  if (!badgeSAP) return;
+
+  // Magasinier / admin — commandes SAP en attente
   if (currentUser.role==='admin' || currentUser.role==='magasinier') {
     try {
       var data=await supa('GET','bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
       var nb=data?data.length:0;
-      var badge=document.getElementById('badgeAttente');
-      if (!badge) {
-        badge=document.createElement('div'); badge.id='badgeAttente';
-        badge.style.cssText='position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
-        badge.onclick=function() { switchSection('panier'); };
-        document.body.appendChild(badge);
-      }
       if (nb>0) {
-        badge.innerHTML='<div style="background:#f0a500;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(240,165,0,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">📋</span>'+nb+' commande'+(nb>1?'s':'')+' en attente SAP</div>';
-        badge.style.display='block';
-      } else badge.style.display='none';
+        badgeSAP.textContent=nb;
+        badgeSAP.style.background='var(--ac)';
+        badgeSAP.style.color='#111';
+        badgeSAP.title=nb+' commande'+(nb>1?'s':'')+' SAP en attente';
+        badgeSAP.classList.remove('hidden');
+      } else badgeSAP.classList.add('hidden');
     } catch(e) {}
   }
 
-  // Badge agent — commande prête à retirer
-  if (currentUser.role==='agent') {
+  // Agent / brigadier — commande prête à retirer
+  if (currentUser.role==='agent' || currentUser.role==='brigadier') {
     try {
-      var data=await supa('GET','bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&preparation_statut=eq.pret&sap_effectue=eq.false&select=id,numero_ordre');
+      var data=await supa('GET','bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&preparation_statut=eq.pret&sap_effectue=eq.false&select=id');
       var nb=data?data.length:0;
-      var badge=document.getElementById('badgeAttente');
-      if (!badge) {
-        badge=document.createElement('div'); badge.id='badgeAttente';
-        badge.style.cssText='position:fixed;bottom:80px;right:16px;z-index:800;cursor:pointer;';
-        badge.onclick=function() { switchSection('panier'); };
-        document.body.appendChild(badge);
-      }
       if (nb>0) {
-        var ordre = data[0].numero_ordre || '';
-        badge.innerHTML='<div style="background:#2ecc71;color:#111;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(46,204,113,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">✅</span>Ta commande est prête !</div>';
-        badge.style.display='block';
-        // Notification sonore si nouvelle
-        playDing();
-      } else badge.style.display='none';
+        badgeSAP.textContent='✓';
+        badgeSAP.style.background='var(--gn)';
+        badgeSAP.style.color='#111';
+        badgeSAP.title=nb+' commande'+(nb>1?'s':'')+' prête'+(nb>1?'s':'')+'  !';
+        badgeSAP.classList.remove('hidden');
+      } else badgeSAP.classList.add('hidden');
     } catch(e) {}
   }
 }
@@ -1982,13 +1974,13 @@ async function retourOutil(id) {
 function updateBadgePretsOutillage() {
   if (currentUser.role!=='admin'&&currentUser.role!=='magasinier') return;
   var nb=outillage.filter(function(o){return o.agent_pret;}).length;
-  var badge=document.getElementById('badgePrets');
-  if (!badge) {
-    badge=document.createElement('div'); badge.id='badgePrets'; badge.style.cssText='position:fixed;bottom:150px;right:16px;z-index:800;cursor:pointer;';
-    badge.onclick=function(){switchSection('outillage');}; document.body.appendChild(badge);
-  }
-  if (nb>0) { badge.innerHTML='<div style="background:#e74c3c;color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(231,76,60,0.4);display:flex;align-items:center;gap:8px;"><span style="font-size:16px;">🔧</span>'+nb+' outil'+(nb>1?'s':'')+' en prêt</div>'; badge.style.display='block'; }
-  else badge.style.display='none';
+  var badge=document.getElementById('badgeOutil');
+  if (!badge) return;
+  if (nb>0) {
+    badge.textContent=nb;
+    badge.title=nb+' outil'+(nb>1?'s':'')+' en prêt';
+    badge.classList.remove('hidden');
+  } else badge.classList.add('hidden');
 }
 
 
