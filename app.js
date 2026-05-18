@@ -1011,7 +1011,13 @@ async function loadHistorique() {
     list.querySelectorAll('.chk-sap').forEach(function(el) {
       el.addEventListener('change', async function() {
         var id=this.getAttribute('data-id'), val=this.checked;
-        try { await supa('PATCH','bons_commande?id=eq.'+id,{sap_effectue:val}); showToast(val?'SAP fait ✓':'SAP non fait','success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur','err'); }
+        try {
+          var patch = {sap_effectue:val};
+          if (val) patch.preparation_statut = 'pret';
+          await supa('PATCH','bons_commande?id=eq.'+id, patch);
+          showToast(val?'SAP fait ✓ — Commande marquée Prête !':'SAP non fait','success');
+          loadHistorique(); updateBadgeAttente();
+        } catch(e) { showToast('Erreur','err'); }
       });
     });
     list.querySelectorAll('.btn-reopen').forEach(function(el) {
