@@ -230,11 +230,10 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   #p1 .card-body{padding:10px 12px;display:flex;flex-direction:column;justify-content:space-between;gap:4px;}
   #p1 .card-edit-btns{margin-top:4px;}
   #p1 .btn-add-panier{padding:8px;font-size:12px;}
-  /* Outillage mobile : 1 colonne verticale */
+  /* Outillage mobile : 1 colonne verticale simple */
   #outilRes{grid-template-columns:1fr!important;padding:10px 12px!important;}
-  #outilRes .piece-card{flex-direction:row;align-items:stretch;}
-  #outilRes .card-photo-wrap{width:90px;height:90px;border-radius:10px 0 0 10px;flex-shrink:0;}
-  #outilRes .card-photo-placeholder{width:90px;height:90px;border-radius:10px 0 0 10px;flex-shrink:0;}
+  #outilRes .piece-card{flex-direction:column;}
+  #outilRes .piece-card > div:first-child{width:100%!important;height:140px!important;border-radius:12px 12px 0 0!important;}
 
   /* Bottom nav */
   .bottom-nav{
@@ -573,6 +572,6 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 
 <div id="outilFab" onclick="showOutilAddForm()" style="display:none;position:fixed;bottom:24px;right:24px;background:var(--ac);color:#111;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:800;cursor:pointer;z-index:200;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.35);">➕ Ajouter outil</div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
