@@ -409,12 +409,11 @@ function renderGrid(q) {
     var photoHtml = '';
     if (a.photo) {
       var firstPhoto = a.photo.split(',')[0].trim();
-      var allPhotos = a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean);
-      photoHtml = '<div style="width:100%;height:100px;overflow:hidden;border-radius:10px 10px 0 0;flex-shrink:0;background:#0d0f18;cursor:pointer;">'
-        +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;" />'
+      photoHtml = '<div class="card-photo-wrap">'
+        +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy"/>'
         +'</div>';
     } else {
-      photoHtml = '<div style="width:100%;height:100px;border-radius:10px 10px 0 0;flex-shrink:0;background:#0d0f18;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-bottom:1px solid var(--br);">'
+      photoHtml = '<div class="card-photo-placeholder">'
         +'<div style="font-size:28px;opacity:0.15;">'+getCatIcon(a.categorie)+'</div>'
         +'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;opacity:0.5;">'+esc(a.categorie||'')+'</div>'
         +'</div>';
