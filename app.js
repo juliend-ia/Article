@@ -1325,6 +1325,57 @@ async function loadAdminPage() {
   await loadHistoriqueActions();
   await loadAdminDashboard();
   await loadAdminHistoBons();
+  await loadAdminModifArticles();
+}
+
+async function loadAdminModifArticles() {
+  var el = document.getElementById('adminModifArticles');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--mu);font-size:12px;">Chargement...</div>';
+  try {
+    // Récupérer les actions liées aux articles (ajout photo, modification, catégorisation)
+    var data = await supa('GET','historique_actions?select=*&order=created_at.desc&limit=200');
+    if (!data||!data.length) { el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">Aucune modification</div>'; return; }
+
+    // Filtrer uniquement les actions liées aux articles
+    var motsCles = ['modifi','ajout','supprim','photo','catégor','categor','article'];
+    var filtres = data.filter(function(a) {
+      var txt = ((a.action||'')+(a.details||'')).toLowerCase();
+      return motsCles.some(function(m){ return txt.indexOf(m)>=0; });
+    });
+
+    // Filtres rapides
+    var _filtre = 'all';
+    function renderModifs(filtre) {
+      var liste = filtre==='all' ? filtres : filtres.filter(function(a){ return ((a.action||'')+(a.details||'')).toLowerCase().indexOf(filtre)>=0; });
+      var h = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">';
+      [['all','Tout'],['photo','📷 Photo'],['modifi','✏️ Modif'],['catégor','📦 Catégor'],['ajout','➕ Ajout'],['supprim','🗑 Supprim']].forEach(function(f) {
+        h += '<div onclick="adminModifFiltre(\''+f[0]+'\')" style="padding:4px 12px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid '+(filtre===f[0]?'var(--ac)':'var(--br)')+';color:'+(filtre===f[0]?'var(--ac)':'var(--mu)')+';background:'+(filtre===f[0]?'rgba(240,165,0,0.08)':'var(--sf)')+';">'+f[1]+'</div>';
+      });
+      h += '</div>';
+      if (!liste.length) { h += '<div style="color:var(--mu);text-align:center;padding:20px;">Aucune action trouvée</div>'; el.innerHTML=h; return; }
+      liste.forEach(function(a) {
+        var dt = new Date(new Date(a.created_at).getTime()+2*60*60*1000);
+        var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+        var isPhoto = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('photo')>=0;
+        var isCat   = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('catégor')>=0 || ((a.action||'')+(a.details||'')).toLowerCase().indexOf('categor')>=0;
+        var icon = isPhoto ? '📷' : isCat ? '📦' : '✏️';
+        h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--br);">'
+          +'<div style="font-size:18px;flex-shrink:0;margin-top:1px;">'+icon+'</div>'
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:12px;font-weight:700;color:var(--ac);">'+esc(a.prenom||a.login)+'</div>'
+            +'<div style="font-size:12px;color:var(--tx);margin-top:1px;">'+esc(a.action||'')+'</div>'
+            +(a.details?'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+esc(a.details)+'</div>':'')
+          +'</div>'
+          +'<div style="font-size:10px;color:var(--mu);white-space:nowrap;flex-shrink:0;">'+dateStr+'</div>'
+        +'</div>';
+      });
+      el.innerHTML = h;
+      el._filtreCourant = filtre;
+    }
+    window.adminModifFiltre = function(f) { renderModifs(f); };
+    renderModifs(_filtre);
+  } catch(e) { el.innerHTML='<div style="color:var(--rd);font-size:12px;">Erreur chargement</div>'; console.error(e); }
 }
 
 async function loadAdminDashboard() {
@@ -1422,36 +1473,11 @@ async function loadAdminDashboard() {
     }
 
     // Bouton export semaine
-    h += '<button onclick="exportSemaine()" style="width:100%;background:rgba(46,204,113,0.1);border:1.5px solid var(--gn);color:var(--gn);border-radius:10px;padding:11px;font-size:13px;font-weight:700;cursor:pointer;">📥 Exporter les bons de cette semaine (CSV)</button>';
 
     el.innerHTML = h;
   } catch(e) { el.innerHTML='<div style="color:var(--rd);font-size:12px;">Erreur chargement dashboard</div>'; console.error(e); }
 }
 
-async function exportSemaine() {
-  var OFFSET = 2*60*60*1000;
-  var now = Date.now();
-  var dow = new Date(now+OFFSET).getUTCDay();
-  var offsetLundi = dow===0?-6:1-dow;
-  var lundi = new Date(now+offsetLundi*86400000).toISOString();
-  try {
-    var data = await supa('GET','bons_commande?date_creation=gte.'+lundi+'&select=*&order=date_creation.asc');
-    if (!data||!data.length) { showToast('Aucun bon cette semaine','err'); return; }
-    var nl='\n', sep=';';
-    var csv = '﻿Date;Login;Ordre;Num SAP;Article;Qté;Emplacement;SAP\n';
-    data.forEach(function(b) {
-      var dt = new Date(new Date(b.date_creation).getTime()+OFFSET).toLocaleDateString('fr-FR');
-      (b.articles||[]).forEach(function(a) {
-        csv += dt+sep+b.login+sep+b.numero_ordre+sep+a.num+sep+a.nom+sep+a.qty+sep+(a.location||'')+sep+(b.sap_effectue?'OUI':'NON')+nl;
-      });
-    });
-    var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
-    var url=URL.createObjectURL(blob), link=document.createElement('a');
-    link.href=url; link.download='bons_semaine_'+new Date().toISOString().slice(0,10)+'.csv'; link.click();
-    URL.revokeObjectURL(url);
-    showToast('Export OK — '+data.length+' bons','success');
-  } catch(e) { showToast('Erreur export','err'); }
-}
 
 // ── ADMIN : Historique complet des bons ──
 async function loadAdminHistoBons() {
@@ -1482,18 +1508,6 @@ async function loadAdminHistoBons() {
     });
     h += '</div>';
 
-    // Top agents
-    if (topAgent.length) {
-      h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:14px;">'
-        +'<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Top demandeurs</div>';
-      topAgent.forEach(function(a,i) {
-        h += '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--br);">'
-          +'<span style="font-size:12px;color:var(--tx);">'+['🥇','🥈','🥉'][i]+' '+esc(a[0])+'</span>'
-          +'<span style="font-size:12px;font-weight:700;color:var(--ac);">'+a[1]+' bons</span>'
-          +'</div>';
-      });
-      h += '</div>';
-    }
 
     // Filtres
     h += '<div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;">'
