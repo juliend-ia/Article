@@ -331,6 +331,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     <div class="tb-right">
       <div class="tb-sound" id="btnSound" onclick="toggleSound()">🔔</div>
       <div id="navAdmin" style="display:none;"><button class="tb-admin-btn" id="btnAdmin">Admin</button></div>
+      <button id="btnChangerAgent" style="display:none;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.35);color:var(--ac);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;" onclick="showBorneEntry()">↩ Changer d'agent</button>
       <div><div class="tb-user-name" id="userInfo"></div><div class="tb-user-role" id="userRole"></div></div>
       <button class="tb-logout" id="logoutBtn">Déco.</button>
     </div>
@@ -586,6 +587,27 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 
 <div id="outilFab" onclick="showOutilAddForm()" style="display:none;position:fixed;bottom:24px;right:24px;background:var(--ac);color:#111;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:800;cursor:pointer;z-index:200;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.35);">➕ Ajouter outil</div>
 <div class="toast" id="toast"></div>
-<script src="app.js?v=11"></script>
+
+<!-- ─── BORNE : ÉCRAN SAISIE AGENT ─── -->
+<div id="borneOverlay" class="hidden" style="position:fixed;inset:0;background:var(--bg);z-index:900;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;">
+  <div style="text-align:center;max-width:380px;width:100%;">
+    <div style="font-size:56px;margin-bottom:16px;">🏪</div>
+    <div style="font-size:24px;font-weight:800;color:var(--ac);margin-bottom:6px;">Magasin 2K</div>
+    <div style="font-size:14px;color:var(--mu);margin-bottom:48px;letter-spacing:1px;">BORNE LIBRE-SERVICE</div>
+    <div style="font-size:13px;color:var(--mu2);margin-bottom:10px;text-align:left;font-weight:600;">Votre numéro d'agent</div>
+    <input id="borneAgentInput" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="Ex : 12345"
+      style="width:100%;background:#1a1d2e;border:2px solid var(--br2);border-radius:14px;padding:18px;font-size:28px;color:var(--tx);text-align:center;font-family:monospace;font-weight:800;outline:none;letter-spacing:6px;transition:border-color 0.2s;"
+      onfocus="this.style.borderColor='var(--ac)'" onblur="this.style.borderColor='var(--br2)'"
+      onkeydown="if(event.key==='Enter') confirmBorneAgent()"/>
+    <div id="borneErr" style="color:var(--rd);font-size:12px;margin:10px 0 6px;min-height:18px;font-weight:600;"></div>
+    <div onclick="confirmBorneAgent()"
+      style="width:100%;background:rgba(46,204,113,0.12);border:2px solid rgba(46,204,113,0.4);border-radius:14px;padding:18px;font-size:16px;color:var(--gn);font-weight:800;text-align:center;cursor:pointer;margin-top:4px;transition:background 0.15s;"
+      onmouseover="this.style.background='rgba(46,204,113,0.22)'" onmouseout="this.style.background='rgba(46,204,113,0.12)'">
+      ✓ Accéder au magasin
+    </div>
+  </div>
+</div>
+
+<script src="app.js?v=12"></script>
 </body>
 </html>

@@ -6,6 +6,7 @@ var currentUser = {login:'',prenom:'',role:'user',token:''};
 var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
 var _editPhoto = null, _editPhotos = [], _sortiesCount = {};
+var _borneAgentNum = ''; // numéro agent saisi sur la borne
 
 // ── ICÔNES PAR CATÉGORIE ──
 var CAT_ICONS = {
@@ -171,11 +172,10 @@ function initUI() {
   if (navAjouter) navAjouter.style.display = window._canEdit ? '' : 'none';
 
   // Son
-  // Charger la préférence son propre à cet utilisateur
   _soundEnabled = localStorage.getItem('soundEnabled_'+currentUser.login) !== 'false';
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
-    if (role !== 'agent') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'🔔':'🔕'; }
+    if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'🔔':'🔕'; }
     else btnSound.style.display='none';
   }
 
@@ -185,22 +185,26 @@ function initUI() {
   var btnAdmin = document.getElementById('btnAdmin');
   if (btnAdmin) btnAdmin.addEventListener('click', function() { switchSection('admin'); });
 
-  // Agent
+  // Bouton "Changer d'agent" (borne uniquement)
+  var btnBorne = document.getElementById('btnChangerAgent');
+  if (btnBorne) btnBorne.style.display = role==='borne' ? 'flex' : 'none';
+
+  // Agent / borne
   var agentField = document.getElementById('agentField');
-  if (agentField) agentField.classList.toggle('hidden', role!=='agent');
+  if (agentField) agentField.classList.add('hidden'); // toujours caché (géré par borne overlay)
 
   var messageField = document.getElementById('messageField');
-  if (messageField) messageField.style.display = (role==='agent' || role==='brigadier') ? '' : 'none';
+  if (messageField) messageField.style.display = (role==='agent' || role==='brigadier' || role==='borne') ? '' : 'none';
 
-  // Historique caché pour agent
+  // Historique
   var histoSection = document.getElementById('histoSection');
-  if (histoSection) histoSection.style.display = 'block'; // Tous voient leur historique
+  if (histoSection) histoSection.style.display = 'block';
 
   // Infos user header
-  document.getElementById('userInfo').textContent = currentUser.prenom||'';
+  document.getElementById('userInfo').textContent = role==='borne' ? 'Borne' : (currentUser.prenom||'');
   var roleEl = document.getElementById('userRole');
   if (roleEl) {
-    var roles = {admin:'Admin',magasinier:'Magasinier',brigadier:'Brigadier',agent:'Agent'};
+    var roles = {admin:'Admin',magasinier:'Magasinier',brigadier:'Brigadier',agent:'Agent',borne:'Borne'};
     roleEl.textContent = roles[role]||role;
   }
 
@@ -221,6 +225,42 @@ function initUI() {
     sidebarFooter.innerHTML = '<div onclick="switchSection(\'ajouter\')" style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;border-left:3px solid var(--ac);background:rgba(240,165,0,0.06);"><div style="width:32px;height:32px;border-radius:8px;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;">&#x2795;</div><div style="font-size:12px;font-weight:700;color:var(--ac);">Ajouter article</div></div>';
   } else sidebarFooter.innerHTML = '';
   updateBadgeAttente();
+
+  // Borne → afficher l'écran de saisie agent
+  if (role === 'borne') {
+    showBorneEntry();
+  }
+}
+
+// ── BORNE ──
+function showBorneEntry() {
+  _borneAgentNum = '';
+  panier = []; updateBadge(); renderPanier();
+  var overlay = document.getElementById('borneOverlay');
+  if (overlay) overlay.classList.remove('hidden');
+  var input = document.getElementById('borneAgentInput');
+  if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 200); }
+  var err = document.getElementById('borneErr');
+  if (err) err.textContent = '';
+  // Remettre l'info header à "Borne"
+  var ui = document.getElementById('userInfo');
+  if (ui) ui.textContent = 'Borne';
+  switchSection('pieces');
+}
+
+function confirmBorneAgent() {
+  var input = document.getElementById('borneAgentInput');
+  var val = (input ? input.value.trim() : '');
+  var err = document.getElementById('borneErr');
+  if (!val || val.length < 2) {
+    if (err) err.textContent = 'Numéro invalide — réessaie';
+    return;
+  }
+  _borneAgentNum = val;
+  var overlay = document.getElementById('borneOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  var ui = document.getElementById('userInfo');
+  if (ui) ui.textContent = 'Agent ' + val;
 }
 
 // ── CHARGEMENT ARTICLES ──
@@ -818,12 +858,13 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   try {
     var msgInput = document.getElementById('panierMessage');
     var msg = msgInput ? msgInput.value.trim() : '';
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:currentUser.login||null,message:msg||null,preparation_statut:'en_prep'}]);
+    var agentNum = currentUser.role==='borne' ? _borneAgentNum : currentUser.login;
+    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:msg||null,preparation_statut:'en_prep'}]);
     if (msgInput) msgInput.value = '';
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
     panier=[]; document.getElementById('numeroOrdre').value='';
     updateBadge(); renderPanier(); loadHistorique();
-    if (currentUser.role==='agent') showConfirmAgent(num,nbArts,totalQty);
+    if (currentUser.role==='agent' || currentUser.role==='borne') showConfirmAgent(num,nbArts,totalQty);
     else showToast('Bon sauvegardé !','success');
   } catch(e) { showToast('Erreur','err'); console.error(e); }
 });
@@ -836,7 +877,10 @@ function showConfirmAgent(ordre, nbArts, totalQty) {
     +'<div style="font-size:20px;font-weight:700;color:#2ecc71;margin-bottom:8px;">Commande envoyée !</div>'
     +'<div style="font-size:14px;color:#e8eaf0;margin-bottom:6px;">Le magasin a bien reçu ta demande.</div>'
     +'<div style="font-size:13px;color:#7a8099;margin-bottom:20px;">Ordre <strong style="color:#f0a500;">'+esc(ordre)+'</strong> · '+nbArts+' article(s) · '+totalQty+' pièce(s)</div>'
-    +'<div onclick="document.getElementById(\'confirmAgent\').style.display=\'none\'" style="background:#2ecc71;color:#111;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;">OK</div>'
+    +(currentUser.role==='borne'
+      ? '<div onclick="document.getElementById(\'confirmAgent\').style.display=\'none\';showBorneEntry();" style="background:#2ecc71;color:#111;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;">OK — Prochain agent</div>'
+      : '<div onclick="document.getElementById(\'confirmAgent\').style.display=\'none\'" style="background:#2ecc71;color:#111;border:none;border-radius:10px;padding:12px;font-size:15px;font-weight:700;cursor:pointer;">OK</div>'
+    )
     +'</div>';
   el.style.display='flex';
 }
@@ -859,6 +903,9 @@ async function loadHistorique() {
     if (currentUser.role === 'agent' || currentUser.role === 'brigadier') {
       var il30j = new Date(Date.now()-30*86400000).toISOString();
       url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&date_creation=gte.'+il30j+'&select=*&order=date_creation.desc&limit=200';
+    } else if (currentUser.role === 'borne') {
+      var today = new Date(); today.setHours(0,0,0,0);
+      url = 'bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&date_creation=gte.'+today.toISOString()+'&select=*&order=date_creation.desc&limit=50';
     }
     var data=await supa('GET', url);
     var list=document.getElementById('historiqueList');
