@@ -428,6 +428,15 @@ function renderGrid(q) {
         +badgeHtml
         +'</div>';
     }
+    // Infos secondaires (admin/magasinier uniquement)
+    var extra = '';
+    if (window._canEdit) {
+      extra += '<div class="card-extra">'
+        +(a.npf?'<span>NPF <b>'+esc(a.npf)+'</b></span>':'')
+        +(a.fournisseur?'<span>'+esc(a.fournisseur)+'</span>':'')
+        +'<span>Min/Max <b>'+(a.min||0)+'/'+(a.max||0)+'</b></span>'
+        +'</div>';
+    }
     // Boutons bas de card : panier + icônes modifier/supprimer
     var editIconBtns = window._canEdit
       ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️</div>'
@@ -446,6 +455,7 @@ function renderGrid(q) {
         +'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
+        +extra
         +bottomRow
       +'</div>'
     +'</div>';
