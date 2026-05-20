@@ -489,7 +489,6 @@ function renderGrid(q) {
     // Mots-clés visuels
     var kwHtml = '';
     if (a.categorie) kwHtml += '<span class="card-kw card-kw-cat">'+esc(a.categorie)+'</span>';
-    if (a.fournisseur) kwHtml += '<span class="card-kw card-kw-four">'+esc(a.fournisseur)+'</span>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
       +'<div class="card-body">'
