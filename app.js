@@ -74,6 +74,7 @@ async function checkAuth() {
     } catch(e) {}
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('appRoot').classList.remove('hidden');
+    initKioskMode();
     initUI();
     loadArticles();
   }
@@ -96,7 +97,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
       document.getElementById('loginOverlay').classList.add('hidden');
       document.getElementById('appRoot').classList.remove('hidden');
-      initUI(); loadArticles(); return;
+      initKioskMode(); initUI(); loadArticles(); return;
     }
   } catch(e) { console.error(e); }
   if (ATOKENS.indexOf(h)>=0) {
@@ -104,7 +105,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
     localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('appRoot').classList.remove('hidden');
-    initUI(); loadArticles();
+    initKioskMode(); initUI(); loadArticles();
   } else { err.textContent='Identifiants incorrects.'; document.getElementById('loginPwd').value=''; }
 });
 
@@ -236,7 +237,6 @@ function initUI() {
 function showBorneEntry() {
   _borneAgentNum = '';
   panier = []; updateBadge(); renderPanier();
-  // Effacer l'historique pour que le prochain agent ne voie pas celui du précédent
   var hList = document.getElementById('historiqueList');
   if (hList) hList.innerHTML = '';
   var overlay = document.getElementById('borneOverlay');
@@ -245,10 +245,48 @@ function showBorneEntry() {
   if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 200); }
   var err = document.getElementById('borneErr');
   if (err) err.textContent = '';
-  // Remettre l'info header à "Borne"
   var ui = document.getElementById('userInfo');
   if (ui) ui.textContent = 'Borne';
   switchSection('pieces');
+  // Demander le plein écran si pas déjà actif
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+  }
+}
+
+// ── MODE KIOSQUE : protection clavier ──
+function initKioskMode() {
+  // Bloquer les raccourcis qui permettraient de sortir
+  document.addEventListener('keydown', function(e) {
+    if (currentUser.role !== 'borne') return;
+    var blocked = [
+      e.key === 'F5',                              // Rafraîchir
+      e.key === 'F11',                             // Sortir plein écran
+      e.key === 'Escape' && !e.target.closest('input,textarea'), // Escape hors champ
+      (e.ctrlKey || e.metaKey) && e.key === 'r',  // Ctrl+R
+      (e.ctrlKey || e.metaKey) && e.key === 'w',  // Ctrl+W (fermer onglet)
+      (e.ctrlKey || e.metaKey) && e.key === 't',  // Ctrl+T (nouvel onglet)
+      (e.ctrlKey || e.metaKey) && e.key === 'l',  // Ctrl+L (barre adresse)
+      (e.ctrlKey || e.metaKey) && e.key === 'n',  // Ctrl+N (nouvelle fenêtre)
+      e.altKey && e.key === 'F4',                  // Alt+F4
+      e.altKey && e.key === 'Tab',                 // Alt+Tab partiel
+    ];
+    if (blocked.some(Boolean)) { e.preventDefault(); e.stopPropagation(); }
+  }, true);
+
+  // Bloquer clic droit
+  document.addEventListener('contextmenu', function(e) {
+    if (currentUser.role === 'borne') e.preventDefault();
+  });
+
+  // Reprendre le plein écran si l'agent en sort (ex: touche Escape)
+  document.addEventListener('fullscreenchange', function() {
+    if (currentUser.role === 'borne' && !document.fullscreenElement) {
+      setTimeout(function() {
+        document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+      }, 500);
+    }
+  });
 }
 
 function confirmBorneAgent() {
