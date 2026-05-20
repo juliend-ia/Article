@@ -66,7 +66,7 @@ async function checkAuth() {
       var data = await supa('GET','utilisateurs?login=eq.'+encodeURIComponent(currentUser.login)+'&select=prenom,role,actif,peut_modifier');
       if (data && data.length) {
         currentUser.prenom = data[0].prenom;
-        currentUser.role = data[0].role;
+        currentUser.role = currentUser.login === 'borne' ? 'borne' : data[0].role;
         currentUser.peut_modifier = data[0].peut_modifier !== false;
         if (!data[0].actif) { localStorage.removeItem(SKEY2); location.reload(); return; }
         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -92,7 +92,8 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       var dbUser = udata[0];
       if (dbUser.password_hash !== h) { err.textContent='Mot de passe incorrect.'; document.getElementById('loginPwd').value=''; return; }
       if (!dbUser.actif) { err.textContent='Compte désactivé.'; return; }
-      currentUser = {login:dbUser.login,prenom:dbUser.prenom,role:dbUser.role,token:h,peut_modifier:dbUser.peut_modifier!==false};
+      var role = dbUser.login === 'borne' ? 'borne' : dbUser.role;
+      currentUser = {login:dbUser.login,prenom:dbUser.prenom,role:role,token:h,peut_modifier:dbUser.peut_modifier!==false};
       if (ATOKENS.indexOf(h)<0) ATOKENS.push(h);
       localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
       document.getElementById('loginOverlay').classList.add('hidden');
