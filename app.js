@@ -550,12 +550,14 @@ function renderGrid(q) {
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
-    // Badges infos : tags + catégorie + NPF/fournisseur/min-max
+    // Badges infos
     var extraItems = '';
-    if (a.bus_std) extraItems += '<span class="card-extra-badge card-eb-std">STD</span>';
-    if (a.bus_art) extraItems += '<span class="card-extra-badge card-eb-art">ART</span>';
-    if (a.chimique) extraItems += '<span class="card-extra-badge card-eb-chim">CHIM.</span>';
-    if (a.reparable) extraItems += '<span class="card-extra-badge card-eb-rep">RÉP.</span>';
+    // Mots-clés mécanicien (champ tags)
+    if (a.tags) {
+      a.tags.split(',').map(function(t){return t.trim();}).filter(Boolean).forEach(function(t){
+        extraItems += '<span class="card-extra-badge card-eb-kw">'+esc(t)+'</span>';
+      });
+    }
     if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
     if (window._canEdit) {
       if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
