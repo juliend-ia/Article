@@ -552,12 +552,6 @@ function renderGrid(q) {
       +'</div>';
     // Badges infos
     var extraItems = '';
-    // Mots-clés mécanicien (champ tags)
-    if (a.tags) {
-      a.tags.split(',').map(function(t){return t.trim();}).filter(Boolean).forEach(function(t){
-        extraItems += '<span class="card-extra-badge card-eb-kw">'+esc(t)+'</span>';
-      });
-    }
     if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
     if (window._canEdit) {
       if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
