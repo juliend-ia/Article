@@ -236,6 +236,9 @@ function initUI() {
 function showBorneEntry() {
   _borneAgentNum = '';
   panier = []; updateBadge(); renderPanier();
+  // Effacer l'historique pour que le prochain agent ne voie pas celui du précédent
+  var hList = document.getElementById('historiqueList');
+  if (hList) hList.innerHTML = '';
   var overlay = document.getElementById('borneOverlay');
   if (overlay) overlay.classList.remove('hidden');
   var input = document.getElementById('borneAgentInput');
