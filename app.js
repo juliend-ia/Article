@@ -670,15 +670,18 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     setBusBtn('addBusStd','addBusStdBtn',false); setBusBtn('addBusArt','addBusArtBtn',false);
     setBusBtn('addChimique','addChimiqueBtn',false); setBusBtn('addReparable','addReparableBtn',false);
     setBusBtn('addEntretien','addEntretienBtn',false);
+    logAction('Ajout article: '+num, 'Nom: '+nom+(a.categorie?' | Cat: '+a.categorie:''));
     showToast('Article enregistré !','success'); buildSidebar(); switchSection('pieces'); doSearch();
   } catch(e) { showToast('Erreur sauvegarde','err'); console.error(e); }
 });
 
 async function delArticle(num) {
   if (!confirm('Supprimer cet article ?')) return;
+  var art = articles.filter(function(a){return a.num===num;})[0];
   try {
     await supa('DELETE','articles?num=eq.'+encodeURIComponent(num));
     articles=articles.filter(function(a) { return a.num!==num; });
+    logAction('Suppression article: '+num, art?art.nom:'');
     buildSidebar(); doSearch(); showToast('Supprimé','success');
   } catch(e) { showToast('Erreur','err'); }
 }
@@ -737,6 +740,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     if (newNum!==editingNum) { await supa('DELETE','articles?num=eq.'+encodeURIComponent(editingNum)); await supa('POST','articles',[updated]); }
     else { await supa('PATCH','articles?num=eq.'+encodeURIComponent(editingNum),updated); }
     for (var i=0;i<articles.length;i++) { if (articles[i].num===editingNum) { articles[i]=updated; break; } }
+    logAction('Modification article: '+newNum, 'Nom: '+nom+(updated.categorie?' | Cat: '+updated.categorie:'')+(newNum!==editingNum?' | Ancien N°: '+editingNum:''));
     document.getElementById('mo').classList.add('hidden'); editingNum=null;
     buildSidebar(); doSearch(); showToast('Modifié !','success');
   } catch(e) { showToast('Erreur','err'); console.error(e); }
@@ -756,6 +760,7 @@ document.getElementById('editPhotoInput').addEventListener('change', async funct
     var url=SURL+'/storage/v1/object/public/photos-articles/'+path;
     if (!_editPhotos) _editPhotos=[];
     _editPhotos.push(url); _editPhoto=_editPhotos.join(',');
+    logAction('Ajout photo article: '+editingNum);
     renderEditPhotos(); showToast('Photo ajoutée !','success');
   } catch(e) { showToast('Erreur upload photo','err'); }
   document.getElementById('editPhotoInput').value='';
@@ -1407,7 +1412,7 @@ async function loadAdminModifArticles() {
     if (!data||!data.length) { el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">Aucune modification</div>'; return; }
 
     // Filtrer uniquement les actions liées aux articles
-    var motsCles = ['modifi','ajout','supprim','photo','catégor','categor','article'];
+    var motsCles = ['modifi','ajout','supprim','photo','catégor','categor','article','outillage','outil'];
     var filtres = data.filter(function(a) {
       var txt = ((a.action||'')+(a.details||'')).toLowerCase();
       return motsCles.some(function(m){ return txt.indexOf(m)>=0; });
@@ -1418,7 +1423,7 @@ async function loadAdminModifArticles() {
     function renderModifs(filtre) {
       var liste = filtre==='all' ? filtres : filtres.filter(function(a){ return ((a.action||'')+(a.details||'')).toLowerCase().indexOf(filtre)>=0; });
       var h = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">';
-      [['all','Tout'],['photo','📷 Photo'],['modifi','✏️ Modif'],['catégor','📦 Catégor'],['ajout','➕ Ajout'],['supprim','🗑 Supprim']].forEach(function(f) {
+      [['all','Tout'],['photo','📷 Photo'],['modifi','✏️ Modif'],['catégor','📦 Catégor'],['ajout','➕ Ajout'],['supprim','🗑 Supprim'],['outil','🔧 Outillage']].forEach(function(f) {
         h += '<div onclick="adminModifFiltre(\''+f[0]+'\')" style="padding:4px 12px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid '+(filtre===f[0]?'var(--ac)':'var(--br)')+';color:'+(filtre===f[0]?'var(--ac)':'var(--mu)')+';background:'+(filtre===f[0]?'rgba(240,165,0,0.08)':'var(--sf)')+';">'+f[1]+'</div>';
       });
       h += '</div>';
@@ -2080,7 +2085,15 @@ function openOutilEdit(id) {
   document.getElementById('outilEditModal').classList.remove('hidden');
 }
 function closeOutilEdit() { document.getElementById('outilEditModal').classList.add('hidden'); }
-async function deleteOutil(id) { if (!confirm('Supprimer cet outil ?')) return; try { await supa('DELETE','outillage?id=eq.'+id); showToast('Outil supprimé','success'); loadOutillage(); } catch(e) { showToast('Erreur','err'); } }
+async function deleteOutil(id) {
+  var o=outillage.filter(function(x){return x.id===id;})[0];
+  if (!confirm('Supprimer cet outil ?')) return;
+  try {
+    await supa('DELETE','outillage?id=eq.'+id);
+    logAction('Suppression outillage: '+(o?o.nom:id));
+    showToast('Outil supprimé','success'); loadOutillage();
+  } catch(e) { showToast('Erreur','err'); }
+}
 
 async function uploadPhoto(file, bucket) {
   try {
@@ -2103,7 +2116,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var nom=(document.getElementById('outilNom').value||'').trim(); if (!nom) { showToast('Désignation obligatoire','err'); return; }
     var obj={nom:nom,location:(document.getElementById('outilLoc').value||'').trim(),tags:(document.getElementById('outilTags').value||'').trim(),photo:_outilPhoto||null};
     try {
-      await supa('POST','outillage',[obj]); showToast('Outil enregistré !','success');
+      await supa('POST','outillage',[obj]);
+      logAction('Ajout outillage: '+nom, obj.location?'Emplacement: '+obj.location:'');
+      showToast('Outil enregistré !','success');
       document.getElementById('outilNom').value=''; document.getElementById('outilLoc').value=''; document.getElementById('outilTags').value='';
       _outilPhoto=null; document.getElementById('outilPhotoContainer').innerHTML='';
       await loadOutillage(); hideOutilAddForm();
@@ -2132,7 +2147,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var id=document.getElementById('outilEditId').value, nom=(document.getElementById('outilEditNom').value||'').trim();
     if (!nom) { showToast('Désignation obligatoire','err'); return; }
     var obj={nom:nom,location:(document.getElementById('outilEditLoc').value||'').trim(),tags:(document.getElementById('outilEditTags').value||'').trim(),photo:_outilEditPhoto};
-    try { await supa('PATCH','outillage?id=eq.'+id,obj); showToast('Outil modifié !','success'); closeOutilEdit(); loadOutillage(); } catch(e) { showToast('Erreur','err'); }
+    try { await supa('PATCH','outillage?id=eq.'+id,obj); logAction('Modification outillage: '+nom, obj.location?'Emplacement: '+obj.location:''); showToast('Outil modifié !','success'); closeOutilEdit(); loadOutillage(); } catch(e) { showToast('Erreur','err'); }
   });
 });
 
