@@ -809,8 +809,10 @@ function ajouterPanier(num) {
 function updateBadge() {
   var total=panier.reduce(function(s,x){return s+x.qty;},0);
   var badge=document.getElementById('panierBadge');
-  if (badge) { if (total>0) { badge.classList.remove('hidden'); badge.textContent=total; } else badge.classList.add('hidden'); }
-  // Bottom nav badge panier
+  if (badge) {
+    if (total>0) { badge.classList.remove('hidden'); var v=document.getElementById('panierBadgeVal'); if(v) v.textContent=total; }
+    else badge.classList.add('hidden');
+  }
   var bnDot=document.getElementById('bnDotPanier');
   if (bnDot) { if (total>0) { bnDot.classList.remove('hidden'); bnDot.textContent=total; } else bnDot.classList.add('hidden'); }
 }
@@ -1353,7 +1355,8 @@ async function updateBadgeAttente() {
       var data=await supa('GET','bons_commande?sap_effectue=eq.false&statut=eq.valide&select=id');
       var nb=data?data.length:0;
       if (nb>0) {
-        badgeSAP.textContent=nb; badgeSAP.style.background='var(--ac)'; badgeSAP.style.color='#111'; badgeSAP.classList.remove('hidden');
+        var v=document.getElementById('badgeSAPVal'); if(v) v.textContent=nb;
+        badgeSAP.classList.remove('hidden');
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP){bnSAP.textContent=nb;bnSAP.className='bn-dot bn-dot-orange';}
       } else {
         badgeSAP.classList.add('hidden');
@@ -1368,7 +1371,8 @@ async function updateBadgeAttente() {
       var data=await supa('GET','bons_commande?login=eq.'+encodeURIComponent(currentUser.login)+'&preparation_statut=eq.pret&sap_effectue=eq.false&select=id');
       var nb=data?data.length:0;
       if (nb>0) {
-        badgeSAP.textContent='✓'; badgeSAP.style.background='var(--gn)'; badgeSAP.style.color='#111'; badgeSAP.classList.remove('hidden');
+        var v=document.getElementById('badgeSAPVal'); if(v) v.textContent='✓ Prêt';
+        badgeSAP.classList.remove('hidden');
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP){bnSAP.textContent='✓';bnSAP.className='bn-dot bn-dot-green';}
       } else {
         badgeSAP.classList.add('hidden');
@@ -2051,7 +2055,8 @@ function updateBadgePretsOutillage() {
   var badge=document.getElementById('badgeOutil');
   if (!badge) return;
   if (nb>0) {
-    badge.textContent=nb; badge.classList.remove('hidden');
+    var v=document.getElementById('badgeOutilVal'); if(v) v.textContent=nb;
+    badge.classList.remove('hidden');
     var bnO=document.getElementById('bnDotOutil'); if(bnO){bnO.textContent=nb;bnO.classList.remove('hidden');}
   } else {
     badge.classList.add('hidden');

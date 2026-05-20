@@ -49,6 +49,10 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .tb-nav-item{display:flex;align-items:center;gap:7px;padding:0 18px;font-size:13px;font-weight:700;color:var(--mu);cursor:pointer;border-bottom:3px solid transparent;white-space:nowrap;position:relative;transition:color 0.15s;}
 .tb-nav-item.on{color:var(--ac);border-bottom-color:var(--ac);}
 .tb-nav-badge{background:var(--rd);color:#fff;border-radius:10px;padding:1px 7px;font-size:10px;font-weight:800;margin-left:2px;}
+#tbAlerts{display:flex;gap:8px;align-items:center;margin:0 12px;}
+.tb-alert{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;background:rgba(231,76,60,0.12);border:1px solid rgba(231,76,60,0.35);color:#e74c3c;white-space:nowrap;}
+.tb-alert-sap{background:rgba(240,165,0,0.12);border-color:rgba(240,165,0,0.35);color:var(--ac);}
+.tb-alert-outil{background:rgba(231,76,60,0.12);border-color:rgba(231,76,60,0.35);color:#e74c3c;}
 .tb-right{margin-left:auto;display:flex;align-items:center;gap:10px;}
 .tb-sound{width:34px;height:34px;border-radius:8px;background:var(--sf);border:1px solid var(--br2);display:none;align-items:center;justify-content:center;cursor:pointer;font-size:16px;}
 .tb-admin-btn{background:rgba(240,165,0,0.1);border:1.5px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;}
@@ -220,6 +224,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   .tb-logo-name{font-size:15px;}
   .tb-logo-sub{display:none;}
   .tb-nav{display:none;}
+  #tbAlerts{display:none;}
   .tb-user-name,.tb-user-role{display:none;}
   .tb-sound{display:none!important;}
   .tb-admin-btn{padding:5px 10px;font-size:11px;}
@@ -325,8 +330,14 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     </div>
     <div class="tb-nav">
       <div class="tb-nav-item on" id="navPieces">⬡ Pièces</div>
-      <div class="tb-nav-item" id="navOutillage">⚙ Outillages <span class="tb-nav-badge hidden" id="badgeOutil" style="background:var(--rd);">0</span></div>
-      <div class="tb-nav-item" id="navPanier">▣ Panier <span class="tb-nav-badge hidden" id="panierBadge">0</span><span class="tb-nav-badge hidden" id="badgeSAP" style="background:var(--ac);color:#111;">0</span></div>
+      <div class="tb-nav-item" id="navOutillage">⚙ Outillages</div>
+      <div class="tb-nav-item" id="navPanier">▣ Panier</div>
+    </div>
+    <!-- Alertes entre nav et droite -->
+    <div id="tbAlerts">
+      <span class="tb-alert hidden" id="panierBadge" onclick="switchSection('panier')">🛒 <b id="panierBadgeVal">0</b> en attente</span>
+      <span class="tb-alert tb-alert-sap hidden" id="badgeSAP" onclick="switchSection('panier')">SAP <b id="badgeSAPVal">0</b></span>
+      <span class="tb-alert tb-alert-outil hidden" id="badgeOutil" onclick="switchSection('outillage')">⚙ <b id="badgeOutilVal">0</b> en prêt</span>
     </div>
     <div class="tb-right">
       <div class="tb-sound" id="btnSound" onclick="toggleSound()">🔔</div>
@@ -608,6 +619,6 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
-<script src="app.js?v=12"></script>
+<script src="app.js?v=13"></script>
 </body>
 </html>
