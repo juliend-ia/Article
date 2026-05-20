@@ -540,15 +540,7 @@ function renderGrid(q) {
         +badgeHtml
         +'</div>';
     }
-    // Infos secondaires (admin/magasinier uniquement)
     var extra = '';
-    if (window._canEdit) {
-      extra += '<div class="card-extra">'
-        +(a.npf?'<span>NPF <b>'+esc(a.npf)+'</b></span>':'')
-        +(a.fournisseur?'<span>'+esc(a.fournisseur)+'</span>':'')
-        +'<span>Min/Max <b>'+(a.min||0)+'/'+(a.max||0)+'</b></span>'
-        +'</div>';
-    }
     // Boutons bas de card : panier + icônes modifier/supprimer
     var editIconBtns = window._canEdit
       ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️</div>'
@@ -558,15 +550,22 @@ function renderGrid(q) {
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
-    // Mots-clés visuels
-    var kwHtml = '';
-    if (a.categorie) kwHtml += '<span class="card-kw card-kw-cat">'+esc(a.categorie)+'</span>';
+    // Infos secondaires enrichies avec la catégorie
+    if (window._canEdit) {
+      var extraItems = '';
+      if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
+      if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
+      if (a.fournisseur) extraItems += '<span class="card-extra-badge">'+esc(a.fournisseur)+'</span>';
+      extraItems += '<span class="card-extra-badge">'+( a.min||0)+'/'+( a.max||0)+'</span>';
+      extra = '<div class="card-extra">'+extraItems+'</div>';
+    } else if (a.categorie) {
+      extra = '<div class="card-extra"><span class="card-extra-badge">'+esc(a.categorie)+'</span></div>';
+    }
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
       +'<div class="card-body">'
         +'<div class="card-num">'+hl(a.num,q)+'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
-        +(kwHtml?'<div class="card-kw-row">'+kwHtml+'</div>':'')
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
         +extra
         +bottomRow
