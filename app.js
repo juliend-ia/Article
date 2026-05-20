@@ -242,16 +242,12 @@ function showBorneEntry() {
   var overlay = document.getElementById('borneOverlay');
   if (overlay) overlay.classList.remove('hidden');
   var input = document.getElementById('borneAgentInput');
-  if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 200); }
+  if (input) { input.value = ''; setTimeout(function(){ input.focus(); }, 400); }
   var err = document.getElementById('borneErr');
   if (err) err.textContent = '';
   var ui = document.getElementById('userInfo');
   if (ui) ui.textContent = 'Borne';
   switchSection('pieces');
-  // Demander le plein écran si pas déjà actif
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-  }
 }
 
 // ── SORTIE SECRÈTE KIOSQUE ──
@@ -301,7 +297,7 @@ function initKioskMode() {
       e.altKey && e.key === 'F4',                  // Alt+F4
       e.altKey && e.key === 'Tab',                 // Alt+Tab partiel
     ];
-    if (blocked.some(Boolean)) { e.preventDefault(); e.stopPropagation(); }
+    if (blocked.some(Boolean)) { e.preventDefault(); }
   }, true);
 
   // Bloquer clic droit
@@ -330,6 +326,10 @@ function confirmBorneAgent() {
   _borneAgentNum = val;
   var overlay = document.getElementById('borneOverlay');
   if (overlay) overlay.classList.add('hidden');
+  // Plein écran depuis un vrai clic utilisateur
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+  }
   var ui = document.getElementById('userInfo');
   if (ui) ui.textContent = 'Agent ' + val;
 }
