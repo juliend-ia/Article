@@ -486,14 +486,16 @@ function renderGrid(q) {
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
+    // Mots-clés visuels
+    var kwHtml = '';
+    if (a.categorie) kwHtml += '<span class="card-kw card-kw-cat">'+esc(a.categorie)+'</span>';
+    if (a.fournisseur) kwHtml += '<span class="card-kw card-kw-four">'+esc(a.fournisseur)+'</span>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
       +'<div class="card-body">'
-        +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
-          +'<div class="card-num">'+hl(a.num,q)+'</div>'
-          +(a.categorie?'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:1px;padding-top:2px;text-align:right;line-height:1.2;max-width:90px;">'+esc(a.categorie)+'</div>':'')
-        +'</div>'
+        +'<div class="card-num">'+hl(a.num,q)+'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
+        +(kwHtml?'<div class="card-kw-row">'+kwHtml+'</div>':'')
         +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
         +extra
         +bottomRow
@@ -810,7 +812,7 @@ function updateBadge() {
   var total=panier.reduce(function(s,x){return s+x.qty;},0);
   var badge=document.getElementById('panierBadge');
   if (badge) {
-    if (total>0) { badge.classList.remove('hidden'); var v=document.getElementById('panierBadgeVal'); if(v) v.textContent=total; }
+    if (total>0) { badge.classList.remove('hidden'); badge.textContent=total; }
     else badge.classList.add('hidden');
   }
   var bnDot=document.getElementById('bnDotPanier');
@@ -999,7 +1001,7 @@ async function loadHistorique() {
           +'<div>'
             +'<div class="histo-num">Ordre '+esc(b.numero_ordre)+'</div>'
             +'<div class="histo-date">'+dateStr+'</div>'
-            +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+'</div>':'')
+            +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · 🪪 Agent '+esc(b.numero_agent):'')+'</div>':'')
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
             +(b.message?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(b.message)+'</div>':'')
           +'</div>'
