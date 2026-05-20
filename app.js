@@ -254,6 +254,36 @@ function showBorneEntry() {
   }
 }
 
+// ── SORTIE SECRÈTE KIOSQUE ──
+var _logoClicks = 0, _logoTimer = null;
+function secretLogoClick() {
+  if (currentUser.role !== 'borne') return;
+  _logoClicks++;
+  clearTimeout(_logoTimer);
+  _logoTimer = setTimeout(function() { _logoClicks = 0; }, 2000);
+  if (_logoClicks >= 5) {
+    _logoClicks = 0;
+    var pwd = prompt('🔐 Code administrateur :');
+    if (!pwd) return;
+    hashStr('Djulien:' + pwd).then(function(h) {
+      if (ATOKENS.indexOf(h) >= 0 || h === ADMIN_TOKEN) {
+        document.exitFullscreen && document.exitFullscreen();
+        // Afficher le bouton déconnexion pour permettre de se reconnecter en admin
+        var logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) logoutBtn.style.display = 'block';
+        showToast('Mode admin déverrouillé', 'success');
+        // Déconnecter et recharger pour permettre un autre login
+        setTimeout(function() {
+          localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
+          location.reload();
+        }, 1500);
+      } else {
+        showToast('Code incorrect', 'err');
+      }
+    });
+  }
+}
+
 // ── MODE KIOSQUE : protection clavier ──
 function initKioskMode() {
   // Bloquer les raccourcis qui permettraient de sortir
