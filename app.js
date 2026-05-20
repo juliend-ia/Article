@@ -550,17 +550,19 @@ function renderGrid(q) {
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
-    // Infos secondaires enrichies avec la catégorie
+    // Badges infos : tags + catégorie + NPF/fournisseur/min-max
+    var extraItems = '';
+    if (a.bus_std) extraItems += '<span class="card-extra-badge card-eb-std">STD</span>';
+    if (a.bus_art) extraItems += '<span class="card-extra-badge card-eb-art">ART</span>';
+    if (a.chimique) extraItems += '<span class="card-extra-badge card-eb-chim">CHIM.</span>';
+    if (a.reparable) extraItems += '<span class="card-extra-badge card-eb-rep">RÉP.</span>';
+    if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
     if (window._canEdit) {
-      var extraItems = '';
-      if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
       if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
       if (a.fournisseur) extraItems += '<span class="card-extra-badge">'+esc(a.fournisseur)+'</span>';
-      extraItems += '<span class="card-extra-badge">'+( a.min||0)+'/'+( a.max||0)+'</span>';
-      extra = '<div class="card-extra">'+extraItems+'</div>';
-    } else if (a.categorie) {
-      extra = '<div class="card-extra"><span class="card-extra-badge">'+esc(a.categorie)+'</span></div>';
+      extraItems += '<span class="card-extra-badge">'+(a.min||0)+'/'+(a.max||0)+'</span>';
     }
+    if (extraItems) extra = '<div class="card-extra">'+extraItems+'</div>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
       +'<div class="card-body">'
