@@ -358,13 +358,19 @@ async function loadArticles() {
 
 async function loadSorties() {
   try {
-    var data = await supa('GET','bons_commande?select=articles&statut=eq.valide');
+    // Tous les bons (valide + archive) pour un tri de tout temps
+    var all = [], page = 0;
+    while (true) {
+      var data = await supa('GET','bons_commande?select=articles&statut=in.(valide,archive)&limit=1000&offset='+(page*1000));
+      if (!data||!data.length) break;
+      all = all.concat(data);
+      if (data.length<1000) break;
+      page++;
+    }
     _sortiesCount = {};
-    if (data) {
-      for (var i=0;i<data.length;i++) {
-        var arts = data[i].articles||[];
-        for (var j=0;j<arts.length;j++) { var n=arts[j].num; _sortiesCount[n]=(_sortiesCount[n]||0)+1; }
-      }
+    for (var i=0;i<all.length;i++) {
+      var arts = all[i].articles||[];
+      for (var j=0;j<arts.length;j++) { var n=arts[j].num; _sortiesCount[n]=(_sortiesCount[n]||0)+arts[j].qty; }
     }
   } catch(e) { _sortiesCount={}; }
 }
@@ -2004,8 +2010,20 @@ var outillage=[], _outilPhoto=null, _outilEditPhoto=null;
 async function loadOutillage() {
   try {
     var data=await supa('GET','outillage?select=*&order=nom.asc');
-    outillage=data||[]; doOutilSearch(); updateBadgePretsOutillage();
-    // Bouton flottant Ajouter outil (admin/magasinier uniquement)
+    outillage=data||[];
+    // Compter les prêts depuis historique_actions
+    try {
+      var histo = await supa('GET','historique_actions?action=like.Pret+outillage*&select=action');
+      if (histo && histo.length) {
+        var counts = {};
+        histo.forEach(function(h) {
+          var nom = (h.action||'').replace(/^Pret outillage:\s*/i,'').trim();
+          if (nom) counts[nom] = (counts[nom]||0)+1;
+        });
+        outillage.forEach(function(o) { o.nb_prets = counts[o.nom] || 0; });
+      }
+    } catch(e) {}
+    doOutilSearch(); updateBadgePretsOutillage();
     var fab=document.getElementById('outilFab');
     if (fab) fab.style.display=window._canEdit?'flex':'none';
   } catch(e) { showToast('Erreur chargement outillage','err'); }
@@ -2120,11 +2138,21 @@ function togglePretPanel(id) {
 async function confirmerPret(id) {
   var input=document.getElementById('pret-'+id), agent=input?input.value.trim():'';
   if (!agent) { showToast('Saisir un numéro d\'agent','err'); return; }
-  try { await supa('PATCH','outillage?id=eq.'+id,{agent_pret:agent,date_pret:new Date().toISOString()}); showToast('Prêt enregistré — Agent '+agent,'success'); await loadOutillage(); } catch(e) { showToast('Erreur','err'); }
+  var o=outillage.filter(function(x){return x.id===id;})[0];
+  try {
+    await supa('PATCH','outillage?id=eq.'+id,{agent_pret:agent,date_pret:new Date().toISOString()});
+    logAction('Pret outillage: '+(o?o.nom:id),'Agent: '+agent);
+    showToast('Prêt enregistré — Agent '+agent,'success'); await loadOutillage();
+  } catch(e) { showToast('Erreur','err'); }
 }
 async function retourOutil(id) {
   if (!confirm('Confirmer le retour ?')) return;
-  try { await supa('PATCH','outillage?id=eq.'+id,{agent_pret:null,date_pret:null}); showToast('Retour enregistré ✓','success'); await loadOutillage(); } catch(e) { showToast('Erreur','err'); }
+  var o=outillage.filter(function(x){return x.id===id;})[0];
+  try {
+    await supa('PATCH','outillage?id=eq.'+id,{agent_pret:null,date_pret:null});
+    logAction('Retour outillage: '+(o?o.nom:id));
+    showToast('Retour enregistré ✓','success'); await loadOutillage();
+  } catch(e) { showToast('Erreur','err'); }
 }
 
 function updateBadgePretsOutillage() {
