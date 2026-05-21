@@ -995,16 +995,19 @@ async function loadHistorique() {
     }
     var data=await supa('GET', url);
     var list=document.getElementById('historiqueList');
-    var OFFSET=2*60*60*1000;
-    function dateBelge(ts) { return new Date(ts+OFFSET).toISOString().slice(0,10); }
-    var maintenant=Date.now(), aujourdhui=dateBelge(maintenant);
-    var nowBelge=new Date(maintenant+OFFSET), jourSemaine=nowBelge.getUTCDay();
+    // Utiliser le fuseau local du navigateur (gère heure d'été/hiver automatiquement)
+    function dateLocale(ts) {
+      var d=new Date(ts);
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
+    var maintenant=Date.now(), aujourdhui=dateLocale(maintenant);
+    var now=new Date(), jourSemaine=now.getDay();
     var offsetLundi=jourSemaine===0?-6:1-jourSemaine;
-    var lundi=dateBelge(maintenant+offsetLundi*86400000);
+    var lundi=dateLocale(maintenant+offsetLundi*86400000);
 
     var filtrés=(data||[]).filter(function(b) {
       if (b.statut==='annule' || b.statut==='archive') return false;
-      var dateBon=dateBelge(new Date(b.date_creation).getTime());
+      var dateBon=dateLocale(new Date(b.date_creation).getTime());
       if (_histoFiltre==='today') return dateBon===aujourdhui;
       if (_histoFiltre==='week') return dateBon>=lundi;
       return true;
@@ -1026,7 +1029,7 @@ async function loadHistorique() {
     var h=tabs;
     for (var i=0;i<filtrés.length;i++) {
       var b=filtrés[i], arts=b.articles||[];
-      var dtBrussels=new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
+      var dtBrussels=new Date(b.date_creation);
       var dateStr=dtBrussels.toLocaleDateString('fr-FR')+' '+dtBrussels.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone=b.sap_effectue||false;
       var prepStatut = b.preparation_statut || 'en_prep';
@@ -1228,7 +1231,7 @@ async function exportBon(id) {
     var bon=data[0], arts=bon.articles||[];
 
     // Date heure belge
-    var dtBelge=new Date(new Date(bon.date_creation).getTime()+2*60*60*1000);
+    var dtBelge=new Date(bon.date_creation);
     var dateStr=dtBelge.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
     var heureStr=dtBelge.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 
@@ -1580,7 +1583,7 @@ async function loadAdminModifArticles() {
       h += '</div>';
       if (!liste.length) { h += '<div style="color:var(--mu);text-align:center;padding:20px;">Aucune action trouvée</div>'; el.innerHTML=h; return; }
       liste.forEach(function(a) {
-        var dt = new Date(new Date(a.created_at).getTime()+2*60*60*1000);
+        var dt = new Date(a.created_at);
         var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
         var isPhoto = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('photo')>=0;
         var isCat   = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('catégor')>=0 || ((a.action||'')+(a.details||'')).toLowerCase().indexOf('categor')>=0;
@@ -1608,12 +1611,14 @@ async function loadAdminDashboard() {
   if (!el) return;
   el.innerHTML = '<div style="color:var(--mu);font-size:12px;">Chargement...</div>';
   try {
-    var OFFSET = 2*60*60*1000;
-    function dateBelge(ts) { return new Date(ts+OFFSET).toISOString().slice(0,10); }
+    function dateBelge(ts) {
+      var d=new Date(ts);
+      return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+    }
     var now = Date.now();
-    var nowB = new Date(now+OFFSET), dow = nowB.getUTCDay();
+    var dow = new Date(now).getDay();
     var offsetLundi = dow===0?-6:1-dow;
-    var lundi = new Date(now+offsetLundi*86400000+OFFSET).toISOString().slice(0,10);
+    var lundi = dateBelge(now+offsetLundi*86400000);
 
     // Bons des 4 dernières semaines
     var depuis4s = new Date(now - 28*86400000).toISOString();
@@ -1745,7 +1750,7 @@ async function loadAdminHistoBons() {
     h += '<div id="adminBonsList">';
     data.slice(0,50).forEach(function(b) {
       var arts = b.articles||[];
-      var dt = new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
+      var dt = new Date(b.date_creation);
       var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone = b.sap_effectue;
       var sc = {en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
@@ -1774,7 +1779,7 @@ async function loadAdminHistoBons() {
         var list = el.querySelector('#adminBonsList');
         list.innerHTML = filtered.slice(0,50).map(function(b) {
           var arts=b.articles||[];
-          var dt=new Date(new Date(b.date_creation).getTime()+2*60*60*1000);
+          var dt=new Date(b.date_creation);
           var dateStr=dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
           var sc={en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
           return '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
@@ -1818,7 +1823,7 @@ async function loadAdminHistoOutillage() {
           +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
           +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
           +'<div style="text-align:right;"><div style="font-size:11px;color:#e74c3c;font-weight:700;">Agent '+esc(o.agent_pret)+'</div>'
-          +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+new Date(new Date(o.date_pret).getTime()+2*60*60*1000).toLocaleDateString('fr-FR')+'</div>':'')
+          +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+new Date(o.date_pret).toLocaleDateString('fr-FR')+'</div>':'')
           +'</div></div>';
       });
       h += '</div>';
@@ -1847,7 +1852,7 @@ async function loadDemandesCompte() {
     if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
     var h='';
     for (var i=0;i<data.length;i++) {
-      var d=data[i], date=new Date(new Date(d.created_at).getTime()+2*60*60*1000).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      var d=data[i], date=new Date(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
           +'<div><div style="font-size:14px;font-weight:700;">👤 '+esc(d.prenom)+' — Matricule '+esc(d.matricule)+'</div><div style="font-size:11px;color:var(--mu);margin-top:3px;">Demande le '+date+'</div></div>'
@@ -2200,7 +2205,7 @@ function doOutilSearch() {
   updateBadgePretsOutillage();
 }
 
-function formatDateBelge(ts) { var d=new Date(new Date(ts).getTime()+2*60*60*1000); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+function formatDateBelge(ts) { var d=new Date(ts); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
 
 function toggleOutilCard(card) {
   var photo=card.querySelector('.outil-photo'), isOpen=card.classList.contains('exp');
