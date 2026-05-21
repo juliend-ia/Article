@@ -1467,6 +1467,51 @@ async function updateBadgeAttente() {
 }
 
 // ── ADMIN ──
+function exportArticlesExcel() {
+  var BOM = '﻿';
+  var headers = [
+    'N° SAP','Désignation','Catégorie','Emplacement',
+    'NPF','Fournisseur',
+    'Bus STD','Bus ART','Chimique','Réparable','Entretien',
+    'Min','Max',
+    'Photo','Mots-clés'
+  ];
+  var rows = articles.map(function(a) {
+    return [
+      a.num||'',
+      a.nom||'',
+      a.categorie||'',
+      a.location||'',
+      a.npf||'',
+      a.fournisseur||'',
+      a.bus_std?'OUI':'',
+      a.bus_art?'OUI':'',
+      a.chimique?'OUI':'',
+      a.reparable?'OUI':'',
+      a.entretien?'OUI':'',
+      a.min||0,
+      a.max||0,
+      a.photo?'OUI':'',
+      a.tags||''
+    ].map(function(v) {
+      var s = String(v);
+      if (s.indexOf(';')>=0||s.indexOf('"')>=0||s.indexOf('\n')>=0) s='"'+s.replace(/"/g,'""')+'"';
+      return s;
+    }).join(';');
+  });
+  var csv = BOM + headers.join(';') + '\n' + rows.join('\n');
+  var blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  var d = new Date();
+  a.download = 'articles_magasin2k_'+d.getFullYear()+('0'+(d.getMonth()+1)).slice(-2)+('0'+d.getDate()).slice(-2)+'.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Export téléchargé !','success');
+  logAction('Export articles Excel — '+articles.length+' articles');
+}
+
 async function loadAdminPage() {
   await loadDemandes();
   await loadDemandesCompte();

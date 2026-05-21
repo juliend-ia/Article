@@ -401,6 +401,11 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
         </div>
         <div id="p4" class="admin-panel hidden">
           <div class="admin-section"><h2>📊 Tableau de bord</h2><div id="adminDashboard"></div></div>
+          <div class="admin-section">
+            <h2>📥 Export articles</h2>
+            <p style="font-size:12px;color:var(--mu);margin-bottom:14px;">Télécharge la liste complète des articles avec NPF, fournisseur, compatibilité et photo.</p>
+            <div onclick="exportArticlesExcel()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(46,204,113,0.1);border:1.5px solid rgba(46,204,113,0.4);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;color:var(--gn);cursor:pointer;">📥 Télécharger Excel complet</div>
+          </div>
           <div id="resetDemandesSection" style="display:none;" class="admin-section">
             <h2 style="color:var(--rd);">🔑 Réinitialisations <span id="badgeDemandes" class="badge-demandes" style="display:none;"></span></h2>
             <div id="demandesList"></div>
