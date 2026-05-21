@@ -187,6 +187,10 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .admin-panel{padding:18px;overflow-y:auto;flex:1;}
 .admin-section{background:var(--cd);border:1px solid var(--br);border-radius:12px;padding:18px;margin-bottom:16px;}
 .admin-section h2{font-size:16px;color:var(--ac);margin-bottom:14px;font-weight:700;}
+.admin-tab{padding:8px 14px;border-radius:8px 8px 0 0;font-size:12px;font-weight:700;cursor:pointer;color:var(--mu);border:1px solid transparent;border-bottom:none;transition:all 0.15s;white-space:nowrap;}
+.admin-tab:hover{color:var(--tx);}
+.admin-tab.on{background:var(--cd);border-color:var(--br);color:var(--ac);border-bottom:1px solid var(--cd);margin-bottom:-1px;z-index:1;position:relative;}
+.admin-tab-content{padding:16px 18px;}
 .badge-demandes{background:var(--rd);color:#fff;border-radius:50%;width:20px;height:20px;font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:800;margin-left:6px;vertical-align:middle;}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.82);display:flex;align-items:flex-end;justify-content:center;z-index:500;}
 .modal-box{background:var(--cd);border:1px solid var(--br);border-radius:16px 16px 0 0;padding:20px;width:100%;max-width:620px;max-height:92vh;overflow-y:auto;}
@@ -400,33 +404,66 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
           </div>
         </div>
         <div id="p4" class="admin-panel hidden">
-          <div class="admin-section"><h2>📊 Tableau de bord</h2><div id="adminDashboard"></div></div>
-          <div class="admin-section">
-            <h2>📥 Export articles</h2>
-            <p style="font-size:12px;color:var(--mu);margin-bottom:14px;">Télécharge la liste complète des articles avec NPF, fournisseur, compatibilité et photo.</p>
-            <div onclick="exportArticlesExcel()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(46,204,113,0.1);border:1.5px solid rgba(46,204,113,0.4);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;color:var(--gn);cursor:pointer;">📥 Télécharger Excel complet</div>
+          <!-- Onglets admin -->
+          <div id="adminTabs" style="display:flex;gap:6px;flex-wrap:wrap;padding:14px 18px 0;border-bottom:1px solid var(--br);margin-bottom:16px;">
+            <div class="admin-tab on" data-tab="dashboard" onclick="switchAdminTab('dashboard')">📊 Tableau de bord</div>
+            <div class="admin-tab" data-tab="export" onclick="switchAdminTab('export')">📥 Export</div>
+            <div class="admin-tab" data-tab="users" onclick="switchAdminTab('users')">👑 Utilisateurs <span id="badgeDemandesCompte" class="badge-demandes" style="display:none;background:var(--ac);color:#111;"></span> <span id="badgeDemandes" class="badge-demandes" style="display:none;"></span></div>
+            <div class="admin-tab" data-tab="bons" onclick="switchAdminTab('bons')">📋 Bons</div>
+            <div class="admin-tab" data-tab="modifs" onclick="switchAdminTab('modifs')">✏️ Modifications</div>
+            <div class="admin-tab" data-tab="actions" onclick="switchAdminTab('actions')">📜 Actions</div>
           </div>
-          <div id="resetDemandesSection" style="display:none;" class="admin-section">
-            <h2 style="color:var(--rd);">🔑 Réinitialisations <span id="badgeDemandes" class="badge-demandes" style="display:none;"></span></h2>
-            <div id="demandesList"></div>
+
+          <!-- Contenu onglet Tableau de bord -->
+          <div class="admin-tab-content" id="adminTab-dashboard">
+            <div class="admin-section"><h2>📊 Tableau de bord</h2><div id="adminDashboard"></div></div>
           </div>
-          <div id="demandesCompteSection" style="display:none;" class="admin-section">
-            <h2>👤 Demandes de compte <span id="badgeDemandesCompte" class="badge-demandes" style="display:none;background:var(--ac);color:#111;"></span></h2>
-            <div id="demandesCompteList"></div>
+
+          <!-- Contenu onglet Export -->
+          <div class="admin-tab-content hidden" id="adminTab-export">
+            <div class="admin-section">
+              <h2>📥 Export articles</h2>
+              <p style="font-size:12px;color:var(--mu);margin-bottom:14px;">Télécharge la liste complète des articles avec NPF, fournisseur, compatibilité et photo.</p>
+              <div onclick="exportArticlesExcel()" style="display:inline-flex;align-items:center;gap:8px;background:rgba(46,204,113,0.1);border:1.5px solid rgba(46,204,113,0.4);border-radius:10px;padding:10px 20px;font-size:13px;font-weight:700;color:var(--gn);cursor:pointer;">📥 Télécharger Excel complet</div>
+            </div>
           </div>
-          <div class="admin-section">
-            <h2>👑 Gestion utilisateurs</h2>
-            <div class="field"><label>Prénom</label><input type="text" id="newPrenom"/></div>
-            <div class="field"><label>Login</label><input type="text" id="newLogin" autocorrect="off" autocapitalize="none"/></div>
-            <div class="field"><label>Mot de passe</label><input type="password" id="newPwd"/></div>
-            <div class="field"><label>Rôle</label><select id="newRole"><option value="agent">Agent maintenance</option><option value="magasinier">Magasinier</option><option value="brigadier">Brigadier</option><option value="admin">Administrateur</option></select></div>
-            <div class="field" style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="newPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/><label style="margin:0;font-size:13px;cursor:pointer;" for="newPeutModifier">Peut modifier les articles</label></div>
-            <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
+
+          <!-- Contenu onglet Utilisateurs -->
+          <div class="admin-tab-content hidden" id="adminTab-users">
+            <div id="resetDemandesSection" class="admin-section">
+              <h2 style="color:var(--rd);">🔑 Réinitialisations</h2>
+              <div id="demandesList"></div>
+            </div>
+            <div id="demandesCompteSection" class="admin-section">
+              <h2>👤 Demandes de compte</h2>
+              <div id="demandesCompteList"></div>
+            </div>
+            <div class="admin-section">
+              <h2>👑 Gestion utilisateurs</h2>
+              <div class="field"><label>Prénom</label><input type="text" id="newPrenom"/></div>
+              <div class="field"><label>Login</label><input type="text" id="newLogin" autocorrect="off" autocapitalize="none"/></div>
+              <div class="field"><label>Mot de passe</label><input type="password" id="newPwd"/></div>
+              <div class="field"><label>Rôle</label><select id="newRole"><option value="agent">Agent maintenance</option><option value="magasinier">Magasinier</option><option value="brigadier">Brigadier</option><option value="admin">Administrateur</option></select></div>
+              <div class="field" style="display:flex;align-items:center;gap:10px;"><input type="checkbox" id="newPeutModifier" style="width:18px;height:18px;accent-color:var(--gn);cursor:pointer;" checked/><label style="margin:0;font-size:13px;cursor:pointer;" for="newPeutModifier">Peut modifier les articles</label></div>
+              <button class="bsave" onclick="createUser()">CRÉER L'UTILISATEUR</button>
+            </div>
+            <div class="admin-section"><h2>Liste des comptes</h2><div id="usersList"></div></div>
           </div>
-          <div class="admin-section"><h2>Utilisateurs</h2><div id="usersList"></div></div>
-          <div class="admin-section"><h2>📋 Historique des bons de commande</h2><div id="adminHistoBons"></div></div>
-          <div class="admin-section"><h2>✏️ Modifications des articles</h2><div id="adminModifArticles"></div></div>
-          <div class="admin-section"><h2>Historique des actions</h2><div id="actionsList"></div></div>
+
+          <!-- Contenu onglet Bons -->
+          <div class="admin-tab-content hidden" id="adminTab-bons">
+            <div class="admin-section"><h2>📋 Historique des bons de commande</h2><div id="adminHistoBons"></div></div>
+          </div>
+
+          <!-- Contenu onglet Modifications -->
+          <div class="admin-tab-content hidden" id="adminTab-modifs">
+            <div class="admin-section"><h2>✏️ Modifications des articles</h2><div id="adminModifArticles"></div></div>
+          </div>
+
+          <!-- Contenu onglet Actions -->
+          <div class="admin-tab-content hidden" id="adminTab-actions">
+            <div class="admin-section"><h2>📜 Historique des actions</h2><div id="actionsList"></div></div>
+          </div>
         </div>
       </div>
     </div>

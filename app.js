@@ -1512,14 +1512,36 @@ function exportArticlesExcel() {
   logAction('Export articles Excel — '+articles.length+' articles');
 }
 
+var _adminTabLoaded = {};
+
+function switchAdminTab(tab) {
+  // Mettre à jour les onglets visuels
+  document.querySelectorAll('.admin-tab').forEach(function(el) {
+    el.classList.toggle('on', el.getAttribute('data-tab') === tab);
+  });
+  document.querySelectorAll('.admin-tab-content').forEach(function(el) {
+    el.classList.add('hidden');
+  });
+  var content = document.getElementById('adminTab-'+tab);
+  if (content) content.classList.remove('hidden');
+
+  // Chargement lazy : charger seulement si pas encore chargé
+  if (!_adminTabLoaded[tab]) {
+    _adminTabLoaded[tab] = true;
+    if (tab === 'dashboard') { loadAdminDashboard(); }
+    else if (tab === 'users') { loadDemandes(); loadDemandesCompte(); loadUtilisateurs(); }
+    else if (tab === 'bons') { loadAdminHistoBons(); }
+    else if (tab === 'modifs') { loadAdminModifArticles(); }
+    else if (tab === 'actions') { loadHistoriqueActions(); }
+  }
+}
+
 async function loadAdminPage() {
-  await loadDemandes();
-  await loadDemandesCompte();
-  await loadUtilisateurs();
-  await loadHistoriqueActions();
-  await loadAdminDashboard();
-  await loadAdminHistoBons();
-  await loadAdminModifArticles();
+  _adminTabLoaded = {}; // Reset pour forcer rechargement
+  // Charger seulement le tableau de bord par défaut
+  switchAdminTab('dashboard');
+  // Charger les badges demandes en arrière-plan
+  loadDemandes(); loadDemandesCompte();
 }
 
 async function loadAdminModifArticles() {
@@ -1812,8 +1834,8 @@ async function loadDemandesCompte() {
     var data=await supa('GET','demandes_compte?statut=eq.en_attente&order=created_at.asc&select=*');
     var section=document.getElementById('demandesCompteSection'), badge=document.getElementById('badgeDemandesCompte'), list=document.getElementById('demandesCompteList');
     if (!section||!list) return;
-    if (!data||!data.length) { section.style.display='none'; return; }
-    section.style.display='block'; badge.style.display='inline-flex'; badge.textContent=data.length;
+    if (!data||!data.length) { if(section) section.style.display='none'; return; }
+    if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
     var h='';
     for (var i=0;i<data.length;i++) {
       var d=data[i], date=new Date(new Date(d.created_at).getTime()+2*60*60*1000).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
@@ -1853,8 +1875,8 @@ async function loadDemandes() {
   try {
     var data=await supa('GET','demandes_reset?traitee=eq.false&order=created_at.asc&select=*');
     var section=document.getElementById('resetDemandesSection'), badge=document.getElementById('badgeDemandes'), list=document.getElementById('demandesList');
-    if (!data||!data.length) { section.style.display='none'; return; }
-    section.style.display='block'; badge.style.display='inline-flex'; badge.textContent=data.length;
+    if (!data||!data.length) { if(section) section.style.display='none'; return; }
+    if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
     var h='';
     for (var i=0;i<data.length;i++) {
       var d=data[i], date=new Date(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
