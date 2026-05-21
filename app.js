@@ -683,9 +683,12 @@ function switchSection(section) {
     document.getElementById('navOutillage').classList.add('on');
     loadOutillage();
   }
-  // Bouton flottant outillage
+  // Boutons flottants (FAB) — visibles uniquement sur mobile
+  var isMobile = window.innerWidth <= 700;
   var fab=document.getElementById('outilFab');
   if (fab) fab.style.display=(section==='outillage' && window._canEdit)?'flex':'none';
+  var artFab=document.getElementById('articleFab');
+  if (artFab) artFab.style.display=(section==='pieces' && window._canEdit && isMobile)?'flex':'none';
 }
 
 function showPiecesTab(tab) {
