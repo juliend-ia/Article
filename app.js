@@ -1062,10 +1062,19 @@ async function loadHistorique() {
       var detailRows='';
       for (var j=0;j<arts.length;j++) {
         var art=arts[j];
+        // Chercher la photo dans le catalogue
+        var artData = articles.filter(function(a){return a.num===art.num;})[0];
+        var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
+        var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+        var photoBtn = photoUrl
+          ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+          : '<div style="width:32px;height:32px;border-radius:6px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--mu);">📷</div>';
         detailRows+='<div class="bon-detail-row">'
-          +'<div><div style="font-size:14px;font-weight:800;color:var(--ac);">'+esc(art.num)+(art.reparable?' <span style="font-size:11px;background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:4px;padding:1px 6px;color:#9b59b6;">🔧 Rép.</span>':'')+'</div>'
-          +'<div style="font-size:13px;color:var(--tx);margin-top:2px;">'+esc(art.nom)+'</div>'
-          +(art.location?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">📍 '+esc(art.location)+'</div>':'')
+          +photoBtn
+          +'<div style="flex:1;min-width:0;">'
+            +'<div style="font-size:14px;font-weight:800;color:var(--ac);">'+esc(art.num)+(art.reparable?' <span style="font-size:11px;background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:4px;padding:1px 6px;color:#9b59b6;">🔧 Rép.</span>':'')+'</div>'
+            +'<div style="font-size:13px;color:var(--tx);margin-top:2px;">'+esc(art.nom)+'</div>'
+            +(art.location?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">📍 '+esc(art.location)+'</div>':'')
           +'</div>'
           +'<div class="bon-qty">×'+art.qty+'</div>'
           +'</div>';
