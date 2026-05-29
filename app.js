@@ -468,6 +468,111 @@ function buildSidebar() {
 // ── RECHERCHE ──
 function normalize(s) { return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 
+// \u2500\u2500 RECHERCHE INTELLIGENTE \u2500\u2500
+
+// Dictionnaire synonymes / abr\u00e9viations m\u00e9canicien bus
+var SYNO = {
+  'frein':['plaquette','disque','sabot','machoire','etrier','abs'],
+  'plaquette':['frein','disque','sabot','brake'],
+  'disque':['frein','plaquette','rotor'],
+  'amortisseur':['suspension','ressort','amor','choc'],
+  'suspension':['amortisseur','ressort','silent','silentbloc'],
+  'ressort':['suspension','amortisseur','lame'],
+  'essuie':['balai','wiper','essuie-glace','raclette'],
+  'balai':['essuie','wiper','essuie-glace'],
+  'filtre':['filtration','cartouche'],
+  'huile':['lubrifiant','graisse','oil'],
+  'graisse':['lubrifiant','huile'],
+  'joint':['etancheite','seal','garniture','bague'],
+  'courroie':['distribution','belt','chaine'],
+  'chaine':['distribution','courroie'],
+  'phare':['feu','lumiere','led','optique','eclairage'],
+  'feu':['phare','lumiere','led','clignotant','eclairage'],
+  'clignotant':['feu','indicateur','tournant'],
+  'ampoule':['led','lampe','feu','eclairage'],
+  'moteur':['engine','bloc','culasse'],
+  'carburant':['gasoil','diesel','fuel','essence'],
+  'gasoil':['carburant','diesel','fuel','essence'],
+  'diesel':['gasoil','carburant','fuel'],
+  'turbo':['turbocompresseur','suralimentation','turbine'],
+  'radiateur':['refroidissement','cooling','echangeur'],
+  'alternateur':['dynamo','generateur','charge'],
+  'demarreur':['starter','demarrage'],
+  'starter':['demarreur'],
+  'batterie':['accumulateur','12v','24v'],
+  'porte':['portiere','ouverture','vantail'],
+  'vitre':['vitrage','glace','pare-brise','fenetre'],
+  'pare-brise':['vitre','vitrage','glace'],
+  'pneu':['pneumatique','roue','gomme','tire'],
+  'roue':['pneu','pneumatique','jante'],
+  'adblue':['ad blue','uree','addblue'],
+  'blue':['adblue','ad blue','uree'],
+  'caoutchouc':['joint','rubber','soufflet'],
+  'soufflet':['caoutchouc','joint','manchon'],
+  'pompe':['pump','injection','circuit'],
+  'soupape':['valve','clapet','admission'],
+  'courroie':['belt','distribution','alternateur'],
+  'marteau':['secours','urgence'],
+  'extincteur':['incendie'],
+  'klaxon':['avertisseur','klax','horn'],
+  'ldr':['direction','assistee','liquide direction'],
+  'direction':['volant','ldr','steering'],
+  'embrayage':['clutch','disque embrayage'],
+  'boite':['transmission','vitesse','gearbox'],
+  'intercooler':['echangeur','refroidisseur air'],
+  'coussin':['air','pneumatique','suspension'],
+  'silentbloc':['silent','bloc','caoutchouc'],
+};
+
+// Distance de Levenshtein (fautes de frappe)
+function levenshtein(a, b) {
+  if (a===b) return 0;
+  if (!a.length) return b.length;
+  if (!b.length) return a.length;
+  var dp=[], i, j;
+  for (i=0;i<=a.length;i++) dp[i]=[i];
+  for (j=0;j<=b.length;j++) dp[0][j]=j;
+  for (i=1;i<=a.length;i++) {
+    for (j=1;j<=b.length;j++) {
+      dp[i][j]=a[i-1]===b[j-1]?dp[i-1][j-1]:1+Math.min(dp[i-1][j],dp[i][j-1],dp[i-1][j-1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+// V\u00e9rifie si un mot correspond \u00e0 l'article (exact, synonyme ou fuzzy)
+function matchMot(artWords, artText, mot) {
+  // 1. Correspondance directe (substring)
+  if (artText.indexOf(mot) >= 0) return 'exact';
+  // 2. Synonymes
+  var syns = SYNO[mot] || [];
+  for (var s=0; s<syns.length; s++) {
+    if (artText.indexOf(normalize(syns[s])) >= 0) return 'syno';
+  }
+  // 3. Fuzzy (seulement pour mots \u2265 4 lettres)
+  if (mot.length >= 4) {
+    var maxDist = mot.length >= 7 ? 2 : 1;
+    for (var w=0; w<artWords.length; w++) {
+      var aw = artWords[w];
+      if (aw.length < 3) continue;
+      if (levenshtein(mot, aw) <= maxDist) return 'fuzzy';
+    }
+  }
+  return null;
+}
+
+// Calcule un score de pertinence pour trier les r\u00e9sultats
+function scoreRecherche(a, words, artWords, artText) {
+  var score = 0;
+  words.forEach(function(mot) {
+    var m = matchMot(artWords, artText, mot);
+    if (m==='exact') score += 10;
+    else if (m==='syno') score += 5;
+    else if (m==='fuzzy') score += 2;
+  });
+  return score;
+}
+
 
 function toggleBusFilter(f) {
   _busFilter = (_busFilter === f) ? '' : f;
@@ -476,17 +581,37 @@ function toggleBusFilter(f) {
 }
 
 function doSearch() {
-  var q = normalize(document.getElementById('si').value.trim());
+  var rawQ = normalize(document.getElementById('si').value.trim());
+  var words = rawQ ? rawQ.split(/\s+/).filter(Boolean) : [];
   filtered = [];
+  var scored = [];
+
   for (var i=0;i<articles.length;i++) {
     var a=articles[i];
     if (selectedCat!=='TOUT' && a.categorie!==selectedCat) continue;
     if (_busFilter==='std' && !a.bus_std) continue;
     if (_busFilter==='art' && !a.bus_art) continue;
-    if (q && (normalize(a.nom)+'|'+normalize(a.num)+'|'+normalize(a.tags)+'|'+normalize(a.location)+'|'+normalize(a.npf)).indexOf(q)<0) continue;
-    filtered.push(a);
+    if (!words.length) { filtered.push(a); continue; }
+
+    var artText = normalize(a.nom)+'|'+normalize(a.num)+'|'+normalize(a.tags||'')+'|'+normalize(a.location||'')+'|'+normalize(a.npf||'')+'|'+normalize(a.categorie||'')+'|'+normalize(a.fournisseur||'');
+    var artWords = artText.split(/[|\s,]+/).filter(function(w){return w.length>1;});
+
+    // Chaque mot de la query doit matcher (AND)
+    var allMatch = words.every(function(mot) { return matchMot(artWords, artText, mot) !== null; });
+    if (!allMatch) continue;
+
+    var score = scoreRecherche(a, words, artWords, artText);
+    scored.push({a:a, score:score});
   }
-  if (Object.keys(_sortiesCount).length>0) {
+
+  // Trier : d'abord par score de recherche, ensuite par popularité
+  if (words.length) {
+    scored.sort(function(x,y) {
+      if (y.score !== x.score) return y.score - x.score;
+      return (_sortiesCount[y.a.num]||0) - (_sortiesCount[x.a.num]||0);
+    });
+    filtered = scored.map(function(x){return x.a;});
+  } else if (Object.keys(_sortiesCount).length>0) {
     filtered.sort(function(a,b) { return (_sortiesCount[b.num]||0)-(_sortiesCount[a.num]||0); });
   }
   var hasFilter = q || selectedCat!=='TOUT' || _busFilter;
