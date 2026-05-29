@@ -621,7 +621,7 @@ function doSearch() {
     var btn=document.getElementById('busFilter-'+f);
     if (btn) btn.classList.toggle('on', _busFilter===f);
   });
-  renderGrid(q);
+  renderGrid(rawQ);
 }
 
 function hl(txt, q) {
