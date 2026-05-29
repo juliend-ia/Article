@@ -614,7 +614,7 @@ function doSearch() {
   } else if (Object.keys(_sortiesCount).length>0) {
     filtered.sort(function(a,b) { return (_sortiesCount[b.num]||0)-(_sortiesCount[a.num]||0); });
   }
-  var hasFilter = q || selectedCat!=='TOUT' || _busFilter;
+  var hasFilter = rawQ || selectedCat!=='TOUT' || _busFilter;
   document.getElementById('rc').textContent = hasFilter ? (filtered.length+' résultat(s)') : (articles.length+' articles au total');
   // Mettre à jour l'état visuel des boutons filtres bus
   ['std','art'].forEach(function(f) {
