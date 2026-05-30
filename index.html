@@ -471,7 +471,17 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
     <!-- SECTION PANIER -->
     <div id="sectionPanier" style="display:none;flex:1;overflow:hidden;">
       <div class="panier-panel">
-        <div class="ordre-block"><label>Numéro d'ordre (8 chiffres)</label><input type="text" id="numeroOrdre" placeholder="ex: 20240503" inputmode="numeric"/></div>
+        <div class="ordre-block">
+          <label>Numéro d'ordre (8 chiffres)</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <input type="text" id="numeroOrdre" placeholder="ex: 83193846" inputmode="numeric" style="flex:1;"/>
+            <div id="btnScan" onclick="startBarcodeScanner()" style="width:44px;height:44px;background:rgba(240,165,0,0.1);border:1.5px solid rgba(240,165,0,0.35);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;flex-shrink:0;" title="Scanner le code-barre">📷</div>
+          </div>
+        </div>
+        <div class="ordre-block">
+          <label>N° de bus</label>
+          <input type="text" id="numeroBus" placeholder="ex: B9130" style="text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()"/>
+        </div>
         <div class="ordre-block hidden" id="agentField" style="display:none!important;"></div>
         <div class="ordre-block" id="messageField">
           <label>Message pour le magasinier <span style="color:var(--mu);font-weight:400;">(optionnel)</span></label>
@@ -641,6 +651,23 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 <div id="outilFab" onclick="showOutilAddForm()" style="display:none;position:fixed;bottom:24px;right:24px;background:var(--ac);color:#111;border:none;border-radius:14px;padding:12px 18px;font-size:13px;font-weight:800;cursor:pointer;z-index:200;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.35);">➕ Ajouter outil</div>
 <div id="articleFab" onclick="switchSection('ajouter')" style="display:none;position:fixed;bottom:80px;right:16px;background:var(--ac);color:#111;border:none;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:800;cursor:pointer;z-index:200;align-items:center;gap:8px;box-shadow:0 4px 16px rgba(240,165,0,0.35);">➕ Ajouter article</div>
 <div class="toast" id="toast"></div>
+
+<!-- ─── SCANNER CODE-BARRE ─── -->
+<div id="scannerOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:1200;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+  <div style="text-align:center;max-width:420px;width:100%;padding:20px;">
+    <div style="font-size:16px;font-weight:700;color:#f0a500;margin-bottom:16px;">📷 Scanner le code-barre</div>
+    <div style="position:relative;border-radius:12px;overflow:hidden;background:#000;">
+      <video id="scannerVideo" autoplay playsinline style="width:100%;max-height:320px;display:block;"></video>
+      <!-- Viseur -->
+      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;">
+        <div style="width:260px;height:80px;border:2px solid #f0a500;border-radius:8px;box-shadow:0 0 0 1000px rgba(0,0,0,0.4);"></div>
+      </div>
+    </div>
+    <div id="scannerStatus" style="margin-top:14px;font-size:13px;color:#6a6d82;">Pointez la caméra vers le code-barre de la feuille de route</div>
+    <div id="scannerResult" style="margin-top:8px;font-size:18px;font-weight:800;color:#2ecc71;min-height:28px;font-family:monospace;"></div>
+    <div onclick="stopBarcodeScanner()" style="margin-top:16px;background:rgba(231,76,60,0.15);border:1.5px solid rgba(231,76,60,0.4);color:#e74c3c;border-radius:10px;padding:10px 24px;font-size:13px;font-weight:700;cursor:pointer;display:inline-block;">✕ Annuler</div>
+  </div>
+</div>
 
 <!-- ─── BORNE : ÉCRAN SAISIE AGENT ─── -->
 <div id="borneOverlay" class="hidden" style="position:fixed;inset:0;background:var(--bg);z-index:1100;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px;">

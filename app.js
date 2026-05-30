@@ -234,6 +234,67 @@ function initUI() {
   }
 }
 
+// ── SCANNER CODE-BARRE ──
+var _scannerStream = null, _scannerInterval = null;
+
+async function startBarcodeScanner() {
+  var overlay = document.getElementById('scannerOverlay');
+  var video = document.getElementById('scannerVideo');
+  var status = document.getElementById('scannerStatus');
+  var result = document.getElementById('scannerResult');
+  if (!overlay || !video) return;
+
+  // Vérifier support BarcodeDetector
+  if (!('BarcodeDetector' in window)) {
+    showToast('Scanner non supporté — saisis le numéro manuellement','err');
+    return;
+  }
+
+  result.textContent = '';
+  status.textContent = 'Démarrage caméra...';
+  overlay.classList.remove('hidden');
+
+  try {
+    _scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
+    });
+    video.srcObject = _scannerStream;
+
+    var detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','itf','codabar'] });
+    status.textContent = 'Pointez vers le code-barre de la feuille de route';
+
+    _scannerInterval = setInterval(async function() {
+      if (video.readyState < 2) return;
+      try {
+        var barcodes = await detector.detect(video);
+        if (barcodes.length > 0) {
+          var val = barcodes[0].rawValue.trim();
+          result.textContent = '✓ ' + val;
+          status.textContent = 'Code-barre détecté !';
+          // Remplir le champ numéro d'ordre
+          var input = document.getElementById('numeroOrdre');
+          if (input) input.value = val;
+          // Fermer après 1 seconde
+          setTimeout(function() { stopBarcodeScanner(); }, 900);
+        }
+      } catch(e) {}
+    }, 400);
+
+  } catch(e) {
+    status.textContent = 'Erreur caméra — vérifie les permissions';
+    showToast('Accès caméra refusé','err');
+  }
+}
+
+function stopBarcodeScanner() {
+  clearInterval(_scannerInterval); _scannerInterval = null;
+  if (_scannerStream) { _scannerStream.getTracks().forEach(function(t){t.stop();}); _scannerStream = null; }
+  var overlay = document.getElementById('scannerOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  var video = document.getElementById('scannerVideo');
+  if (video) video.srcObject = null;
+}
+
 // ── BORNE ──
 function showBorneEntry() {
   _borneAgentNum = '';
@@ -1069,9 +1130,13 @@ document.getElementById('validerBtn').addEventListener('click', async function()
   try {
     var msgInput = document.getElementById('panierMessage');
     var msg = msgInput ? msgInput.value.trim() : '';
+    var busInput = document.getElementById('numeroBus');
+    var bus = busInput ? busInput.value.trim().toUpperCase() : '';
+    var fullMsg = bus ? '[BUS:'+bus+']'+(msg?' '+msg:'') : (msg||null);
     var agentNum = currentUser.role==='borne' ? _borneAgentNum : currentUser.login;
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:msg||null,preparation_statut:'en_prep'}]);
+    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:fullMsg,preparation_statut:'en_prep'}]);
     if (msgInput) msgInput.value = '';
+    if (busInput) busInput.value = '';
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
     panier=[]; document.getElementById('numeroOrdre').value='';
     updateBadge(); renderPanier(); loadHistorique();
@@ -1221,8 +1286,9 @@ async function loadHistorique() {
             +'<div class="histo-num">Ordre '+esc(b.numero_ordre)+'</div>'
             +'<div class="histo-date">'+dateStr+'</div>'
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · 🪪 Agent '+esc(b.numero_agent):'')+'</div>':'')
+            +(function(){var bus=(b.message||'').match(/^\[BUS:([^\]]+)\]/);return bus?'<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.35);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;color:#3498db;">🚌 '+esc(bus[1])+'</div>':'';}())
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
-            +(b.message?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(b.message)+'</div>':'')
+            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'');return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
           +'</div>'
           +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
             +'<div style="color:var(--mu);font-size:16px;">▼</div>'
