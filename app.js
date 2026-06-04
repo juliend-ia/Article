@@ -1197,7 +1197,7 @@ async function loadHistorique() {
 
     var filtrés=(data||[]).filter(function(b) {
       if (b.statut==='annule' || b.statut==='archive') return false;
-      var dateBon=dateLocale(new Date(b.date_creation).getTime());
+      var dateBon=dateLocale(supaDate(b.date_creation).getTime());
       if (_histoFiltre==='today') return dateBon===aujourdhui;
       if (_histoFiltre==='week') return dateBon>=lundi;
       return true;
@@ -1219,7 +1219,7 @@ async function loadHistorique() {
     var h=tabs;
     for (var i=0;i<filtrés.length;i++) {
       var b=filtrés[i], arts=b.articles||[];
-      var dtBrussels=new Date(b.date_creation);
+      var dtBrussels=supaDate(b.date_creation);
       var dateStr=dtBrussels.toLocaleDateString('fr-FR')+' '+dtBrussels.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone=b.sap_effectue||false;
       var prepStatut = b.preparation_statut || 'en_prep';
@@ -1422,7 +1422,7 @@ async function exportBon(id) {
     var bon=data[0], arts=bon.articles||[];
 
     // Date heure belge
-    var dtBelge=new Date(bon.date_creation);
+    var dtBelge=supaDate(bon.date_creation);
     var dateStr=dtBelge.toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'});
     var heureStr=dtBelge.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 
@@ -1774,7 +1774,7 @@ async function loadAdminModifArticles() {
       h += '</div>';
       if (!liste.length) { h += '<div style="color:var(--mu);text-align:center;padding:20px;">Aucune action trouvée</div>'; el.innerHTML=h; return; }
       liste.forEach(function(a) {
-        var dt = new Date(a.created_at);
+        var dt = supaDate(a.created_at);
         var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
         var isPhoto = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('photo')>=0;
         var isCat   = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('catégor')>=0 || ((a.action||'')+(a.details||'')).toLowerCase().indexOf('categor')>=0;
@@ -1833,7 +1833,7 @@ async function loadAdminDashboard() {
       var finS   = dateBelge(now+(offsetLundi-w*7+6)*86400000);
       var label  = w===0?'Cette sem.':'S-'+(w);
       var count  = data.filter(function(b) {
-        var d = dateBelge(new Date(b.date_creation).getTime());
+        var d = dateBelge(supaDate(b.date_creation).getTime());
         return d>=debutS && d<=finS;
       }).length;
       semaines.push({label:label, count:count});
@@ -1841,7 +1841,7 @@ async function loadAdminDashboard() {
     var maxS = Math.max.apply(null, semaines.map(function(s){return s.count;})) || 1;
 
     // ── Agents actifs (cette semaine) ──
-    var bonsSemaine = data.filter(function(b){ return dateBelge(new Date(b.date_creation).getTime())>=lundi; });
+    var bonsSemaine = data.filter(function(b){ return dateBelge(supaDate(b.date_creation).getTime())>=lundi; });
     var agentsActifs = {};
     bonsSemaine.forEach(function(b){ agentsActifs[b.login]=(agentsActifs[b.login]||0)+1; });
     var nbAgents = Object.keys(agentsActifs).length;
@@ -1941,7 +1941,7 @@ async function loadAdminHistoBons() {
     h += '<div id="adminBonsList">';
     data.slice(0,50).forEach(function(b) {
       var arts = b.articles||[];
-      var dt = new Date(b.date_creation);
+      var dt = supaDate(b.date_creation);
       var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone = b.sap_effectue;
       var sc = {en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
@@ -1970,7 +1970,7 @@ async function loadAdminHistoBons() {
         var list = el.querySelector('#adminBonsList');
         list.innerHTML = filtered.slice(0,50).map(function(b) {
           var arts=b.articles||[];
-          var dt=new Date(b.date_creation);
+          var dt=supaDate(b.date_creation);
           var dateStr=dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
           var sc={en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
           return '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
@@ -2014,7 +2014,7 @@ async function loadAdminHistoOutillage() {
           +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
           +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
           +'<div style="text-align:right;"><div style="font-size:11px;color:#e74c3c;font-weight:700;">Agent '+esc(o.agent_pret)+'</div>'
-          +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+new Date(o.date_pret).toLocaleDateString('fr-FR')+'</div>':'')
+          +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+supaDate(o.date_pret).toLocaleDateString('fr-FR')+'</div>':'')
           +'</div></div>';
       });
       h += '</div>';
@@ -2043,7 +2043,7 @@ async function loadDemandesCompte() {
     if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
     var h='';
     for (var i=0;i<data.length;i++) {
-      var d=data[i], date=new Date(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      var d=data[i], date=supaDate(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
           +'<div><div style="font-size:14px;font-weight:700;">👤 '+esc(d.prenom)+' — Matricule '+esc(d.matricule)+'</div><div style="font-size:11px;color:var(--mu);margin-top:3px;">Demande le '+date+'</div></div>'
@@ -2084,7 +2084,7 @@ async function loadDemandes() {
     if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
     var h='';
     for (var i=0;i<data.length;i++) {
-      var d=data[i], date=new Date(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      var d=data[i], date=supaDate(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div><div style="font-size:14px;font-weight:700;">👤 '+esc(d.login)+'</div><div style="font-size:11px;color:var(--mu);margin-top:2px;">'+date+'</div></div>'
         +'<div style="display:flex;gap:6px;">'
@@ -2195,7 +2195,7 @@ async function loadHistoriqueActions() {
     if (!data||!data.length) { list.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center;">Aucune action</div>'; return; }
     var h='';
     for (var i=0;i<data.length;i++) {
-      var a=data[i], date=new Date(a.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+      var a=data[i], date=supaDate(a.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div><div style="font-size:12px;font-weight:700;color:var(--ac);">'+esc(a.prenom)+'</div><div style="font-size:12px;color:var(--tx);">'+esc(a.action)+'</div>'+(a.details?'<div style="font-size:11px;color:var(--mu);">'+esc(a.details)+'</div>':'')+'</div>'
         +'<div style="font-size:11px;color:var(--mu);white-space:nowrap;">'+date+'</div></div>';
@@ -2325,8 +2325,8 @@ function doOutilSearch() {
     if (bp !== ap) return bp - ap;
     // 2. Parmi les en-prêt : le plus ancien prêt en premier (attente la plus longue)
     if (ap && bp) {
-      var da = a.date_pret ? new Date(a.date_pret) : 0;
-      var db = b.date_pret ? new Date(b.date_pret) : 0;
+      var da = a.date_pret ? supaDate(a.date_pret) : 0;
+      var db = b.date_pret ? supaDate(b.date_pret) : 0;
       return da - db;
     }
     // 3. Parmi les disponibles : par nb_prets desc si dispo, sinon alpha
@@ -2396,7 +2396,9 @@ function doOutilSearch() {
   updateBadgePretsOutillage();
 }
 
-function formatDateBelge(ts) { var d=new Date(ts); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
+// Supabase retourne les timestamps UTC sans 'Z' → forcer Z pour que JS les interprète en UTC
+function supaDate(ts) { if (!ts) return new Date(); var s=String(ts); return new Date((!s.endsWith('Z')&&!s.includes('+')&&!s.includes('-0'))?s+'Z':s); }
+function formatDateBelge(ts) { var d=supaDate(ts); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
 
 function toggleOutilCard(card) {
   var photo=card.querySelector('.outil-photo'), isOpen=card.classList.contains('exp');
