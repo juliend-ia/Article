@@ -2397,7 +2397,13 @@ function doOutilSearch() {
 }
 
 // Supabase retourne les timestamps UTC sans 'Z' → forcer Z pour que JS les interprète en UTC
-function supaDate(ts) { if (!ts) return new Date(); var s=String(ts); return new Date((!s.endsWith('Z')&&!s.includes('+')&&!s.includes('-0'))?s+'Z':s); }
+function supaDate(ts) {
+  if (!ts) return new Date();
+  var s = String(ts).trim();
+  // Ajouter Z seulement si pas de timezone déjà présent (Z, +HH:MM ou -HH:MM en fin de chaîne)
+  if (!/Z$|[+-]\d{2}:\d{2}$|[+-]\d{4}$/.test(s)) s = s + 'Z';
+  return new Date(s);
+}
 function formatDateBelge(ts) { var d=supaDate(ts); return d.toLocaleDateString('fr-FR')+' '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}); }
 
 function toggleOutilCard(card) {
