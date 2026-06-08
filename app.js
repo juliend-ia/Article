@@ -1288,7 +1288,7 @@ async function loadHistorique() {
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · 🪪 Agent '+esc(b.numero_agent):'')+'</div>':'')
             +(function(){var bus=(b.message||'').match(/^\[BUS:([^\]]+)\]/);return bus?'<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.35);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;color:#3498db;">🚌 '+esc(bus[1])+'</div>':'';}())
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
-            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'');return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
+            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[ARDIAN\]\s*/g,' ').trim();return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
           +'</div>'
           +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
             +'<div style="color:var(--mu);font-size:16px;">▼</div>'
@@ -1302,6 +1302,10 @@ async function loadHistorique() {
             +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(sapDone?'var(--gn)':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
               +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
               +'SAP fait'
+            +'</label>'
+            +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(((b.message||'').indexOf('[ARDIAN]')>=0)?'#6495ed':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
+              +'<input type="checkbox" class="chk-ardian" data-id="'+b.id+'" '+(((b.message||'').indexOf('[ARDIAN]')>=0)?'checked':'')+' style="width:15px;height:15px;accent-color:#6495ed;cursor:pointer;"/>'
+              +'👷 Ardian'
             +'</label>'
             +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">📋 Copier</div>'
             +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;">🖨️ Bon</div>'
@@ -1366,6 +1370,22 @@ async function loadHistorique() {
           await supa('PATCH','bons_commande?id=eq.'+id, patch);
           showToast(val?'SAP fait ✓ — Commande marquée Prête !':'SAP non fait','success');
           loadHistorique(); updateBadgeAttente();
+        } catch(e) { showToast('Erreur','err'); }
+      });
+    });
+    list.querySelectorAll('.chk-ardian').forEach(function(el) {
+      el.addEventListener('change', async function() {
+        var id=this.getAttribute('data-id'), val=this.checked;
+        try {
+          // Récupérer le message actuel
+          var bon = data.filter(function(b){return b.id==id;})[0];
+          var msg = (bon && bon.message) || '';
+          // Retirer [ARDIAN] existant puis ajouter si coché
+          msg = msg.replace(/\s*\[ARDIAN\]\s*/g,' ').trim();
+          if (val) msg = (msg ? msg+' ' : '') + '[ARDIAN]';
+          await supa('PATCH','bons_commande?id=eq.'+id, {message: msg||null});
+          showToast(val?'👷 Ardian ajouté ✓':'Ardian retiré','success');
+          loadHistorique();
         } catch(e) { showToast('Erreur','err'); }
       });
     });
