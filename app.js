@@ -1360,9 +1360,23 @@ async function loadHistorique() {
         });
         // Activer le bouton cliqué
         this.style.color=sc.color; this.style.background=sc.bg; this.style.borderColor=sc.border;
-        // Mettre à jour le badge statut en haut du bon
-        var badge = item.querySelector('.statut-badge');
-        if (badge) { badge.style.background=sc.bg; badge.style.borderColor=sc.border; badge.style.color=sc.color; badge.textContent=sc.label; }
+        // Mettre à jour le bloc statut visuel (header droit)
+        var statutBlock = item.querySelector('.histo-header-statut');
+        if (statutBlock) {
+          statutBlock.style.background = sc.bg;
+          var parts = sc.label.split(' ');
+          var emoji = parts[0];
+          var txt = parts.slice(1).join(' ');
+          var sapDoneEl = statutBlock.querySelector('div:nth-child(3)');
+          var sapHtml = sapDoneEl ? sapDoneEl.outerHTML : '';
+          statutBlock.innerHTML =
+            '<div style="font-size:22px;line-height:1;margin-bottom:5px;">'+emoji+'</div>'
+            +'<div style="font-size:11px;font-weight:800;color:'+sc.color+';text-transform:uppercase;letter-spacing:1px;">'+txt+'</div>'
+            +sapHtml;
+        }
+        // Mettre à jour la bordure latérale gauche
+        var headerLeft = item.querySelector('.histo-header-left');
+        if (headerLeft) headerLeft.style.borderLeftColor = sc.border;
         // Envoyer en base
         try {
           await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
