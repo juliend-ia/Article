@@ -1303,11 +1303,16 @@ async function loadHistorique() {
             +'</div>'
             +(msgRest?'<div class="histo-msg">💬 '+esc(msgRest)+'</div>':'')
           +'</div>'
-          +'<div class="histo-header-statut" style="background:'+sc.bg+';">'
-            +'<div style="font-size:22px;line-height:1;margin-bottom:5px;">'+sc.label.charAt(0)+'</div>'
-            +'<div style="font-size:11px;font-weight:800;color:'+sc.color+';text-transform:uppercase;letter-spacing:1px;">'+sc.label.substring(1).trim()+'</div>'
-            +(sapDone?'<div style="margin-top:5px;font-size:9px;color:var(--gn);font-weight:700;letter-spacing:1px;">✓ SAP FAIT</div>':'')
-          +'</div>'
+          +(function(){
+            var parts = sc.label.trim().split(' ');
+            var emoji = parts[0];
+            var txt = parts.slice(1).join(' ');
+            return '<div class="histo-header-statut" style="background:'+sc.bg+';">'
+              +'<div style="font-size:24px;line-height:1;margin-bottom:6px;">'+emoji+'</div>'
+              +'<div style="font-size:11px;font-weight:800;color:'+sc.color+';text-transform:uppercase;letter-spacing:1px;">'+txt+'</div>'
+              +(sapDone?'<div style="margin-top:5px;font-size:9px;color:var(--gn);font-weight:700;letter-spacing:1px;">✓ SAP FAIT</div>':'')
+            +'</div>';
+          }())
         +'</div>'
         +(statutBtns||alertBadges?'<div class="histo-section">'+statutBtns+alertBadges+'</div>':'')
         +(currentUser.role==='agent' || currentUser.role==='brigadier' ? '' :
@@ -1364,13 +1369,14 @@ async function loadHistorique() {
         var statutBlock = item.querySelector('.histo-header-statut');
         if (statutBlock) {
           statutBlock.style.background = sc.bg;
-          var parts = sc.label.split(' ');
+          var parts = sc.label.trim().split(' ');
           var emoji = parts[0];
           var txt = parts.slice(1).join(' ');
-          var sapDoneEl = statutBlock.querySelector('div:nth-child(3)');
-          var sapHtml = sapDoneEl ? sapDoneEl.outerHTML : '';
+          // Préserver le ✓ SAP FAIT s'il existe
+          var sapEl = Array.from(statutBlock.children).filter(function(c){return c.textContent.indexOf('SAP')>=0;})[0];
+          var sapHtml = sapEl ? sapEl.outerHTML : '';
           statutBlock.innerHTML =
-            '<div style="font-size:22px;line-height:1;margin-bottom:5px;">'+emoji+'</div>'
+            '<div style="font-size:24px;line-height:1;margin-bottom:6px;">'+emoji+'</div>'
             +'<div style="font-size:11px;font-weight:800;color:'+sc.color+';text-transform:uppercase;letter-spacing:1px;">'+txt+'</div>'
             +sapHtml;
         }
