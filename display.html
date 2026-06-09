@@ -471,7 +471,9 @@ function render(bons) {
 
 async function load() {
   try {
-    var data = await supa('bons_commande?select=*&order=date_creation.asc&limit=100');
+    // Tri DESC + filtre côté serveur sur les dernières 24h pour éviter de rater les nouveaux
+    var since = new Date(Date.now() - 26*3600000).toISOString();
+    var data = await supa('bons_commande?select=*&date_creation=gte.'+since+'&order=date_creation.desc&limit=200');
     _bons = data||[];
     render(_bons);
     document.getElementById('loading').style.display='none';
