@@ -1288,7 +1288,7 @@ async function loadHistorique() {
             +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · 🪪 Agent '+esc(b.numero_agent):'')+'</div>':'')
             +(function(){var bus=(b.message||'').match(/^\[BUS:([^\]]+)\]/);return bus?'<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.35);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;color:#3498db;">🚌 '+esc(bus[1])+'</div>':'';}())
             +'<div class="histo-count">'+arts.length+' article(s)</div>'
-            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[ARDIAN\]\s*/g,' ').trim();return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
+            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
           +'</div>'
           +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
             +'<div style="color:var(--mu);font-size:16px;">▼</div>'
@@ -1303,10 +1303,17 @@ async function loadHistorique() {
               +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
               +'SAP fait'
             +'</label>'
-            +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(((b.message||'').indexOf('[ARDIAN]')>=0)?'#6495ed':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
-              +'<input type="checkbox" class="chk-ardian" data-id="'+b.id+'" '+(((b.message||'').indexOf('[ARDIAN]')>=0)?'checked':'')+' style="width:15px;height:15px;accent-color:#6495ed;cursor:pointer;"/>'
-              +'👷 Ardian'
-            +'</label>'
+            +(function(){
+              var pris=(b.message||'').match(/\[PRIS:([^\]]+)\]/);
+              var noms = pris ? pris[1].split(',').map(function(n){return n.trim();}).filter(Boolean) : [];
+              var moi = currentUser.prenom || currentUser.login || '';
+              var jySuis = noms.indexOf(moi) >= 0;
+              var label = noms.length ? '👷 '+esc(noms.join(', ')) : '🙋 Je prends';
+              return '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(noms.length?'#6495ed':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
+              +'<input type="checkbox" class="chk-pris" data-id="'+b.id+'" '+(jySuis?'checked':'')+' style="width:15px;height:15px;accent-color:#6495ed;cursor:pointer;"/>'
+              +label
+            +'</label>';
+            }())
             +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">📋 Copier</div>'
             +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;">🖨️ Bon</div>'
             +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">✏️ Modifier</div>'
@@ -1373,18 +1380,24 @@ async function loadHistorique() {
         } catch(e) { showToast('Erreur','err'); }
       });
     });
-    list.querySelectorAll('.chk-ardian').forEach(function(el) {
+    list.querySelectorAll('.chk-pris').forEach(function(el) {
       el.addEventListener('change', async function() {
         var id=this.getAttribute('data-id'), val=this.checked;
         try {
-          // Récupérer le message actuel
           var bon = data.filter(function(b){return b.id==id;})[0];
           var msg = (bon && bon.message) || '';
-          // Retirer [ARDIAN] existant puis ajouter si coché
-          msg = msg.replace(/\s*\[ARDIAN\]\s*/g,' ').trim();
-          if (val) msg = (msg ? msg+' ' : '') + '[ARDIAN]';
+          // Extraire la liste actuelle
+          var match = msg.match(/\[PRIS:([^\]]+)\]/);
+          var noms = match ? match[1].split(',').map(function(n){return n.trim();}).filter(Boolean) : [];
+          var moi = currentUser.prenom || currentUser.login || 'Magasinier';
+          // Ajouter ou retirer mon nom
+          if (val) { if (noms.indexOf(moi) < 0) noms.push(moi); }
+          else { noms = noms.filter(function(n){return n !== moi;}); }
+          // Retirer l'ancien marqueur et réinjecter
+          msg = msg.replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
+          if (noms.length) msg = (msg ? msg+' ' : '') + '[PRIS:'+noms.join(',')+']';
           await supa('PATCH','bons_commande?id=eq.'+id, {message: msg||null});
-          showToast(val?'👷 Ardian ajouté ✓':'Ardian retiré','success');
+          showToast(val?'👷 '+moi+' a pris ce bon ✓':moi+' s\'est retiré','success');
           loadHistorique();
         } catch(e) { showToast('Erreur','err'); }
       });
@@ -1513,6 +1526,10 @@ async function exportBon(id) {
           +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">SAP</div>'
           +'<div style="font-size:14px;font-weight:700;">'+sapStatut+'</div>'
         +'</div>'
+        +(function(){var p=(bon.message||'').match(/\[PRIS:([^\]]+)\]/);return p?'<div style="flex:1;background:#eaf2fb;border-left:3px solid #6495ed;border-radius:4px;padding:10px 14px;">'
+          +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Magasinier</div>'
+          +'<div style="font-size:15px;font-weight:700;color:#2471a3;">👷 '+esc(p[1])+'</div>'
+        +'</div>':'';}())
       +'</div>'
 
       // Alerte ZLMM2 si entretien
