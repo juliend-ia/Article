@@ -373,14 +373,20 @@ function esc(s) {
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
+// Supabase retourne UTC sans 'Z' final → forcer Z pour parsing UTC correct
+function supaDate(ts) {
+  if (!ts) return new Date();
+  var s = String(ts).trim();
+  if (!/Z$|[+-]\d{2}:\d{2}$|[+-]\d{4}$/.test(s)) s = s + 'Z';
+  return new Date(s);
+}
+
 function formatTime(ts) {
-  var d = new Date(ts);
-  return d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  return supaDate(ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
 
 function timeSince(ts) {
-  // Supabase stocke en UTC — Date() le convertit automatiquement en local
-  var diff = Math.floor((Date.now() - new Date(ts).getTime()) / 60000);
+  var diff = Math.floor((Date.now() - supaDate(ts).getTime()) / 60000);
   if (diff < 1) return 'À l\'instant';
   if (diff === 1) return 'Il y a 1 min';
   if (diff < 60) return 'Il y a '+diff+' min';
@@ -391,11 +397,17 @@ function timeSince(ts) {
 function renderCard(b, isNewPret) {
   var arts = b.articles||[];
   var agents = b.login || '—';
+  // Parser les marqueurs spéciaux du message
+  var rawMsg = b.message || '';
+  var busMatch = rawMsg.match(/^\[BUS:([^\]]+)\]/);
+  var prisMatch = rawMsg.match(/\[PRIS:([^\]]+)\]/);
+  var msgClean = rawMsg.replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
   return '<div class="order-card'+(isNewPret?' new-pret':'')+'">'
     +'<div class="order-num-big">'+esc(b.numero_ordre)+'</div>'
     +'<div class="order-agent">👤 '+esc(agents)+'</div>'
-    +'<div class="order-items">'+arts.length+' article'+(arts.length>1?'s':'')+'</div>'
-    +(b.message?'<div class="order-msg">💬 '+esc(b.message)+'</div>':'')
+    +'<div class="order-items">'+arts.length+' article'+(arts.length>1?'s':'')+(busMatch?' · 🚌 '+esc(busMatch[1]):'')+'</div>'
+    +(prisMatch?'<div style="font-size:11px;color:#6495ed;margin-bottom:6px;font-weight:700;">👷 '+esc(prisMatch[1])+'</div>':'')
+    +(msgClean?'<div class="order-msg">💬 '+esc(msgClean)+'</div>':'')
     +'<div class="order-time">'+timeSince(b.date_creation)+'</div>'
   +'</div>';
 }
@@ -413,8 +425,7 @@ function render(bons) {
   var filtered = bons.filter(function(b) {
     if (b.statut === 'annule') return false;
     if (b.sap_effectue) return false;
-    // Date locale du bon
-    var d = new Date(b.date_creation);
+    var d = supaDate(b.date_creation);
     var dateBon = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
     return dateBon === today;
   });
