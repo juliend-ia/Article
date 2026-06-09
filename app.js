@@ -1260,8 +1260,8 @@ async function loadHistorique() {
         var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
         var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
         var photoBtn = photoUrl
-          ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:32px;height:32px;border-radius:6px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
-          : '<div style="width:32px;height:32px;border-radius:6px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--mu);">📷</div>';
+          ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+          : '<div style="width:48px;height:48px;border-radius:8px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
         detailRows+='<div class="bon-detail-row">'
           +photoBtn
           +'<div style="flex:1;min-width:0;">'
@@ -1280,47 +1280,61 @@ async function loadHistorique() {
       if (hasEntretien) alertBadges += '<div style="background:rgba(52,152,219,0.12);border:1.5px solid #3498db;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#3498db;display:flex;align-items:center;gap:8px;margin-bottom:6px;">⚙ Certains articles doivent être sortis en <strong>ZLMM2</strong></div>';
       if (hasReparable) alertBadges += '<div style="background:rgba(155,89,182,0.12);border:1.5px solid #9b59b6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#9b59b6;display:flex;align-items:center;gap:8px;margin-bottom:6px;">🔧 Certains articles sont réparables — sortie en réparable</div>';
 
-      h+='<div class="histo-item" style="'+(sapDone?'opacity:0.55;':'')+'">'
-        +'<div style="display:flex;justify-content:space-between;align-items:start;cursor:pointer;" onclick="toggleBon(this)">'
-          +'<div>'
-            +'<div class="histo-num">Ordre '+esc(b.numero_ordre)+'</div>'
-            +'<div class="histo-date">'+dateStr+'</div>'
-            +(b.login?'<div style="font-size:11px;color:var(--ac);margin-top:2px;">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · 🪪 Agent '+esc(b.numero_agent):'')+'</div>':'')
-            +(function(){var bus=(b.message||'').match(/^\[BUS:([^\]]+)\]/);return bus?'<div style="margin-top:3px;display:inline-flex;align-items:center;gap:5px;background:rgba(52,152,219,0.12);border:1px solid rgba(52,152,219,0.35);border-radius:6px;padding:2px 8px;font-size:12px;font-weight:800;color:#3498db;">🚌 '+esc(bus[1])+'</div>':'';}())
-            +'<div class="histo-count">'+arts.length+' article(s)</div>'
-            +(function(){var rest=(b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();return rest?'<div style="margin-top:5px;background:rgba(240,165,0,0.08);border-left:2px solid var(--ac);padding:4px 8px;border-radius:0 6px 6px 0;font-size:11px;color:var(--tx);font-style:italic;">💬 '+esc(rest)+'</div>':'';}())
+      // Extraire les noms des magasiniers qui ont pris le bon
+      var prisMatch = (b.message||'').match(/\[PRIS:([^\]]+)\]/);
+      var prisNoms = prisMatch ? prisMatch[1].split(',').map(function(n){return n.trim();}).filter(Boolean) : [];
+      var busMatch = (b.message||'').match(/^\[BUS:([^\]]+)\]/);
+      var msgRest = (b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
+
+      h+='<div class="histo-item" style="'+(sapDone?'opacity:0.6;':'')+'border-left:none;">'
+        // Header avec ordre + statut visuel à droite
+        +'<div class="histo-header" onclick="toggleBon(this)" style="border-left-color:'+sc.border+';">'
+          +'<div class="histo-header-left" style="border-left-color:'+sc.border+';">'
+            +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+              +'<div class="histo-num">N° '+esc(b.numero_ordre)+'</div>'
+              +'<div style="color:var(--mu);font-size:13px;">▼</div>'
+            +'</div>'
+            +'<div class="histo-date">🕒 '+dateStr+'</div>'
+            +'<div class="histo-meta-row">'
+              +(b.login?'<span class="histo-chip histo-chip-agent">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · '+esc(b.numero_agent):'')+'</span>':'')
+              +(busMatch?'<span class="histo-chip histo-chip-bus">🚌 '+esc(busMatch[1])+'</span>':'')
+              +'<span class="histo-chip histo-chip-count">📦 '+arts.length+' article'+(arts.length>1?'s':'')+'</span>'
+              +(prisNoms.length?'<span class="histo-chip histo-chip-pris">👷 '+esc(prisNoms.join(', '))+'</span>':'')
+            +'</div>'
+            +(msgRest?'<div class="histo-msg">💬 '+esc(msgRest)+'</div>':'')
           +'</div>'
-          +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">'
-            +'<div style="color:var(--mu);font-size:16px;">▼</div>'
-            +'<div class="statut-badge" style="background:'+sc.bg+';border:1.5px solid '+sc.border+';border-radius:8px;padding:4px 10px;font-size:11px;font-weight:800;color:'+sc.color+';">'+sc.label+'</div>'
+          +'<div class="histo-header-statut" style="background:'+sc.bg+';">'
+            +'<div style="font-size:22px;line-height:1;margin-bottom:5px;">'+sc.label.charAt(0)+'</div>'
+            +'<div style="font-size:11px;font-weight:800;color:'+sc.color+';text-transform:uppercase;letter-spacing:1px;">'+sc.label.substring(1).trim()+'</div>'
+            +(sapDone?'<div style="margin-top:5px;font-size:9px;color:var(--gn);font-weight:700;letter-spacing:1px;">✓ SAP FAIT</div>':'')
           +'</div>'
         +'</div>'
-        +statutBtns
-        +alertBadges
+        +(statutBtns||alertBadges?'<div class="histo-section">'+statutBtns+alertBadges+'</div>':'')
         +(currentUser.role==='agent' || currentUser.role==='brigadier' ? '' :
-          '<div class="histo-btns">'
-            +'<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(sapDone?'var(--gn)':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
-              +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:15px;height:15px;accent-color:var(--gn);cursor:pointer;"/>'
+          (function(){
+            var moi = currentUser.prenom || currentUser.login || '';
+            var jySuis = prisNoms.indexOf(moi) >= 0;
+            return '<div class="histo-btns">'
+            +'<label class="histo-chk" style="color:'+(sapDone?'var(--gn)':'var(--mu)')+';background:'+(sapDone?'rgba(46,204,113,0.08)':'transparent')+';" onclick="event.stopPropagation()">'
+              +'<input type="checkbox" class="chk-sap" data-id="'+b.id+'" '+(sapDone?'checked':'')+' style="width:16px;height:16px;accent-color:var(--gn);cursor:pointer;"/>'
               +'SAP fait'
             +'</label>'
-            +(function(){
-              var pris=(b.message||'').match(/\[PRIS:([^\]]+)\]/);
-              var noms = pris ? pris[1].split(',').map(function(n){return n.trim();}).filter(Boolean) : [];
-              var moi = currentUser.prenom || currentUser.login || '';
-              var jySuis = noms.indexOf(moi) >= 0;
-              var label = noms.length ? '👷 '+esc(noms.join(', ')) : '🙋 Je prends';
-              return '<label style="display:flex;align-items:center;gap:5px;font-size:11px;color:'+(noms.length?'#6495ed':'var(--mu)')+';cursor:pointer;" onclick="event.stopPropagation()">'
-              +'<input type="checkbox" class="chk-pris" data-id="'+b.id+'" '+(jySuis?'checked':'')+' style="width:15px;height:15px;accent-color:#6495ed;cursor:pointer;"/>'
-              +label
-            +'</label>';
-            }())
+            +'<label class="histo-chk" style="color:'+(jySuis?'#6495ed':'var(--mu)')+';background:'+(jySuis?'rgba(100,149,237,0.08)':'transparent')+';" onclick="event.stopPropagation()">'
+              +'<input type="checkbox" class="chk-pris" data-id="'+b.id+'" '+(jySuis?'checked':'')+' style="width:16px;height:16px;accent-color:#6495ed;cursor:pointer;"/>'
+              +'🙋 Je prends'
+            +'</label>'
+            +'<div class="histo-btns-spacer"></div>'
             +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">📋 Copier</div>'
             +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;">🖨️ Bon</div>'
             +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">✏️ Modifier</div>'
-            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">Supprimer</div>'
-          +'</div>'
+            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">🗑</div>'
+          +'</div>';
+          }())
         )
-        +'<div class="bon-detail">'+detailRows+'</div>'
+        +'<div class="bon-detail">'
+          +'<div class="bon-detail-title">📦 Articles à préparer</div>'
+          +detailRows
+        +'</div>'
       +'</div>';
     }
 
