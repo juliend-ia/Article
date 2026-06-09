@@ -94,7 +94,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .card-photo-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
 .card-photo-placeholder{width:100%;height:170px;border-radius:10px 10px 0 0;flex-shrink:0;background:linear-gradient(135deg,#0f1220 0%,#141828 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-bottom:1px solid var(--br);position:relative;}
 .card-photo-badge{position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:1;}
-.card-photo-badge .tag{backdrop-filter:blur(4px);}
+.card-photo-badge .tag{backdrop-filter:blur(8px);font-size:10px;font-weight:900;padding:3px 9px;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.5);}
 @media(max-width:700px){
   .card-photo-wrap{height:200px;}
 }
@@ -109,11 +109,11 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .tag-chim{background:rgba(231,76,60,0.12);color:#e74c3c;border:1px solid rgba(231,76,60,0.25);}
 .tag-rep{background:rgba(155,89,182,0.12);color:#9b59b6;border:1px solid rgba(155,89,182,0.25);}
 .tag-int{background:rgba(100,149,237,0.12);color:#6495ed;border:1px solid rgba(100,149,237,0.25);}
-.card-photo-badge .tag-std{background:rgba(46,204,113,0.3);border-color:rgba(46,204,113,0.5);}
-.card-photo-badge .tag-art{background:rgba(240,165,0,0.3);border-color:rgba(240,165,0,0.5);}
-.card-photo-badge .tag-chim{background:rgba(231,76,60,0.3);border-color:rgba(231,76,60,0.5);}
-.card-photo-badge .tag-rep{background:rgba(155,89,182,0.3);border-color:rgba(155,89,182,0.5);}
-.card-photo-badge .tag-int{background:rgba(100,149,237,0.3);border-color:rgba(100,149,237,0.5);}
+.card-photo-badge .tag-std{background:rgba(46,204,113,0.95);color:#fff;border-color:rgba(46,204,113,1);}
+.card-photo-badge .tag-art{background:rgba(240,165,0,0.95);color:#111;border-color:rgba(240,165,0,1);}
+.card-photo-badge .tag-chim{background:rgba(231,76,60,0.95);color:#fff;border-color:rgba(231,76,60,1);}
+.card-photo-badge .tag-rep{background:rgba(155,89,182,0.95);color:#fff;border-color:rgba(155,89,182,1);}
+.card-photo-badge .tag-int{background:rgba(100,149,237,0.95);color:#fff;border-color:rgba(100,149,237,1);}
 .card-extra{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px;}
 .card-extra-badge{font-size:10px;color:var(--mu2);background:rgba(255,255,255,0.04);border:1px solid var(--br);border-radius:4px;padding:2px 7px;font-weight:600;}
 .card-extra-badge b{color:var(--tx);font-weight:700;}
