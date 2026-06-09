@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=1920, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>Magasin 2K — Commandes</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@500;700&display=swap');
@@ -334,11 +337,25 @@ body::before {
 
   </div>
 
+  <!-- Debug discret en bas -->
+  <div id="dbg" style="position:fixed;bottom:4px;right:8px;font-family:'DM Mono',monospace;font-size:9px;color:#3a3d52;opacity:0.5;pointer-events:none;z-index:10;"></div>
+
 </div>
 
 <script>
+// ── DISPLAY v3 — désinstaller tout SW pour garantir les données fraîches ──
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){ r.unregister(); });
+  });
+}
+if (window.caches) {
+  caches.keys().then(function(keys){ keys.forEach(function(k){ caches.delete(k); }); });
+}
+
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
 var SKEY = 'sb_publishable_F0Gcdx4mHDbvAAcuXwYbhA_QSlPD8aC';
+var DISPLAY_VERSION = 'v3-' + Date.now();
 
 var _bons = [];
 var _prevPrets = [];
@@ -459,8 +476,21 @@ async function load() {
     render(_bons);
     document.getElementById('loading').style.display='none';
     document.getElementById('appRoot').style.cssText='display:flex;flex-direction:column;height:100vh;';
+    // Debug : montrer combien de bons reçus
+    var now = new Date();
+    var today = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    var auj = _bons.filter(function(b){
+      if (b.statut==='annule'||b.sap_effectue) return false;
+      var d = supaDate(b.date_creation);
+      var db = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      return db === today;
+    });
+    var dbg = document.getElementById('dbg');
+    if (dbg) dbg.textContent = DISPLAY_VERSION+' · '+_bons.length+' bons · '+auj.length+' aujourd\'hui ('+today+') · MAJ '+now.toLocaleTimeString('fr-FR');
   } catch(e) {
     console.error(e);
+    var dbg = document.getElementById('dbg');
+    if (dbg) dbg.textContent = 'ERREUR: '+e.message;
     setTimeout(load, 3000);
   }
 }
