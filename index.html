@@ -302,6 +302,60 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   .bn-dot-green{background:var(--gn);color:#111;}
   .bn-dot-orange{background:var(--ac);color:#111;}
 }
+
+/* ═════════ DASHBOARD MAGASINIER/ADMIN ═════════ */
+#sectionDashboard{flex:1;background:radial-gradient(ellipse at top,#1a1b3a 0%,#0a0a18 60%,#000 100%);font-family:'Space Grotesk','Inter',sans-serif;color:#e8eaf0;padding:32px 40px;display:none;flex-direction:column;gap:20px;overflow:hidden;position:relative;}
+#sectionDashboard::before{content:'';position:absolute;top:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(240,165,0,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+#sectionDashboard::after{content:'';position:absolute;bottom:-100px;left:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(155,89,182,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+
+.dash-hero{position:relative;z-index:1;display:flex;align-items:flex-end;gap:36px;flex-wrap:wrap;}
+.dash-clock-wrap{flex:1;min-width:340px;}
+.dash-greet{font-size:11px;color:#9b9ec7;text-transform:uppercase;letter-spacing:4px;margin-bottom:8px;font-weight:600;}
+.dash-greet b{color:var(--ac);}
+.dash-time-big{font-family:'JetBrains Mono','Consolas',monospace;font-size:110px;font-weight:700;color:#fff;line-height:1;letter-spacing:-3px;background:linear-gradient(180deg,#fff 0%,#9b9ec7 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+.dash-time-sec{font-family:'JetBrains Mono','Consolas',monospace;font-size:28px;font-weight:500;color:var(--ac);}
+.dash-date-line{font-size:14px;color:#a5a5b8;margin-top:8px;font-weight:500;letter-spacing:1px;text-transform:capitalize;}
+
+.dash-service{background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:18px;padding:20px 24px;min-width:300px;}
+.dash-svc-label{font-size:9px;color:#9b9ec7;letter-spacing:3px;text-transform:uppercase;font-weight:700;margin-bottom:6px;}
+.dash-svc-name{font-size:15px;font-weight:700;color:#fff;margin-bottom:14px;}
+.dash-svc-name b{color:var(--ac);}
+.dash-svc-countdown{display:flex;align-items:baseline;gap:10px;}
+.dash-svc-num{font-family:'JetBrains Mono','Consolas',monospace;font-size:42px;font-weight:700;color:var(--ac);line-height:1;}
+.dash-svc-unit{font-size:11px;color:#9b9ec7;text-transform:uppercase;letter-spacing:2px;font-weight:600;}
+.dash-svc-bar{margin-top:14px;height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden;}
+.dash-svc-bar-fill{height:100%;background:linear-gradient(90deg,var(--ac),#ffc233);border-radius:3px;transition:width 1s linear;}
+
+.dash-cards{position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px;flex:1;min-height:280px;}
+.dash-c{background:rgba(255,255,255,0.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.08);border-radius:22px;padding:28px 26px;cursor:pointer;position:relative;overflow:hidden;display:flex;flex-direction:column;transition:all 0.3s;}
+.dash-c:hover{border-color:rgba(240,165,0,0.5);background:rgba(255,255,255,0.06);transform:translateY(-4px);}
+.dash-c-glow{position:absolute;top:-40px;right:-40px;width:180px;height:180px;border-radius:50%;filter:blur(50px);opacity:0.35;pointer-events:none;}
+.dash-c1 .dash-c-glow{background:#3498db;}
+.dash-c2 .dash-c-glow{background:#2ecc71;}
+.dash-c3 .dash-c-glow{background:#f0a500;}
+.dash-c4 .dash-c-glow{background:#9b59b6;}
+.dash-c-ic{font-size:44px;margin-bottom:24px;position:relative;}
+.dash-c-t{font-size:30px;font-weight:600;color:#fff;margin-bottom:auto;line-height:1.1;letter-spacing:-0.5px;position:relative;}
+.dash-c-count{font-family:'JetBrains Mono','Consolas',monospace;font-size:13px;color:#9b9ec7;margin-top:12px;font-weight:600;position:relative;}
+.dash-c-count b{color:#fff;font-size:18px;}
+.dash-c-go{margin-top:16px;display:flex;align-items:center;justify-content:space-between;position:relative;}
+.dash-c-cta{font-size:11px;color:var(--ac);text-transform:uppercase;letter-spacing:2.5px;font-weight:700;}
+.dash-c-arrow{width:40px;height:40px;border-radius:50%;border:1px solid rgba(240,165,0,0.5);display:flex;align-items:center;justify-content:center;color:var(--ac);font-size:16px;transition:all 0.2s;}
+.dash-c:hover .dash-c-arrow{background:var(--ac);color:#0a0a18;}
+
+@media(max-width:900px){
+  #sectionDashboard{padding:20px 16px;gap:14px;}
+  .dash-hero{gap:14px;}
+  .dash-clock-wrap{min-width:100%;}
+  .dash-time-big{font-size:64px;letter-spacing:-2px;}
+  .dash-time-sec{font-size:18px;}
+  .dash-service{min-width:100%;}
+  .dash-cards{grid-template-columns:repeat(2,1fr);gap:12px;}
+  .dash-c{padding:18px 16px;}
+  .dash-c-ic{font-size:32px;margin-bottom:14px;}
+  .dash-c-t{font-size:22px;}
+}
+
 </style>
 </head>
 <body>
@@ -352,6 +406,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
       <div class="tb-logo-sub">Dépôt Bus Citaro</div>
     </div>
     <div class="tb-nav">
+      <div class="tb-nav-item" id="navDashboard" onclick="switchSection('dashboard')" style="display:none;">🏠 Accueil</div>
       <div class="tb-nav-item on" id="navPieces">🔩 Pièces</div>
       <div class="tb-nav-item" id="navOutillage">🔧 Outillages</div>
       <div class="tb-nav-item" id="navPanier">🛒 Panier <span class="tb-nav-badge hidden" id="panierBadge" style="background:var(--rd);">0</span></div>
@@ -371,6 +426,70 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   </div>
 
   <div class="app-body">
+
+    <!-- SECTION DASHBOARD (magasinier / admin) -->
+    <div id="sectionDashboard">
+      <div class="dash-hero">
+        <div class="dash-clock-wrap">
+          <div class="dash-greet">Bonjour <b id="dashUserName">—</b></div>
+          <div>
+            <span class="dash-time-big" id="dashTimeBig">--:--</span><span class="dash-time-sec" id="dashTimeSec">:--</span>
+          </div>
+          <div class="dash-date-line" id="dashDateLine">—</div>
+        </div>
+        <div class="dash-service">
+          <div class="dash-svc-label">Service en cours</div>
+          <div class="dash-svc-name" id="dashSvcName">—</div>
+          <div class="dash-svc-countdown">
+            <div class="dash-svc-num" id="dashSvcCountdown">—</div>
+            <div class="dash-svc-unit">avant fin</div>
+          </div>
+          <div class="dash-svc-bar"><div class="dash-svc-bar-fill" id="dashSvcBar" style="width:0%;"></div></div>
+        </div>
+      </div>
+      <div class="dash-cards">
+        <div class="dash-c dash-c1" onclick="switchSection('pieces')">
+          <div class="dash-c-glow"></div>
+          <div class="dash-c-ic">🔩</div>
+          <div class="dash-c-t">Pièces</div>
+          <div class="dash-c-count"><b id="dashCountArticles">—</b> articles</div>
+          <div class="dash-c-go">
+            <div class="dash-c-cta">Catalogue</div>
+            <div class="dash-c-arrow">→</div>
+          </div>
+        </div>
+        <div class="dash-c dash-c2" onclick="switchSection('outillage')">
+          <div class="dash-c-glow"></div>
+          <div class="dash-c-ic">🔧</div>
+          <div class="dash-c-t">Outillage</div>
+          <div class="dash-c-count"><b id="dashCountOutil">—</b> en prêt</div>
+          <div class="dash-c-go">
+            <div class="dash-c-cta">Gérer</div>
+            <div class="dash-c-arrow">→</div>
+          </div>
+        </div>
+        <div class="dash-c dash-c3" onclick="switchSection('panier')">
+          <div class="dash-c-glow"></div>
+          <div class="dash-c-ic">🛒</div>
+          <div class="dash-c-t">Panier</div>
+          <div class="dash-c-count"><b id="dashCountPanier">—</b> à préparer</div>
+          <div class="dash-c-go">
+            <div class="dash-c-cta">Préparer</div>
+            <div class="dash-c-arrow">→</div>
+          </div>
+        </div>
+        <div class="dash-c dash-c4" onclick="showToast('Module Retours — à venir prochainement','success')">
+          <div class="dash-c-glow"></div>
+          <div class="dash-c-ic">📦</div>
+          <div class="dash-c-t">Retours</div>
+          <div class="dash-c-count">Bientôt disponible</div>
+          <div class="dash-c-go">
+            <div class="dash-c-cta">Bientôt</div>
+            <div class="dash-c-arrow">→</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- SECTION PIÈCES -->
     <div id="sectionPieces" style="display:flex;flex:1;overflow:hidden;">
@@ -679,6 +798,6 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
-<script src="app.js?v=24"></script>
+<script src="app.js?v=25"></script>
 </body>
 </html>

@@ -228,9 +228,27 @@ function initUI() {
   } else sidebarFooter.innerHTML = '';
   updateBadgeAttente();
 
+  // Dashboard : visible pour magasinier/admin
+  var showDash = (role==='magasinier' || role==='admin');
+  var navDash = document.getElementById('navDashboard');
+  if (navDash) navDash.style.display = showDash ? '' : 'none';
+
   // Borne → afficher l'écran de saisie agent
   if (role === 'borne') {
     showBorneEntry();
+  } else if (showDash) {
+    // Magasinier/Admin → dashboard par défaut (sauf si hash route déjà défini)
+    var initial = (location.hash || '').replace('#','');
+    if (['pieces','outillage','panier','admin','ajouter','dashboard'].indexOf(initial) >= 0) {
+      switchSection(initial);
+    } else {
+      switchSection('dashboard');
+    }
+    startDashboardClock();
+  } else {
+    // Agent/Brigadier → pieces (comportement actuel)
+    var initial2 = (location.hash || '').replace('#','');
+    if (['pieces','outillage','panier'].indexOf(initial2) >= 0) switchSection(initial2);
   }
 }
 
@@ -845,24 +863,110 @@ function showCatSugg(inputId, suggId) {
 
 // ── NAVIGATION SECTIONS ──
 var _currentSection = 'pieces';
+var _dashTimer = null;
+
+// ── DASHBOARD : horloge live + décompte service + compteurs ──
+function refreshDashboard() {
+  refreshDashboardLive();
+  // Compteurs depuis Supabase (en parallèle, non bloquant)
+  try {
+    var nb = document.getElementById('dashCountArticles');
+    if (nb && articles && articles.length) nb.textContent = articles.length;
+  } catch(e) {}
+  try {
+    var no = document.getElementById('dashCountOutil');
+    if (no && typeof outillage !== 'undefined') {
+      var enPret = outillage.filter(function(o){return o.agent_pret;}).length;
+      no.textContent = enPret;
+    }
+  } catch(e) {}
+  // Panier en attente : bons valides non sap
+  supa('GET','bons_commande?statut=eq.valide&sap_effectue=eq.false&select=id')
+    .then(function(data){
+      var nc = document.getElementById('dashCountPanier');
+      if (nc) nc.textContent = (data && data.length) ? data.length : 0;
+    }).catch(function(){});
+}
+
+function refreshDashboardLive() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  var s = String(now.getSeconds()).padStart(2,'0');
+  var tBig = document.getElementById('dashTimeBig');
+  var tSec = document.getElementById('dashTimeSec');
+  if (tBig) tBig.textContent = h+':'+m;
+  if (tSec) tSec.textContent = ':'+s;
+
+  var jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  var mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+  var dLine = document.getElementById('dashDateLine');
+  if (dLine) dLine.textContent = jours[now.getDay()]+' '+now.getDate()+' '+mois[now.getMonth()]+' '+now.getFullYear();
+
+  // Greeting personnalisé
+  var greet = document.getElementById('dashUserName');
+  if (greet) greet.textContent = currentUser.prenom || currentUser.login || 'Magasinier';
+
+  // Décompte fin de service
+  var minutesNow = now.getHours()*60 + now.getMinutes() + now.getSeconds()/60;
+  var service, startMin, endMin;
+  if (minutesNow >= 6*60 && minutesNow < 14*60)       { service='matin';      startMin=6*60;  endMin=14*60; }
+  else if (minutesNow >= 14*60 && minutesNow < 22*60) { service='après-midi'; startMin=14*60; endMin=22*60; }
+  else                                                 { service='nuit';
+    if (minutesNow >= 22*60) { startMin=22*60; endMin=30*60; }
+    else                     { startMin=-2*60; endMin=6*60;  }
+  }
+  var startStr = String(Math.floor(((startMin+1440)%1440)/60)).padStart(2,'0')+'h';
+  var endStr   = String(Math.floor((endMin%1440)/60)).padStart(2,'0')+'h';
+  var svcName = document.getElementById('dashSvcName');
+  if (svcName) svcName.innerHTML = 'Service <b>'+service+'</b> · '+startStr+'–'+endStr;
+
+  var remaining = endMin - minutesNow;
+  var rh = Math.floor(remaining/60);
+  var rm = Math.floor(remaining%60);
+  var cd = document.getElementById('dashSvcCountdown');
+  if (cd) cd.textContent = rh+'h '+String(rm).padStart(2,'0');
+
+  var bar = document.getElementById('dashSvcBar');
+  if (bar) {
+    var pct = ((minutesNow - startMin) / (endMin - startMin)) * 100;
+    bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+}
+
+// Démarrer la mise à jour live (1 fois)
+function startDashboardClock() {
+  if (_dashTimer) return;
+  _dashTimer = setInterval(refreshDashboardLive, 1000);
+}
 
 function switchSection(section) {
   _currentSection = section;
-  ['sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
+  ['sectionDashboard','sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display='none';
   });
-  ['navPieces','navOutillage','navPanier'].forEach(function(id) {
+  ['navDashboard','navPieces','navOutillage','navPanier'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
   // Bottom nav sync
   ['bnPieces','bnOutillage','bnPanier'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
-  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier'};
+  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier', dashboard:'bnPieces'};
   var bnEl = document.getElementById(bnMap[section]||'bnPieces');
   if (bnEl) bnEl.classList.add('on');
 
-  if (section==='pieces') {
+  // Mise à jour URL (hash routing — bouton retour navigateur fonctionnel)
+  try {
+    if (location.hash !== '#'+section) location.hash = section;
+  } catch(e) {}
+
+  if (section==='dashboard') {
+    document.getElementById('sectionDashboard').style.display='flex';
+    var nd = document.getElementById('navDashboard');
+    if (nd) nd.classList.add('on');
+    refreshDashboard();
+  } else if (section==='pieces') {
     document.getElementById('sectionPieces').style.display='flex';
     document.getElementById('navPieces').classList.add('on');
     // Afficher recherche, cacher add/admin
