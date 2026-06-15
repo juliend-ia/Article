@@ -334,8 +334,8 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 .bus-filter-btn{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:10px!important;}
 .bus-filter-btn.on{background:rgba(240,165,0,0.15)!important;border-color:rgba(240,165,0,0.5)!important;color:var(--ac)!important;}
 
-/* Cards pièces glass */
-.piece-card{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;overflow:hidden;transition:all 0.25s!important;}
+/* Cards pièces glass (sans backdrop-filter — Safari iPad bug) */
+.piece-card{background:rgba(255,255,255,0.035)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;transition:all 0.25s!important;}
 .piece-card:hover{border-color:rgba(240,165,0,0.4)!important;background:rgba(255,255,255,0.05)!important;transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.3);}
 .card-photo-wrap{border-radius:18px 18px 0 0!important;}
 .card-photo-placeholder{border-radius:18px 18px 0 0!important;background:linear-gradient(135deg,rgba(15,15,30,0.6) 0%,rgba(20,25,45,0.4) 100%)!important;}
@@ -345,8 +345,8 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 .panier-panel{background:rgba(255,255,255,0.03)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
 #outilRes{background:transparent;}
 
-/* Bons (historique) glass */
-.histo-item{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;overflow:hidden;}
+/* Bons (historique) glass (sans backdrop-filter) */
+.histo-item{background:rgba(255,255,255,0.035)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;overflow:hidden;}
 .histo-item:hover{border-color:rgba(255,255,255,0.15)!important;}
 .histo-btns{background:rgba(255,255,255,0.02)!important;border-top:1px solid rgba(255,255,255,0.05)!important;}
 .bon-detail{background:rgba(255,255,255,0.02)!important;border-top:1px solid rgba(255,255,255,0.05)!important;}
@@ -362,8 +362,8 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 .field input,.field textarea,.field select{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:10px!important;color:var(--tx);}
 .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--ac)!important;background:rgba(255,255,255,0.06)!important;}
 
-/* Admin section glass */
-.admin-section{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;}
+/* Admin section glass (sans backdrop-filter) */
+.admin-section{background:rgba(255,255,255,0.035)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;}
 .admin-tab{background:transparent!important;border-color:rgba(255,255,255,0.08)!important;}
 .admin-tab.on{background:rgba(255,255,255,0.04)!important;border-color:rgba(255,255,255,0.12)!important;border-bottom-color:rgba(255,255,255,0.04)!important;}
 
@@ -893,6 +893,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
   </div>
 </div>
 
-<script src="app.js?v=27"></script>
+<script src="app.js?v=28"></script>
 </body>
 </html>
