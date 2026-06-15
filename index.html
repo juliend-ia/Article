@@ -303,6 +303,100 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   .bn-dot-orange{background:var(--ac);color:#111;}
 }
 
+/* ═══════════════════════════════════════════════════ */
+/* THÈME GLASS GLOBAL — appliqué à toute l'application */
+/* ═══════════════════════════════════════════════════ */
+
+/* Fond global avec gradient + glow ambiants */
+body{background:#0a0a18!important;font-family:'Space Grotesk',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif!important;position:relative;}
+body::before{content:'';position:fixed;top:-200px;right:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(240,165,0,0.10) 0%,transparent 70%);border-radius:50%;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,rgba(155,89,182,0.10) 0%,transparent 70%);border-radius:50%;pointer-events:none;z-index:0;}
+.app{position:relative;z-index:1;background:radial-gradient(ellipse at top,rgba(26,27,58,0.5) 0%,rgba(10,10,24,0.6) 60%,rgba(0,0,0,0.4) 100%);}
+
+/* Topbar glass */
+.topbar{background:rgba(13,15,26,0.6)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:1px solid rgba(240,165,0,0.4)!important;}
+.tb-nav-item{font-family:'Space Grotesk',sans-serif!important;}
+.tb-nav-item.on{color:var(--ac)!important;border-bottom-color:var(--ac)!important;}
+
+/* Sidebar glass */
+.sidebar{background:rgba(15,17,32,0.5)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-right:1px solid rgba(255,255,255,0.06)!important;}
+.cat-item{transition:all 0.2s!important;}
+.cat-item:hover{background:rgba(255,255,255,0.03)!important;}
+.cat-item.on{background:rgba(240,165,0,0.08)!important;}
+.cat-icon{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.08)!important;}
+.cat-item.on .cat-icon{background:rgba(240,165,0,0.15)!important;border-color:rgba(240,165,0,0.4)!important;}
+
+/* Searchbar */
+.searchbar{background:rgba(13,15,26,0.5)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:1px solid rgba(255,255,255,0.06)!important;}
+.search-input{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:14px!important;backdrop-filter:blur(10px);}
+.search-input:focus{border-color:var(--ac)!important;background:rgba(255,255,255,0.06)!important;}
+.bus-filter-btn{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:10px!important;}
+.bus-filter-btn.on{background:rgba(240,165,0,0.15)!important;border-color:rgba(240,165,0,0.5)!important;color:var(--ac)!important;}
+
+/* Cards pièces glass */
+.piece-card{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;overflow:hidden;transition:all 0.25s!important;}
+.piece-card:hover{border-color:rgba(240,165,0,0.4)!important;background:rgba(255,255,255,0.05)!important;transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,0.3);}
+.card-photo-wrap{border-radius:18px 18px 0 0!important;}
+.card-photo-placeholder{border-radius:18px 18px 0 0!important;background:linear-gradient(135deg,rgba(15,15,30,0.6) 0%,rgba(20,25,45,0.4) 100%)!important;}
+
+/* Section bottom (panier, outillage) */
+#sectionPanier,#sectionOutillage{background:transparent!important;}
+.panier-panel{background:rgba(255,255,255,0.03)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+#outilRes{background:transparent;}
+
+/* Bons (historique) glass */
+.histo-item{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;overflow:hidden;}
+.histo-item:hover{border-color:rgba(255,255,255,0.15)!important;}
+.histo-btns{background:rgba(255,255,255,0.02)!important;border-top:1px solid rgba(255,255,255,0.05)!important;}
+.bon-detail{background:rgba(255,255,255,0.02)!important;border-top:1px solid rgba(255,255,255,0.05)!important;}
+.bon-detail-row{border-bottom:1px solid rgba(255,255,255,0.04)!important;}
+.histo-tab{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:10px!important;}
+.histo-tab.on{background:rgba(240,165,0,0.15)!important;border-color:rgba(240,165,0,0.5)!important;color:var(--ac)!important;}
+
+/* Modal */
+.modal-box{background:rgba(20,22,40,0.92)!important;backdrop-filter:blur(30px)!important;-webkit-backdrop-filter:blur(30px)!important;border:1px solid rgba(255,255,255,0.12)!important;border-radius:22px!important;box-shadow:0 20px 60px rgba(0,0,0,0.5)!important;}
+.modal-overlay{background:rgba(0,0,0,0.7)!important;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);}
+
+/* Form inputs */
+.field input,.field textarea,.field select{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:10px!important;color:var(--tx);}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--ac)!important;background:rgba(255,255,255,0.06)!important;}
+
+/* Admin section glass */
+.admin-section{background:rgba(255,255,255,0.035)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border:1px solid rgba(255,255,255,0.08)!important;border-radius:18px!important;}
+.admin-tab{background:transparent!important;border-color:rgba(255,255,255,0.08)!important;}
+.admin-tab.on{background:rgba(255,255,255,0.04)!important;border-color:rgba(255,255,255,0.12)!important;border-bottom-color:rgba(255,255,255,0.04)!important;}
+
+/* Boutons valider / vider / etc */
+.btn-valider{background:linear-gradient(135deg,#2ecc71,#27ae60)!important;border:none!important;border-radius:12px!important;color:#fff!important;font-weight:700;box-shadow:0 4px 14px rgba(46,204,113,0.3);}
+.btn-vider{background:rgba(231,76,60,0.12)!important;border:1px solid rgba(231,76,60,0.4)!important;border-radius:12px!important;color:var(--rd);}
+.bsave{background:linear-gradient(135deg,#f0a500,#ffc233)!important;color:#111!important;border:none!important;border-radius:12px!important;font-weight:800;box-shadow:0 4px 14px rgba(240,165,0,0.3);}
+
+/* Card numéro plus visible (déjà à 14px, on garde) */
+.card-num{font-family:'JetBrains Mono','Consolas',monospace!important;letter-spacing:0.5px;}
+
+/* Login overlay : aussi en thème glass */
+.login-overlay{background:radial-gradient(ellipse at top,#1a1b3a 0%,#0a0a18 60%,#000 100%)!important;}
+.login-overlay::before{content:'';position:fixed;top:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(240,165,0,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.login-overlay::after{content:'';position:fixed;bottom:-100px;left:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(155,89,182,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
+.login-box{background:rgba(255,255,255,0.04)!important;backdrop-filter:blur(30px)!important;-webkit-backdrop-filter:blur(30px)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:22px!important;box-shadow:0 20px 60px rgba(0,0,0,0.4)!important;position:relative;z-index:1;}
+.login-field input,.reset-panel input{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.12)!important;border-radius:12px!important;}
+.login-btn{background:linear-gradient(135deg,#f0a500,#ffc233)!important;color:#111!important;border:none!important;border-radius:14px!important;font-weight:800;box-shadow:0 4px 20px rgba(240,165,0,0.35);}
+
+/* Sound button */
+.tb-sound{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.10)!important;border-radius:10px!important;}
+
+/* Bottom nav (mobile) */
+.bottom-nav{background:rgba(13,15,26,0.85)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-top:1px solid rgba(255,255,255,0.08)!important;}
+
+/* Photos overlay */
+.photo-overlay{background:rgba(0,0,0,0.85)!important;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);}
+
+/* Scrollbars */
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.10);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,0.20);}
+
 /* ═════════ DASHBOARD MAGASINIER/ADMIN ═════════ */
 #sectionDashboard{flex:1;background:radial-gradient(ellipse at top,#1a1b3a 0%,#0a0a18 60%,#000 100%);font-family:'Space Grotesk','Inter',sans-serif;color:#e8eaf0;padding:32px 40px;display:none;flex-direction:column;gap:20px;overflow:hidden;position:relative;}
 #sectionDashboard::before{content:'';position:absolute;top:-100px;right:-100px;width:400px;height:400px;background:radial-gradient(circle,rgba(240,165,0,0.15) 0%,transparent 70%);border-radius:50%;pointer-events:none;}
@@ -798,6 +892,6 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
   </div>
 </div>
 
-<script src="app.js?v=25"></script>
+<script src="app.js?v=26"></script>
 </body>
 </html>
