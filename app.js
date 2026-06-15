@@ -330,34 +330,45 @@ function showBorneEntry() {
   switchSection('pieces');
 }
 
-// ── SORTIE SECRÈTE KIOSQUE ──
+// ── CLIC LOGO MAGASIN 2K ──
+// Borne : 5 clics rapides = sortie kiosque (code admin)
+// Magasinier/Admin : 1 clic = retour dashboard
+// Autres : 1 clic = retour pieces
 var _logoClicks = 0, _logoTimer = null;
 function secretLogoClick() {
-  if (currentUser.role !== 'borne') return;
-  _logoClicks++;
-  clearTimeout(_logoTimer);
-  _logoTimer = setTimeout(function() { _logoClicks = 0; }, 2000);
-  if (_logoClicks >= 5) {
-    _logoClicks = 0;
-    var pwd = prompt('🔐 Code administrateur :');
-    if (!pwd) return;
-    hashStr('Djulien:' + pwd).then(function(h) {
-      if (ATOKENS.indexOf(h) >= 0 || h === ADMIN_TOKEN) {
-        document.exitFullscreen && document.exitFullscreen();
-        // Afficher le bouton déconnexion pour permettre de se reconnecter en admin
-        var logoutBtn = document.getElementById('logoutBtn');
-        if (logoutBtn) logoutBtn.style.display = 'block';
-        showToast('Mode admin déverrouillé', 'success');
-        // Déconnecter et recharger pour permettre un autre login
-        setTimeout(function() {
-          localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
-          location.reload();
-        }, 1500);
-      } else {
-        showToast('Code incorrect', 'err');
-      }
-    });
+  // Mode borne : compteur 5 clics
+  if (currentUser.role === 'borne') {
+    _logoClicks++;
+    clearTimeout(_logoTimer);
+    _logoTimer = setTimeout(function() { _logoClicks = 0; }, 2000);
+    if (_logoClicks >= 5) {
+      _logoClicks = 0;
+      var pwd = prompt('🔐 Code administrateur :');
+      if (!pwd) return;
+      hashStr('Djulien:' + pwd).then(function(h) {
+        if (ATOKENS.indexOf(h) >= 0 || h === ADMIN_TOKEN) {
+          document.exitFullscreen && document.exitFullscreen();
+          var logoutBtn = document.getElementById('logoutBtn');
+          if (logoutBtn) logoutBtn.style.display = 'block';
+          showToast('Mode admin déverrouillé', 'success');
+          setTimeout(function() {
+            localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
+            location.reload();
+          }, 1500);
+        } else {
+          showToast('Code incorrect', 'err');
+        }
+      });
+    }
+    return;
   }
+  // Magasinier/Admin : retour dashboard
+  if (currentUser.role === 'magasinier' || currentUser.role === 'admin') {
+    switchSection('dashboard');
+    return;
+  }
+  // Agent/Brigadier : retour pieces
+  switchSection('pieces');
 }
 
 // ── MODE KIOSQUE : protection clavier ──
