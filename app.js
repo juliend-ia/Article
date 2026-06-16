@@ -1,7 +1,8 @@
 var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
 var SKEY = 'sb_publishable_F0Gcdx4mHDbvAAcuXwYbhA_QSlPD8aC';
-var ATOKENS = ['a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0','35a85085a9ccd1440acb20cca15b78b0353f4f354bfcf8dd5d2f3d36734ca7be'];
-var ADMIN_TOKEN = 'a92be39b486c2c2736d20f3b6e7a7d64b519c564ad44e4d266fdebe5b6c03ff0';
+// Cache mémoire des hashs validés au cours de la session (vide au démarrage)
+// Plus de tokens en dur — toute auth doit passer par la DB
+var ATOKENS = [];
 var currentUser = {login:'',prenom:'',role:'user',token:''};
 var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
@@ -33,6 +34,19 @@ function supa(method, path, body) {
   });
 }
 
+// Appel d'une fonction RPC Supabase (sécurité côté serveur)
+function rpc(name, params) {
+  return fetch(SURL+'/rest/v1/rpc/'+name, {
+    method:'POST',
+    headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':'application/json'},
+    body: JSON.stringify(params||{})
+  }).then(function(r) {
+    if (!r.ok) return r.text().then(function(t){ throw new Error(t); });
+    if (r.status === 204) return null;
+    return r.text().then(function(t){ if (!t||!t.trim()) return null; try { return JSON.parse(t); } catch(e) { return null; } });
+  });
+}
+
 async function hashStr(s) {
   var enc = new TextEncoder().encode(s);
   var buf = await crypto.subtle.digest('SHA-256', enc);
@@ -54,29 +68,31 @@ function showToast(msg, type) {
 // ── AUTH ──
 async function checkAuth() {
   var stored = localStorage.getItem(SKEY2);
-  if (ATOKENS.indexOf(stored) >= 0) {
-    var cu = localStorage.getItem('currentUser');
-    if (cu) { try { currentUser = JSON.parse(cu); } catch(e) {} }
-    if (!currentUser.login) {
-      currentUser = stored === ADMIN_TOKEN ?
-        {login:'Djulien',prenom:'Djulien',role:'admin',token:stored} :
-        {login:'magasin2k',prenom:'Magasin',role:'magasinier',token:stored};
+  if (!stored) return;
+  // Vérification via RPC sécurisée (jamais le password_hash n'est envoyé au client)
+  try {
+    var data = await rpc('magasin_session_check', {p_hash: stored});
+    if (!data || !data.length) {
+      localStorage.removeItem(SKEY2);
+      localStorage.removeItem('currentUser');
+      return;
     }
-    try {
-      var data = await supa('GET','utilisateurs?login=eq.'+encodeURIComponent(currentUser.login)+'&select=prenom,role,actif,peut_modifier');
-      if (data && data.length) {
-        currentUser.prenom = data[0].prenom;
-        currentUser.role = currentUser.login === 'borne' ? 'borne' : data[0].role;
-        currentUser.peut_modifier = data[0].peut_modifier !== false;
-        if (!data[0].actif) { localStorage.removeItem(SKEY2); location.reload(); return; }
-        localStorage.setItem('currentUser', JSON.stringify(currentUser));
-      }
-    } catch(e) {}
+    var dbUser = data[0];
+    if (!dbUser.actif) {
+      localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
+      location.reload(); return;
+    }
+    var role = dbUser.login === 'borne' ? 'borne' : dbUser.role;
+    currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:role, token:stored, peut_modifier:dbUser.peut_modifier!==false};
+    if (ATOKENS.indexOf(stored) < 0) ATOKENS.push(stored);
+    localStorage.setItem('currentUser', JSON.stringify(currentUser));
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('appRoot').classList.remove('hidden');
     initKioskMode();
     initUI();
     loadArticles();
+  } catch(e) {
+    console.error('checkAuth error', e);
   }
 }
 
@@ -87,10 +103,10 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
   if (!u||!p) { err.textContent='Remplis tous les champs.'; return; }
   var h = await hashStr(u+':'+p);
   try {
-    var udata = await supa('GET','utilisateurs?login=eq.'+encodeURIComponent(u)+'&select=login,prenom,role,actif,password_hash,peut_modifier');
+    // Auth via RPC : ne renvoie le user QUE si le hash correspond, sans exposer le password_hash
+    var udata = await rpc('magasin_login', {p_login: u, p_hash: h});
     if (udata && udata.length) {
       var dbUser = udata[0];
-      if (dbUser.password_hash !== h) { err.textContent='Mot de passe incorrect.'; document.getElementById('loginPwd').value=''; return; }
       if (!dbUser.actif) { err.textContent='Compte désactivé.'; return; }
       var role = dbUser.login === 'borne' ? 'borne' : dbUser.role;
       currentUser = {login:dbUser.login,prenom:dbUser.prenom,role:role,token:h,peut_modifier:dbUser.peut_modifier!==false};
@@ -99,14 +115,12 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       document.getElementById('loginOverlay').classList.add('hidden');
       document.getElementById('appRoot').classList.remove('hidden');
       initKioskMode(); initUI(); loadArticles(); return;
+    } else {
+      err.textContent='Identifiants incorrects.'; document.getElementById('loginPwd').value=''; return;
     }
   } catch(e) { console.error(e); }
-  if (ATOKENS.indexOf(h)>=0) {
-    currentUser = h===ADMIN_TOKEN ? {login:'Djulien',prenom:'Djulien',role:'admin',token:h} : {login:'magasin2k',prenom:'Magasin',role:'magasinier',token:h};
-    localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
-    document.getElementById('loginOverlay').classList.add('hidden');
-    document.getElementById('appRoot').classList.remove('hidden');
-    initKioskMode(); initUI(); loadArticles();
+  // Plus de fallback hardcodé — l'auth ne passe QUE par la DB
+  if (false) {
   } else { err.textContent='Identifiants incorrects.'; document.getElementById('loginPwd').value=''; }
 });
 
@@ -124,9 +138,8 @@ document.getElementById('resetBtn').addEventListener('click', async function() {
   var err = document.getElementById('resetErr');
   if (!login) { err.textContent='Saisis ton login.'; return; }
   try {
-    var udata = await supa('GET','utilisateurs?login=eq.'+encodeURIComponent(login)+'&select=login,actif');
-    if (!udata||!udata.length) { err.textContent='Login inconnu.'; return; }
-    if (!udata[0].actif) { err.textContent='Compte désactivé.'; return; }
+    var exists = await rpc('magasin_check_login_exists',{p_login: login});
+    if (!exists) { err.textContent='Login inconnu ou compte désactivé.'; return; }
     var existing = await supa('GET','demandes_reset?login=eq.'+encodeURIComponent(login)+'&traitee=eq.false&select=id');
     if (existing&&existing.length) { err.textContent='Demande déjà envoyée.'; return; }
     await supa('POST','demandes_reset',[{login:login,traitee:false}]);
@@ -152,8 +165,8 @@ if (createBtn) createBtn.addEventListener('click', async function() {
   if (!prenom) { err.textContent='Prénom obligatoire.'; return; }
   if (!pwd||pwd.length<4) { err.textContent='Mot de passe trop court (min 4 car.).'; return; }
   try {
-    var existing = await supa('GET','utilisateurs?login=eq.'+encodeURIComponent(matricule)+'&select=id');
-    if (existing&&existing.length) { err.textContent='Ce matricule existe déjà.'; return; }
+    var existing = await rpc('magasin_check_login_exists',{p_login: matricule});
+    if (existing) { err.textContent='Ce matricule existe déjà.'; return; }
     var existDemande = await supa('GET','demandes_compte?matricule=eq.'+encodeURIComponent(matricule)+'&statut=eq.en_attente&select=id');
     if (existDemande&&existDemande.length) { err.textContent='Demande déjà envoyée.'; return; }
     var hash = await hashStr(matricule+':'+pwd);
@@ -360,19 +373,23 @@ function secretLogoClick() {
       _logoClicks = 0;
       var pwd = prompt('🔐 Code administrateur :');
       if (!pwd) return;
-      hashStr('Djulien:' + pwd).then(function(h) {
-        if (ATOKENS.indexOf(h) >= 0 || h === ADMIN_TOKEN) {
-          document.exitFullscreen && document.exitFullscreen();
-          var logoutBtn = document.getElementById('logoutBtn');
-          if (logoutBtn) logoutBtn.style.display = 'block';
-          showToast('Mode admin déverrouillé', 'success');
-          setTimeout(function() {
-            localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
-            location.reload();
-          }, 1500);
-        } else {
-          showToast('Code incorrect', 'err');
-        }
+      // Vérification du code admin via RPC sécurisée
+      hashStr('Djulien:' + pwd).then(async function(h) {
+        try {
+          var ok = await rpc('magasin_check_admin', {p_hash: h});
+          if (ok === true) {
+            document.exitFullscreen && document.exitFullscreen();
+            var logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) logoutBtn.style.display = 'block';
+            showToast('Mode admin déverrouillé', 'success');
+            setTimeout(function() {
+              localStorage.removeItem(SKEY2); localStorage.removeItem('currentUser');
+              location.reload();
+            }, 1500);
+          } else {
+            showToast('Code incorrect', 'err');
+          }
+        } catch(e) { showToast('Erreur de vérification', 'err'); }
       });
     }
     return;
@@ -2317,7 +2334,7 @@ async function loadDemandesCompte() {
 async function validerCompte(id, matricule, prenom, pwdHash) {
   var role=document.getElementById('role-'+id); var roleVal=role?role.value:'agent';
   try {
-    await supa('POST','utilisateurs',[{login:matricule,prenom:prenom,password_hash:pwdHash,role:roleVal,actif:true}]);
+    await rpc('magasin_create_user',{admin_hash: currentUser.token, p_login: matricule, p_prenom: prenom, p_hash: pwdHash, p_role: roleVal, p_peut_modifier: true});
     await supa('PATCH','demandes_compte?id=eq.'+id,{statut:'valide'});
     showToast('Compte créé pour '+prenom,'success'); logAction('Creation compte: '+prenom+' / '+matricule+' / '+roleVal);
     loadDemandesCompte(); loadUtilisateurs();
@@ -2361,7 +2378,7 @@ async function validerResetPwd() {
   if (!pwd||pwd.length<4) { err.textContent='Mot de passe trop court.'; return; }
   var hash=await hashStr(login+':'+pwd);
   try {
-    await supa('PATCH','utilisateurs?login=eq.'+encodeURIComponent(login),{password_hash:hash});
+    await rpc('magasin_reset_password',{admin_hash: currentUser.token, p_login: login, p_new_hash: hash});
     await supa('PATCH','demandes_reset?id=eq.'+id,{traitee:true});
     ATOKENS.push(hash); document.getElementById('resetPwdModal').classList.add('hidden');
     showToast('Mot de passe réinitialisé !','success'); logAction('Reset MDP: '+login); loadDemandes(); loadUtilisateurs();
@@ -2371,7 +2388,7 @@ function fermerResetModal() { document.getElementById('resetPwdModal').classList
 
 async function loadUtilisateurs() {
   try {
-    var data=await supa('GET','utilisateurs?select=*&order=prenom.asc');
+    var data=await rpc('magasin_list_users',{admin_hash: currentUser.token});
     var list=document.getElementById('usersList');
     if (!data||!data.length) { list.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center;">Aucun utilisateur</div>'; return; }
     var h='';
@@ -2396,7 +2413,7 @@ async function createUser() {
   if (pwd.length<4) { showToast('Mot de passe trop court','err'); return; }
   var hash=await hashStr(login+':'+pwd);
   try {
-    await supa('POST','utilisateurs',[{prenom:prenom,login:login,password_hash:hash,role:role,actif:true,peut_modifier:peutModifier}]);
+    await rpc('magasin_create_user',{admin_hash: currentUser.token, p_login: login, p_prenom: prenom, p_hash: hash, p_role: role, p_peut_modifier: peutModifier});
     ATOKENS.push(hash); document.getElementById('newPrenom').value=''; document.getElementById('newLogin').value=''; document.getElementById('newPwd').value='';
     showToast('Utilisateur créé !','success'); loadUtilisateurs(); logAction('Créé utilisateur: '+login);
   } catch(e) { showToast('Erreur création','err'); }
@@ -2404,13 +2421,14 @@ async function createUser() {
 
 async function deleteUser(el) {
   var id=el.getAttribute('data-id'); if (!confirm('Supprimer cet utilisateur ?')) return;
-  try { await supa('DELETE','utilisateurs?id=eq.'+id); showToast('Utilisateur supprimé','success'); loadUtilisateurs(); } catch(e) { showToast('Erreur','err'); }
+  try { await rpc('magasin_delete_user',{admin_hash: currentUser.token, p_id: parseInt(id,10)}); showToast('Utilisateur supprimé','success'); loadUtilisateurs(); } catch(e) { showToast('Erreur','err'); }
 }
 
 async function editUser(el) {
   var id=el.getAttribute('data-id');
   try {
-    var data=await supa('GET','utilisateurs?id=eq.'+id+'&select=*'); if (!data||!data.length) return;
+    var data=await rpc('magasin_get_user',{admin_hash: currentUser.token, p_id: parseInt(id,10)});
+    if (!data||!data.length) return;
     var u=data[0];
     document.getElementById('editUserId').value=u.id; document.getElementById('editUserPrenom').value=u.prenom||'';
     document.getElementById('editUserLogin').value=u.login||''; document.getElementById('editUserPwd').value='';
@@ -2428,14 +2446,10 @@ async function saveEditUser() {
   var actif=document.getElementById('editUserActif').value==='true';
   var peutModifier=document.getElementById('editUserPeutModifier').value==='true';
   if (!prenom||!login) { showToast('Prénom et login obligatoires','err'); return; }
-  var updates={prenom:prenom,login:login,role:role,actif:actif,peut_modifier:peutModifier};
-  if (pwd) {
-    updates.password_hash=await hashStr(login+':'+pwd);
-    var oldData=await supa('GET','utilisateurs?id=eq.'+id+'&select=password_hash');
-    if (oldData&&oldData.length) { var oldHash=oldData[0].password_hash; var idx=ATOKENS.indexOf(oldHash); if (idx>=0) ATOKENS[idx]=updates.password_hash; else ATOKENS.push(updates.password_hash); }
-  }
+  var newHash = pwd ? await hashStr(login+':'+pwd) : null;
   try {
-    await supa('PATCH','utilisateurs?id=eq.'+id,updates);
+    await rpc('magasin_update_user',{admin_hash: currentUser.token, p_id: parseInt(id,10), p_prenom: prenom, p_login: login, p_role: role, p_actif: actif, p_peut_modifier: peutModifier, p_new_hash: newHash});
+    if (newHash) ATOKENS.push(newHash);
     document.getElementById('editUserModal').classList.add('hidden'); showToast('Modifié !','success'); logAction('Modifié utilisateur: '+login); loadUtilisateurs();
   } catch(e) { showToast('Erreur','err'); }
 }
