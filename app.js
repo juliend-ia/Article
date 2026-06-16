@@ -8,6 +8,7 @@ var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
 var _editPhoto = null, _editPhotos = [], _sortiesCount = {};
 var _borneAgentNum = ''; // numéro agent saisi sur la borne
+var _serviceVisible = true; // état du décompte service sur le dashboard (par user)
 
 // ── ICÔNES PAR CATÉGORIE ──
 var CAT_ICONS = {
@@ -193,6 +194,18 @@ function initUI() {
     if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'🔔':'🔕'; }
     else btnSound.style.display='none';
   }
+
+  // Bouton service (magasinier/admin uniquement — toggle décompte dashboard)
+  _serviceVisible = localStorage.getItem('serviceVisible_'+currentUser.login) !== 'false';
+  var btnService = document.getElementById('btnService');
+  if (btnService) {
+    if (role === 'magasinier' || role === 'admin') {
+      btnService.style.display = 'flex';
+      btnService.textContent = _serviceVisible ? '⏱' : '⏸';
+      btnService.style.opacity = _serviceVisible ? '1' : '0.45';
+    } else btnService.style.display = 'none';
+  }
+  applyServiceVisibility();
 
   // Admin
   var navAdmin = document.getElementById('navAdmin');
@@ -910,6 +923,7 @@ var _dashTimer = null;
 
 // ── DASHBOARD : horloge live + décompte service + compteurs ──
 function refreshDashboard() {
+  applyServiceVisibility();
   refreshDashboardLive();
   // Compteurs depuis Supabase (en parallèle, non bloquant)
   try {
@@ -1880,6 +1894,25 @@ function toggleSound() {
   var btn=document.getElementById('btnSound');
   if (btn) { btn.textContent=_soundEnabled?'🔔':'🔕'; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
   showToast(_soundEnabled?'Son activé':'Son coupé','success');
+}
+
+// Toggle affichage du décompte service sur le dashboard (uniquement pour le user courant, en local)
+function toggleService() {
+  _serviceVisible = !_serviceVisible;
+  localStorage.setItem('serviceVisible_'+currentUser.login, _serviceVisible?'true':'false');
+  var btn = document.getElementById('btnService');
+  if (btn) {
+    btn.textContent = _serviceVisible ? '⏱' : '⏸';
+    btn.style.opacity = _serviceVisible ? '1' : '0.45';
+  }
+  applyServiceVisibility();
+  showToast(_serviceVisible?'Décompte service affiché':'Décompte service masqué','success');
+}
+
+function applyServiceVisibility() {
+  // Cache/affiche la carte service du dashboard selon la pref user
+  var svc = document.querySelector('.dash-service');
+  if (svc) svc.style.display = _serviceVisible ? '' : 'none';
 }
 
 function showNotifCommande(record) {

@@ -649,6 +649,7 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
     </div>
     <div class="tb-right">
       <div class="tb-sound" id="btnSound" onclick="toggleSound()">🔔</div>
+      <div class="tb-sound" id="btnService" onclick="toggleService()" title="Afficher / masquer le décompte du service" style="display:none;">⏱</div>
       <div id="navAdmin" style="display:none;"><button class="tb-admin-btn" id="btnAdmin">Admin</button></div>
       <button id="btnChangerAgent" style="display:none;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.35);color:var(--ac);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;" onclick="showBorneEntry()">↩ Changer d'agent</button>
       <div><div class="tb-user-name" id="userInfo"></div><div class="tb-user-role" id="userRole"></div></div>
@@ -1062,6 +1063,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
   </div>
 </div>
 
-<script src="app.js?v=37"></script>
+<script src="app.js?v=38"></script>
 </body>
 </html>
