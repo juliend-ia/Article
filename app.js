@@ -569,7 +569,7 @@ function buildSidebar() {
     for (var i=0;i<cats.length;i++) {
       var c=cats[i], on=(c===selectedCat);
       h += '<div class="cat-item'+(on?' on':'')+'" data-cat="'+esc(c)+'">'
-        +'<div class="cat-icon">'+getCatIcon(c)+'</div>'
+        +'<div class="cat-icon"></div>'
         +'<div class="cat-info"><div class="cat-label">'+esc(c==='TOUT'?'Tout':c)+'</div><div class="cat-count">'+(counts[c]||0)+'</div></div>'
         +'</div>';
       if (i===0) h+='<div class="cat-sep"></div>';
