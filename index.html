@@ -430,6 +430,21 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 .dash-c2 .dash-c-glow{background:#2ecc71;}
 .dash-c3 .dash-c-glow{background:#f0a500;}
 .dash-c4 .dash-c-glow{background:#9b59b6;}
+/* Alerte commandes en attente — pulsation rouge/orange */
+.dash-c.alert{border-color:rgba(231,76,60,0.7)!important;animation:dashAlert 1.8s ease-in-out infinite;background:rgba(231,76,60,0.10)!important;}
+.dash-c.alert .dash-c-glow{background:#e74c3c!important;opacity:0.55!important;}
+.dash-c.alert .dash-c-count b{color:#ff6b6b!important;font-size:24px!important;}
+.dash-c.alert .dash-c-t{color:#ff6b6b!important;}
+.dash-c.alert .dash-c-cta{color:#ff6b6b!important;}
+.dash-c.alert .dash-c-arrow{border-color:#ff6b6b!important;color:#ff6b6b!important;}
+@keyframes dashAlert{
+  0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.5);}
+  50%{box-shadow:0 0 28px 6px rgba(231,76,60,0.35);}
+}
+.dash-alert-banner{position:relative;z-index:1;display:none;background:linear-gradient(90deg,rgba(231,76,60,0.20),rgba(231,76,60,0.08));border:1px solid rgba(231,76,60,0.5);border-radius:14px;padding:14px 22px;color:#ff6b6b;font-weight:700;font-size:14px;align-items:center;gap:14px;cursor:pointer;animation:dashAlert 2.2s ease-in-out infinite;}
+.dash-alert-banner.show{display:flex;}
+.dash-alert-banner-ic{font-size:22px;}
+.dash-alert-banner-arrow{margin-left:auto;font-size:20px;}
 .dash-c-ic{font-size:44px;margin-bottom:24px;position:relative;}
 .dash-c-t{font-size:30px;font-weight:600;color:#fff;margin-bottom:auto;line-height:1.1;letter-spacing:-0.5px;position:relative;}
 .dash-c-count{font-family:'JetBrains Mono','Consolas',monospace;font-size:13px;color:#9b9ec7;margin-top:12px;font-weight:600;position:relative;}
@@ -507,6 +522,7 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
       <div class="tb-nav-item" id="navOutillage">🔧 Outillages</div>
       <div class="tb-nav-item" id="navPanier">🛒 Panier <span class="tb-nav-badge hidden" id="panierBadge" style="background:var(--rd);">0</span></div>
       <div class="tb-nav-item" id="navCommandes" onclick="switchSection('commandes')" style="display:none;">📋 Commandes <span class="tb-nav-badge hidden" id="commandesBadge" style="background:var(--ac);color:#111;">0</span></div>
+      <div class="tb-nav-item" id="navRetours" onclick="switchSection('retours')" style="display:none;">📦 Retours</div>
     </div>
     <!-- Alertes entre nav et droite -->
     <div id="tbAlerts">
@@ -526,6 +542,12 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
     <!-- SECTION DASHBOARD (magasinier / admin) -->
     <div id="sectionDashboard">
+      <!-- Bandeau d'alerte commandes en attente -->
+      <div class="dash-alert-banner" id="dashAlertBanner" onclick="switchSection('commandes')">
+        <div class="dash-alert-banner-ic">🚨</div>
+        <div><span id="dashAlertCount">0</span> commande(s) en attente — clique pour traiter</div>
+        <div class="dash-alert-banner-arrow">→</div>
+      </div>
       <div class="dash-hero">
         <div class="dash-clock-wrap">
           <div class="dash-greet">Bonjour <b id="dashUserName">—</b></div>
@@ -575,13 +597,13 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
             <div class="dash-c-arrow">→</div>
           </div>
         </div>
-        <div class="dash-c dash-c4" onclick="showToast('Module Retours — à venir prochainement','success')">
+        <div class="dash-c dash-c4" onclick="switchSection('retours')">
           <div class="dash-c-glow"></div>
           <div class="dash-c-ic">📦</div>
           <div class="dash-c-t">Retours</div>
-          <div class="dash-c-count">Bientôt disponible</div>
+          <div class="dash-c-count">Réintégrer en stock</div>
           <div class="dash-c-go">
-            <div class="dash-c-cta">Bientôt</div>
+            <div class="dash-c-cta">Créer un bon</div>
             <div class="dash-c-arrow">→</div>
           </div>
         </div>
@@ -724,6 +746,21 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
           <div class="histo-title">Historique des bons</div>
           <div id="historiqueList"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- SECTION RETOURS (créer un bon retour à partir d'un ordre) -->
+    <div id="sectionRetours" style="display:none;flex:1;overflow:hidden;">
+      <div class="panier-panel">
+        <div class="histo-title">📦 Créer un bon retour</div>
+        <div class="ordre-block" style="margin-bottom:14px;">
+          <label>Numéro d'ordre du bon d'origine</label>
+          <div style="display:flex;gap:10px;align-items:center;">
+            <input type="text" id="retourOrdreInput" placeholder="ex: 83193846" inputmode="numeric" style="flex:1;"/>
+            <button class="btn-valider" id="retourLoadBtn" style="white-space:nowrap;padding:13px 18px;">🔍 Charger</button>
+          </div>
+        </div>
+        <div id="retourBonsList"></div>
       </div>
     </div>
 
@@ -907,6 +944,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
   </div>
 </div>
 
-<script src="app.js?v=29"></script>
+<script src="app.js?v=30"></script>
 </body>
 </html>

@@ -240,18 +240,24 @@ function initUI() {
   var bnCmd = document.getElementById('bnCommandes');
   if (bnCmd) bnCmd.style.display = showCmd ? '' : 'none';
 
+  // Retours : magasinier/admin uniquement
+  var showRet = (role === 'magasinier' || role === 'admin');
+  var navRet = document.getElementById('navRetours');
+  if (navRet) navRet.style.display = showRet ? '' : 'none';
+
   // Borne → afficher l'écran de saisie agent
   if (role === 'borne') {
     showBorneEntry();
   } else if (showDash) {
     // Magasinier/Admin → dashboard par défaut (sauf si hash route déjà défini)
     var initial = (location.hash || '').replace('#','');
-    if (['pieces','outillage','panier','commandes','admin','ajouter','dashboard'].indexOf(initial) >= 0) {
+    if (['pieces','outillage','panier','commandes','retours','admin','ajouter','dashboard'].indexOf(initial) >= 0) {
       switchSection(initial);
     } else {
       switchSection('dashboard');
     }
     startDashboardClock();
+    startDashboardAutoRefresh();
   } else {
     // Agent → pieces ou commandes selon hash
     // Brigadier → pieces uniquement (pas de commandes)
@@ -900,12 +906,29 @@ function refreshDashboard() {
       no.textContent = enPret;
     }
   } catch(e) {}
-  // Panier en attente : bons valides non sap
+  // Commandes en attente : bons valides non sap
   supa('GET','bons_commande?statut=eq.valide&sap_effectue=eq.false&select=id')
     .then(function(data){
+      var nb = (data && data.length) ? data.length : 0;
       var nc = document.getElementById('dashCountPanier');
-      if (nc) nc.textContent = (data && data.length) ? data.length : 0;
+      if (nc) nc.textContent = nb;
+      // Activer l'alerte visuelle si > 0
+      var tile = document.querySelector('.dash-c.dash-c3');
+      if (tile) tile.classList.toggle('alert', nb > 0);
+      var banner = document.getElementById('dashAlertBanner');
+      var bcount = document.getElementById('dashAlertCount');
+      if (bcount) bcount.textContent = nb;
+      if (banner) banner.classList.toggle('show', nb > 0);
     }).catch(function(){});
+}
+
+// Auto-refresh dashboard toutes les 20 secondes quand on y est
+var _dashAutoRefresh = null;
+function startDashboardAutoRefresh() {
+  if (_dashAutoRefresh) return;
+  _dashAutoRefresh = setInterval(function() {
+    if (_currentSection === 'dashboard') refreshDashboard();
+  }, 20000);
 }
 
 function refreshDashboardLive() {
@@ -962,17 +985,17 @@ function startDashboardClock() {
 
 function switchSection(section) {
   _currentSection = section;
-  ['sectionDashboard','sectionPieces','sectionPanier','sectionCommandes','sectionOutillage'].forEach(function(id) {
+  ['sectionDashboard','sectionPieces','sectionPanier','sectionCommandes','sectionRetours','sectionOutillage'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display='none';
   });
-  ['navDashboard','navPieces','navOutillage','navPanier','navCommandes'].forEach(function(id) {
+  ['navDashboard','navPieces','navOutillage','navPanier','navCommandes','navRetours'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
   // Bottom nav sync
   ['bnPieces','bnOutillage','bnPanier','bnCommandes'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
-  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier', commandes:'bnCommandes', dashboard:'bnPieces'};
+  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier', commandes:'bnCommandes', retours:'bnCommandes', dashboard:'bnPieces'};
   var bnEl = document.getElementById(bnMap[section]||'bnPieces');
   if (bnEl) bnEl.classList.add('on');
 
@@ -1009,6 +1032,15 @@ function switchSection(section) {
     var nc = document.getElementById('navCommandes');
     if (nc) nc.classList.add('on');
     loadHistorique();
+  } else if (section==='retours') {
+    document.getElementById('sectionRetours').style.display='flex';
+    var nr = document.getElementById('navRetours');
+    if (nr) nr.classList.add('on');
+    // Reset UI
+    var inp = document.getElementById('retourOrdreInput');
+    if (inp) inp.value = '';
+    var l = document.getElementById('retourBonsList');
+    if (l) l.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:48px;margin-bottom:12px;opacity:0.4;">📦</div><div style="font-size:14px;font-weight:600;">Saisis un numéro d\'ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Tu verras les pièces sorties et pourras choisir celles à retourner</div></div>';
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
@@ -2758,6 +2790,183 @@ function applyMobileLayout() {
 }
 
 window.addEventListener('resize', function() { buildSidebar(); doSearch(); });
+
+// ════════════════════════════════════════
+// ── MODULE RETOURS ──
+// ════════════════════════════════════════
+var _retourSelected = {}; // {num: qty} pour les pièces sélectionnées en retour
+var _retourBons = [];     // bons d'origine chargés
+
+function escapeJsString(s){ return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+
+async function loadRetourOrdre() {
+  var input = document.getElementById('retourOrdreInput');
+  var list = document.getElementById('retourBonsList');
+  var num = (input.value||'').trim();
+  if (!num) { showToast('Saisis un numéro d\'ordre','err'); return; }
+  list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:30px;">🔍 Recherche...</div>';
+  _retourSelected = {};
+  try {
+    // On exclut les bons retours déjà créés (marqueur [RETOUR])
+    var bons = await supa('GET','bons_commande?numero_ordre=eq.'+encodeURIComponent(num)+'&statut=in.(valide,archive)&order=date_creation.desc&select=*');
+    _retourBons = (bons||[]).filter(function(b){ return !(b.message||'').includes('[RETOUR'); });
+    if (!_retourBons.length) {
+      list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:42px;margin-bottom:10px;">🔎</div><div style="font-size:14px;font-weight:600;">Aucun bon trouvé pour cet ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Vérifie le numéro d\'ordre</div></div>';
+      return;
+    }
+    renderRetourBons();
+  } catch(e) { list.innerHTML='<div style="color:var(--rd);text-align:center;padding:30px;">Erreur de chargement</div>'; }
+}
+
+function renderRetourBons() {
+  var list = document.getElementById('retourBonsList');
+  var h = '<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:10px;padding-left:4px;">📋 PIÈCES SORTIES SUR CET ORDRE</div>';
+  _retourBons.forEach(function(bon){
+    var arts = bon.articles || [];
+    var dt = supaDate(bon.date_creation);
+    var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    h += '<div style="background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:12px;">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
+        +'<div><div style="font-size:13px;font-weight:800;color:var(--ac);font-family:monospace;">Bon original — '+esc(bon.numero_ordre)+'</div>'
+        +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+dateStr+' · 👤 '+esc(bon.login||'—')+'</div></div>'
+        +(bon.sap_effectue?'<div style="font-size:10px;font-weight:700;color:var(--gn);">✓ SAP fait</div>':'')
+      +'</div>';
+    arts.forEach(function(a){
+      var artData = articles.filter(function(x){return x.num===a.num;})[0];
+      var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
+      var photoHtml = photoUrl
+        ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+        : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
+      var sel = _retourSelected[a.num] || 0;
+      var maxQty = a.qty;
+      h += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,0.05);">'
+        +photoHtml
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:13px;font-weight:800;color:var(--ac);font-family:monospace;">'+esc(a.num)+'</div>'
+          +'<div style="font-size:12px;color:var(--tx);margin-top:2px;">'+esc(a.nom)+'</div>'
+          +'<div style="font-size:10px;color:var(--mu);margin-top:2px;">Sortie : '+a.qty+'</div>'
+        +'</div>'
+        +'<div style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:4px;">'
+          +'<button class="ret-qty-btn" data-num="'+esc(a.num)+'" data-d="-1" style="width:28px;height:28px;border:none;background:rgba(255,255,255,0.05);color:var(--tx);border-radius:6px;cursor:pointer;font-weight:700;">−</button>'
+          +'<input type="number" class="ret-qty-input" data-num="'+esc(a.num)+'" data-max="'+maxQty+'" value="'+sel+'" min="0" max="'+maxQty+'" style="width:46px;text-align:center;background:transparent;border:none;color:var(--tx);font-weight:700;font-size:14px;outline:none;" />'
+          +'<button class="ret-qty-btn" data-num="'+esc(a.num)+'" data-d="+1" style="width:28px;height:28px;border:none;background:rgba(255,255,255,0.05);color:var(--tx);border-radius:6px;cursor:pointer;font-weight:700;">+</button>'
+        +'</div>'
+        +'<div style="font-size:9px;color:var(--mu);min-width:54px;text-align:right;">retour /'+maxQty+'</div>'
+      +'</div>';
+    });
+    h += '</div>';
+  });
+  // Footer : action + résultat
+  h += '<div id="retourFooter" style="position:sticky;bottom:0;background:linear-gradient(180deg,transparent,#0a0a18 30%);padding:14px 0 4px;margin-top:6px;">'
+    +'<div id="retourSummary" style="font-size:12px;color:var(--mu);margin-bottom:10px;text-align:center;">Sélectionne les quantités à retourner</div>'
+    +'<button class="btn-valider" id="retourCreateBtn" style="width:100%;padding:14px;font-size:15px;">📦 Créer le bon de retour</button>'
+    +'<div id="retourResult"></div>'
+    +'</div>';
+  list.innerHTML = h;
+  // Listeners
+  list.querySelectorAll('.ret-qty-btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var num = this.getAttribute('data-num');
+      var d = parseInt(this.getAttribute('data-d'),10);
+      var inp = list.querySelector('.ret-qty-input[data-num="'+num+'"]');
+      if (!inp) return;
+      var max = parseInt(inp.getAttribute('data-max'),10);
+      var v = (parseInt(inp.value,10)||0) + d;
+      v = Math.max(0, Math.min(max, v));
+      inp.value = v;
+      _retourSelected[num] = v;
+      if (v===0) delete _retourSelected[num];
+      updateRetourSummary();
+    });
+  });
+  list.querySelectorAll('.ret-qty-input').forEach(function(inp){
+    inp.addEventListener('input', function(){
+      var num = this.getAttribute('data-num');
+      var max = parseInt(this.getAttribute('data-max'),10);
+      var v = parseInt(this.value,10)||0;
+      v = Math.max(0, Math.min(max, v));
+      this.value = v;
+      _retourSelected[num] = v;
+      if (v===0) delete _retourSelected[num];
+      updateRetourSummary();
+    });
+  });
+  var btn = document.getElementById('retourCreateBtn');
+  if (btn) btn.addEventListener('click', createBonRetour);
+  updateRetourSummary();
+}
+
+function updateRetourSummary() {
+  var summary = document.getElementById('retourSummary');
+  if (!summary) return;
+  var nums = Object.keys(_retourSelected).filter(function(n){return _retourSelected[n]>0;});
+  var total = nums.reduce(function(s,n){return s+_retourSelected[n];},0);
+  if (!nums.length) summary.textContent = 'Sélectionne les quantités à retourner';
+  else summary.innerHTML = '<b style="color:var(--ac);">'+nums.length+' article'+(nums.length>1?'s':'')+' / '+total+' pièce'+(total>1?'s':'')+'</b> à retourner';
+}
+
+async function createBonRetour() {
+  var nums = Object.keys(_retourSelected).filter(function(n){return _retourSelected[n]>0;});
+  if (!nums.length) { showToast('Sélectionne au moins une pièce','err'); return; }
+  if (!_retourBons.length) return;
+  var originalOrdre = _retourBons[0].numero_ordre;
+  // Construire la liste des articles retournés en s'appuyant sur les bons d'origine
+  var allArts = {};
+  _retourBons.forEach(function(b){
+    (b.articles||[]).forEach(function(a){ if (!allArts[a.num]) allArts[a.num] = a; });
+  });
+  var retourArts = nums.map(function(n){
+    var src = allArts[n] || {};
+    return { num:n, nom:src.nom||n, qty:_retourSelected[n], location:src.location||'', reparable:src.reparable||false, entretien:src.entretien||false };
+  });
+  try {
+    var msg = '[RETOUR:'+originalOrdre+']';
+    var bon = { numero_ordre: originalOrdre, statut:'valide', articles: retourArts, login: currentUser.login||'', numero_agent: currentUser.login||null, message: msg, preparation_statut:'pret', sap_effectue:false };
+    var created = await supa('POST','bons_commande?select=id', bon);
+    var newId = (created && created[0] && created[0].id) || null;
+    logAction('Création bon retour ordre '+originalOrdre, retourArts.length+' article(s)');
+    showToast('Bon retour créé ✓','success');
+    renderRetourResult(retourArts, originalOrdre, newId);
+  } catch(e) { showToast('Erreur création bon retour','err'); }
+}
+
+function renderRetourResult(arts, ordre, newId) {
+  var res = document.getElementById('retourResult');
+  if (!res) return;
+  var lines = arts.map(function(a){ return a.num+'\t'+a.qty+'\t\t2K\t\tRET-'+ordre+'\t10'; }).join('\n');
+  var html = '<div style="margin-top:18px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.4);border-radius:14px;padding:18px;">'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;">✅</div><div><div style="font-size:14px;font-weight:800;color:var(--gn);">Bon retour créé</div><div style="font-size:11px;color:var(--mu);">Ordre original: '+esc(ordre)+' · '+arts.length+' article(s)</div></div></div>'
+    +'<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:6px;">Format SAP retour</div>'
+    +'<pre style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:var(--tx);overflow-x:auto;white-space:pre;margin-bottom:12px;">'+esc(lines)+'</pre>'
+    +'<div style="display:flex;gap:8px;">'
+      +'<button id="retourCopyBtn" class="btn-valider" style="flex:1;padding:12px;">📋 Copier pour SAP</button>'
+      +'<button id="retourResetBtn" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:var(--tx);border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;">↺ Nouveau retour</button>'
+    +'</div>'
+    +'</div>';
+  res.innerHTML = html;
+  // Cacher la ligne d'action initiale
+  var btn = document.getElementById('retourCreateBtn');
+  var sum = document.getElementById('retourSummary');
+  if (btn) btn.style.display='none';
+  if (sum) sum.style.display='none';
+
+  document.getElementById('retourCopyBtn').addEventListener('click', async function(){
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(lines);
+      else { var ta=document.createElement('textarea'); ta.value=lines; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }
+      showToast('Copié ! Colle dans SAP','success');
+    } catch(e) { showToast('Erreur copie','err'); }
+  });
+  document.getElementById('retourResetBtn').addEventListener('click', function(){ switchSection('retours'); });
+}
+
+// Init handlers retours
+document.addEventListener('DOMContentLoaded', function(){
+  var btn = document.getElementById('retourLoadBtn');
+  if (btn) btn.addEventListener('click', loadRetourOrdre);
+  var inp = document.getElementById('retourOrdreInput');
+  if (inp) inp.addEventListener('keydown', function(e){ if (e.key==='Enter') loadRetourOrdre(); });
+});
 
 // ── SERVICE WORKER (PWA) ──
 if ('serviceWorker' in navigator) {
