@@ -233,22 +233,31 @@ function initUI() {
   var navDash = document.getElementById('navDashboard');
   if (navDash) navDash.style.display = showDash ? '' : 'none';
 
+  // Commandes : visible pour tous SAUF brigadier
+  var showCmd = (role !== 'brigadier');
+  var navCmd = document.getElementById('navCommandes');
+  if (navCmd) navCmd.style.display = showCmd ? '' : 'none';
+  var bnCmd = document.getElementById('bnCommandes');
+  if (bnCmd) bnCmd.style.display = showCmd ? '' : 'none';
+
   // Borne → afficher l'écran de saisie agent
   if (role === 'borne') {
     showBorneEntry();
   } else if (showDash) {
     // Magasinier/Admin → dashboard par défaut (sauf si hash route déjà défini)
     var initial = (location.hash || '').replace('#','');
-    if (['pieces','outillage','panier','admin','ajouter','dashboard'].indexOf(initial) >= 0) {
+    if (['pieces','outillage','panier','commandes','admin','ajouter','dashboard'].indexOf(initial) >= 0) {
       switchSection(initial);
     } else {
       switchSection('dashboard');
     }
     startDashboardClock();
   } else {
-    // Agent/Brigadier → pieces (comportement actuel)
+    // Agent → pieces ou commandes selon hash
+    // Brigadier → pieces uniquement (pas de commandes)
     var initial2 = (location.hash || '').replace('#','');
-    if (['pieces','outillage','panier'].indexOf(initial2) >= 0) switchSection(initial2);
+    var allowed = (role==='brigadier') ? ['pieces','outillage','panier'] : ['pieces','outillage','panier','commandes'];
+    if (allowed.indexOf(initial2) >= 0) switchSection(initial2);
   }
 }
 
@@ -953,17 +962,17 @@ function startDashboardClock() {
 
 function switchSection(section) {
   _currentSection = section;
-  ['sectionDashboard','sectionPieces','sectionPanier','sectionOutillage'].forEach(function(id) {
+  ['sectionDashboard','sectionPieces','sectionPanier','sectionCommandes','sectionOutillage'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display='none';
   });
-  ['navDashboard','navPieces','navOutillage','navPanier'].forEach(function(id) {
+  ['navDashboard','navPieces','navOutillage','navPanier','navCommandes'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
   // Bottom nav sync
-  ['bnPieces','bnOutillage','bnPanier'].forEach(function(id) {
+  ['bnPieces','bnOutillage','bnPanier','bnCommandes'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.classList.remove('on');
   });
-  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier', dashboard:'bnPieces'};
+  var bnMap = {pieces:'bnPieces', ajouter:'bnPieces', admin:'bnPieces', outillage:'bnOutillage', panier:'bnPanier', commandes:'bnCommandes', dashboard:'bnPieces'};
   var bnEl = document.getElementById(bnMap[section]||'bnPieces');
   if (bnEl) bnEl.classList.add('on');
 
@@ -995,6 +1004,10 @@ function switchSection(section) {
     document.getElementById('sectionPanier').style.display='flex';
     document.getElementById('navPanier').classList.add('on');
     renderPanier();
+  } else if (section==='commandes') {
+    document.getElementById('sectionCommandes').style.display='flex';
+    var nc = document.getElementById('navCommandes');
+    if (nc) nc.classList.add('on');
     loadHistorique();
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
@@ -1215,11 +1228,19 @@ function updateBadge() {
 
 function renderPanier() {
   var list=document.getElementById('panierList');
-  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:40px;margin-bottom:10px;">🛒</div>Panier vide</div>'; return; }
+  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:48px;margin-bottom:12px;">🛒</div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ton panier est vide</div><div style="font-size:11px;color:var(--mu);">Ajoute des pièces depuis le catalogue</div></div>'; return; }
   var h='';
   for (var i=0;i<panier.length;i++) {
     var p=panier[i];
+    // Chercher la photo dans le catalogue
+    var artData = articles.filter(function(a){return a.num===p.num;})[0];
+    var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
+    var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+    var photoHtml = photoUrl
+      ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/\'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'])" style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+      : '<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,rgba(15,21,37,0.6) 0%,rgba(20,29,53,0.4) 100%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
     h+='<div class="panier-item">'
+      +photoHtml
       +'<div class="panier-item-info">'
         +'<div class="panier-item-num">'+esc(p.num)+'</div>'
         +'<div class="panier-item-nom">'+esc(p.nom)+'</div>'
@@ -1831,6 +1852,7 @@ function fermerNotif() { var el=document.getElementById('notifCommande'); if (el
 
 async function updateBadgeAttente() {
   var badgeSAP = document.getElementById('badgeSAP');
+  var badgeCmd = document.getElementById('commandesBadge');
   if (!badgeSAP) return;
 
   // Magasinier / admin — commandes SAP en attente
@@ -1842,9 +1864,11 @@ async function updateBadgeAttente() {
         var v=document.getElementById('badgeSAPVal'); if(v) v.textContent=nb;
         badgeSAP.classList.remove('hidden');
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP){bnSAP.textContent=nb;bnSAP.className='bn-dot bn-dot-orange';}
+        if (badgeCmd) { badgeCmd.textContent = nb; badgeCmd.classList.remove('hidden'); }
       } else {
         badgeSAP.classList.add('hidden');
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP) bnSAP.className='bn-dot hidden';
+        if (badgeCmd) badgeCmd.classList.add('hidden');
       }
     } catch(e) {}
   }
