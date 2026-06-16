@@ -324,12 +324,109 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 .tb-nav-item.on{color:var(--ac)!important;border-bottom-color:var(--ac)!important;}
 
 /* Sidebar glass */
-.sidebar{background:rgba(15,17,32,0.5)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-right:1px solid rgba(255,255,255,0.06)!important;}
-.cat-item{transition:all 0.2s!important;}
-.cat-item:hover{background:rgba(255,255,255,0.03)!important;}
-.cat-item.on{background:rgba(240,165,0,0.08)!important;}
-.cat-icon{background:rgba(255,255,255,0.04)!important;border:1px solid rgba(255,255,255,0.08)!important;}
-.cat-item.on .cat-icon{background:rgba(240,165,0,0.15)!important;border-color:rgba(240,165,0,0.4)!important;}
+/* ─── SIDEBAR CATÉGORIES STYLE GLASS (cohérence dashboard) ─── */
+.sidebar{
+  width:230px!important;
+  background:rgba(10,10,24,0.45)!important;
+  backdrop-filter:blur(24px)!important;
+  -webkit-backdrop-filter:blur(24px)!important;
+  border-right:1px solid rgba(255,255,255,0.06)!important;
+  padding:18px 12px!important;
+  position:relative;
+  font-family:'Space Grotesk',-apple-system,sans-serif;
+}
+.sidebar::before{
+  content:'';position:absolute;top:-60px;left:-60px;
+  width:240px;height:240px;
+  background:radial-gradient(circle,rgba(240,165,0,0.10) 0%,transparent 70%);
+  border-radius:50%;pointer-events:none;
+}
+.sidebar-title{
+  font-size:9px!important;color:#9b9ec7!important;
+  letter-spacing:3px!important;font-weight:700;
+  padding:0 10px 14px!important;text-transform:uppercase;
+  position:relative;z-index:1;
+}
+.cat-item{
+  display:flex!important;align-items:center!important;gap:11px!important;
+  padding:10px 12px!important;
+  margin-bottom:3px;
+  border-radius:14px!important;
+  border-left:none!important;
+  cursor:pointer;
+  transition:all 0.2s ease!important;
+  position:relative;z-index:1;
+  background:transparent!important;
+}
+.cat-item:hover{
+  background:rgba(255,255,255,0.04)!important;
+  transform:translateX(2px);
+}
+.cat-item.on{
+  background:rgba(240,165,0,0.10)!important;
+  box-shadow:0 0 20px rgba(240,165,0,0.10);
+  border:1px solid rgba(240,165,0,0.25)!important;
+  padding:9px 11px!important;
+}
+.cat-icon{
+  width:36px!important;height:36px!important;
+  border-radius:11px!important;
+  background:rgba(255,255,255,0.05)!important;
+  border:1px solid rgba(255,255,255,0.08)!important;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+  transition:all 0.2s;
+}
+.cat-item.on .cat-icon{
+  background:linear-gradient(135deg,#f0a500,#ffc233)!important;
+  border-color:transparent!important;
+  color:#111!important;
+  box-shadow:0 4px 14px rgba(240,165,0,0.35);
+}
+.cat-info{flex:1;min-width:0;}
+.cat-label{
+  font-size:13px!important;font-weight:600!important;
+  color:#c8cadc!important;
+  line-height:1.2;
+}
+.cat-item.on .cat-label{color:#fff!important;font-weight:700!important;}
+.cat-count{
+  font-size:10px!important;
+  color:#5a5d72!important;
+  margin-top:2px;font-weight:500;
+  font-family:'JetBrains Mono','Consolas',monospace;
+}
+.cat-item.on .cat-count{color:rgba(255,255,255,0.7)!important;}
+.cat-sep{height:1px;background:rgba(255,255,255,0.06);margin:8px 16px!important;}
+
+/* Couleurs spécifiques par catégorie (auto-stylisation via data-cat) */
+.cat-item[data-cat*="Frein" i]:not(.on) .cat-icon{background:rgba(231,76,60,0.12)!important;border-color:rgba(231,76,60,0.3)!important;}
+.cat-item[data-cat*="Élec" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Elec" i]:not(.on) .cat-icon{background:rgba(241,196,15,0.12)!important;border-color:rgba(241,196,15,0.3)!important;}
+.cat-item[data-cat*="Carross" i]:not(.on) .cat-icon{background:rgba(155,89,182,0.12)!important;border-color:rgba(155,89,182,0.3)!important;}
+.cat-item[data-cat*="Huile" i]:not(.on) .cat-icon{background:rgba(230,126,34,0.12)!important;border-color:rgba(230,126,34,0.3)!important;}
+.cat-item[data-cat*="Suspen" i]:not(.on) .cat-icon{background:rgba(52,152,219,0.12)!important;border-color:rgba(52,152,219,0.3)!important;}
+.cat-item[data-cat*="Porte" i]:not(.on) .cat-icon{background:rgba(46,204,113,0.12)!important;border-color:rgba(46,204,113,0.3)!important;}
+.cat-item[data-cat*="Ad blue" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Adblue" i]:not(.on) .cat-icon{background:rgba(52,152,219,0.15)!important;border-color:rgba(52,152,219,0.35)!important;}
+.cat-item[data-cat*="Aéros" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Aeros" i]:not(.on) .cat-icon{background:rgba(189,195,199,0.12)!important;border-color:rgba(189,195,199,0.3)!important;}
+.cat-item[data-cat*="Éclair" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Eclair" i]:not(.on) .cat-icon{background:rgba(241,196,15,0.15)!important;border-color:rgba(241,196,15,0.35)!important;}
+.cat-item[data-cat*="Entretien" i]:not(.on) .cat-icon{background:rgba(46,204,113,0.12)!important;border-color:rgba(46,204,113,0.3)!important;}
+.cat-item[data-cat*="Essuie" i]:not(.on) .cat-icon{background:rgba(52,152,219,0.12)!important;border-color:rgba(52,152,219,0.3)!important;}
+.cat-item[data-cat*="Colle" i]:not(.on) .cat-icon{background:rgba(127,140,141,0.12)!important;border-color:rgba(127,140,141,0.3)!important;}
+.cat-item[data-cat*="Filtre" i]:not(.on) .cat-icon{background:rgba(149,165,166,0.12)!important;border-color:rgba(149,165,166,0.3)!important;}
+.cat-item[data-cat*="Joint" i]:not(.on) .cat-icon{background:rgba(100,149,237,0.12)!important;border-color:rgba(100,149,237,0.3)!important;}
+.cat-item[data-cat*="Moteur" i]:not(.on) .cat-icon{background:rgba(192,57,43,0.12)!important;border-color:rgba(192,57,43,0.3)!important;}
+.cat-item[data-cat*="Chim" i]:not(.on) .cat-icon{background:rgba(155,89,182,0.15)!important;border-color:rgba(155,89,182,0.35)!important;}
+.cat-item[data-cat*="Nettoy" i]:not(.on) .cat-icon{background:rgba(46,204,113,0.12)!important;border-color:rgba(46,204,113,0.3)!important;}
+.cat-item[data-cat*="Pmr" i]:not(.on) .cat-icon{background:rgba(149,165,166,0.15)!important;border-color:rgba(149,165,166,0.35)!important;}
+.cat-item[data-cat*="Ldr" i]:not(.on) .cat-icon{background:rgba(52,152,219,0.18)!important;border-color:rgba(52,152,219,0.4)!important;}
+.cat-item[data-cat*="Echappement" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Échap" i]:not(.on) .cat-icon{background:rgba(127,140,141,0.15)!important;border-color:rgba(127,140,141,0.35)!important;}
+.cat-item[data-cat*="Feu" i]:not(.on) .cat-icon,
+.cat-item[data-cat*="Phare" i]:not(.on) .cat-icon{background:rgba(241,196,15,0.15)!important;border-color:rgba(241,196,15,0.35)!important;}
 
 /* Searchbar */
 .searchbar{background:rgba(13,15,26,0.5)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:1px solid rgba(255,255,255,0.06)!important;}
@@ -948,6 +1045,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
   </div>
 </div>
 
-<script src="app.js?v=33"></script>
+<script src="app.js?v=34"></script>
 </body>
 </html>
