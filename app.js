@@ -293,8 +293,24 @@ function initUI() {
   }
 }
 
-// ── SCANNER CODE-BARRE ──
-var _scannerStream = null, _scannerInterval = null;
+// ══════════════════════════════════════════════════════════
+// SCANNER CODE-BARRE (ZXing-JS — compatible iOS Safari + Android Chrome)
+// ══════════════════════════════════════════════════════════
+var _zxingReader = null;
+var _zxingStream = null;
+
+function fillNumeroOrdre(val) {
+  val = String(val || '').trim();
+  if (!val) return;
+  var input = document.getElementById('numeroOrdre');
+  if (input) input.value = val;
+  var result = document.getElementById('scannerResult');
+  var status = document.getElementById('scannerStatus');
+  if (result) result.textContent = '✓ ' + val;
+  if (status) status.textContent = 'Code-barre détecté !';
+  showToast('N° d\'ordre : ' + val, 'success');
+  setTimeout(function(){ stopBarcodeScanner(); }, 900);
+}
 
 async function startBarcodeScanner() {
   var overlay = document.getElementById('scannerOverlay');
@@ -302,56 +318,69 @@ async function startBarcodeScanner() {
   var status = document.getElementById('scannerStatus');
   var result = document.getElementById('scannerResult');
   if (!overlay || !video) return;
-
-  // Vérifier support BarcodeDetector
-  if (!('BarcodeDetector' in window)) {
-    showToast('Scanner non supporté — saisis le numéro manuellement','err');
+  if (typeof ZXing === 'undefined') {
+    showToast('Librairie scanner non chargée — vérifie ta connexion internet', 'err');
     return;
   }
 
-  result.textContent = '';
-  status.textContent = 'Démarrage caméra...';
+  if (result) result.textContent = '';
+  if (status) status.textContent = 'Démarrage caméra...';
   overlay.classList.remove('hidden');
 
-  try {
-    _scannerStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: {ideal:1280}, height: {ideal:720} }
-    });
-    video.srcObject = _scannerStream;
-
-    var detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','itf','codabar'] });
-    status.textContent = 'Pointez vers le code-barre de la feuille de route';
-
-    _scannerInterval = setInterval(async function() {
-      if (video.readyState < 2) return;
+  // Brancher l'input file (alternative : choisir une photo)
+  var fileInput = document.getElementById('scannerFileInput');
+  if (fileInput) {
+    fileInput.value = '';
+    fileInput.onchange = async function(ev) {
+      var file = ev.target.files && ev.target.files[0];
+      if (!file) return;
+      if (status) status.textContent = 'Analyse de la photo...';
       try {
-        var barcodes = await detector.detect(video);
-        if (barcodes.length > 0) {
-          var val = barcodes[0].rawValue.trim();
-          result.textContent = '✓ ' + val;
-          status.textContent = 'Code-barre détecté !';
-          // Remplir le champ numéro d'ordre
-          var input = document.getElementById('numeroOrdre');
-          if (input) input.value = val;
-          // Fermer après 1 seconde
-          setTimeout(function() { stopBarcodeScanner(); }, 900);
-        }
-      } catch(e) {}
-    }, 400);
+        var url = URL.createObjectURL(file);
+        var reader = new ZXing.BrowserMultiFormatReader();
+        var res = await reader.decodeFromImageUrl(url);
+        URL.revokeObjectURL(url);
+        if (res && res.text) fillNumeroOrdre(res.text);
+        else { if (status) status.textContent = 'Aucun code-barre trouvé dans la photo'; }
+      } catch(e) {
+        if (status) status.textContent = 'Aucun code-barre trouvé — essaie une meilleure photo';
+      }
+    };
+  }
 
+  try {
+    // ZXing gère lui-même getUserMedia et décode en continu
+    _zxingReader = new ZXing.BrowserMultiFormatReader();
+    if (status) status.textContent = 'Pointe la caméra vers le code-barre';
+    _zxingReader.decodeFromVideoDevice(
+      undefined, // caméra par défaut (arrière sur mobile)
+      'scannerVideo',
+      function(res, err) {
+        if (res && res.text) {
+          fillNumeroOrdre(res.text);
+        }
+        // err ignorée volontairement : ZXing émet une erreur à chaque frame sans code détecté
+      }
+    );
   } catch(e) {
-    status.textContent = 'Erreur caméra — vérifie les permissions';
-    showToast('Accès caméra refusé','err');
+    if (status) status.textContent = 'Caméra indisponible — utilise "Choisir une photo"';
+    showToast('Caméra refusée — utilise le bouton Photo','err');
   }
 }
 
 function stopBarcodeScanner() {
-  clearInterval(_scannerInterval); _scannerInterval = null;
-  if (_scannerStream) { _scannerStream.getTracks().forEach(function(t){t.stop();}); _scannerStream = null; }
+  if (_zxingReader) {
+    try { _zxingReader.reset(); } catch(e){}
+    _zxingReader = null;
+  }
+  if (_zxingStream) {
+    try { _zxingStream.getTracks().forEach(function(t){t.stop();}); } catch(e){}
+    _zxingStream = null;
+  }
   var overlay = document.getElementById('scannerOverlay');
   if (overlay) overlay.classList.add('hidden');
   var video = document.getElementById('scannerVideo');
-  if (video) video.srcObject = null;
+  if (video) { try { video.srcObject = null; } catch(e){} }
 }
 
 // ── BORNE ──
