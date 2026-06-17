@@ -867,6 +867,18 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
     <!-- SECTION COMMANDES (bons validés : en attente / prêts / archivés) -->
     <div id="sectionCommandes" style="display:none;flex:1;overflow:hidden;">
       <div class="panier-panel">
+        <!-- Barre de recherche bons -->
+        <div style="position:sticky;top:0;background:transparent;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:0 0 12px;z-index:5;">
+          <div style="position:relative;">
+            <input type="text" id="cmdSearch" placeholder="🔍 Chercher un bon : N° ordre, agent, bus, article, magasinier..." autocomplete="off"
+              style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:13px 44px 13px 18px;font-size:14px;color:var(--tx);outline:none;-webkit-appearance:none;font-family:inherit;transition:border-color 0.2s,background 0.2s;"
+              onfocus="this.style.borderColor='var(--ac)';this.style.background='rgba(255,255,255,0.06)';"
+              onblur="this.style.borderColor='rgba(255,255,255,0.10)';this.style.background='rgba(255,255,255,0.04)';"
+              oninput="filterCommandes(this.value)"/>
+            <div id="cmdSearchClear" onclick="clearCommandesSearch()" style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);font-size:18px;color:var(--mu);cursor:pointer;line-height:1;padding:4px 6px;">✕</div>
+          </div>
+          <div id="cmdSearchInfo" style="display:none;margin-top:6px;font-size:11px;color:var(--mu);padding-left:6px;"></div>
+        </div>
         <div id="histoSection">
           <div class="histo-title">Historique des bons</div>
           <div id="historiqueList"></div>
@@ -1099,6 +1111,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=39"></script>
+<script src="app.js?v=40"></script>
 </body>
 </html>

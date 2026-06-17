@@ -1402,6 +1402,26 @@ function showConfirmAgent(ordre, nbArts, totalQty) {
 
 // ── HISTORIQUE ──
 var _histoFiltre='today';
+var _cmdSearch=''; // texte de recherche pour la page Commandes (normalisé)
+
+// Recherche dans la page Commandes — filtre live
+function filterCommandes(query) {
+  _cmdSearch = normalize((query || '').trim());
+  var clr = document.getElementById('cmdSearchClear');
+  var info = document.getElementById('cmdSearchInfo');
+  if (clr) clr.style.display = _cmdSearch ? 'block' : 'none';
+  if (info) {
+    if (_cmdSearch) { info.style.display = 'block'; info.textContent = '🔍 Filtre actif sur "' + (query.trim()) + '"'; }
+    else { info.style.display = 'none'; }
+  }
+  loadHistorique();
+}
+
+function clearCommandesSearch() {
+  var input = document.getElementById('cmdSearch');
+  if (input) input.value = '';
+  filterCommandes('');
+}
 
 async function autoArchiverBons() {
   try {
@@ -1437,8 +1457,18 @@ async function loadHistorique() {
     var filtrés=(data||[]).filter(function(b) {
       if (b.statut==='annule' || b.statut==='archive') return false;
       var dateBon=dateLocale(supaDate(b.date_creation).getTime());
-      if (_histoFiltre==='today') return dateBon===aujourdhui;
-      if (_histoFiltre==='week') return dateBon>=lundi;
+      if (_histoFiltre==='today' && dateBon!==aujourdhui) return false;
+      if (_histoFiltre==='week' && dateBon<lundi) return false;
+      // Recherche texte multi-champs
+      if (_cmdSearch) {
+        var hay = [
+          b.numero_ordre, b.login, b.numero_agent, b.message || ''
+        ].join(' ');
+        if (b.articles && b.articles.length) {
+          b.articles.forEach(function(a){ hay += ' '+(a.num||'')+' '+(a.nom||''); });
+        }
+        if (normalize(hay).indexOf(_cmdSearch) < 0) return false;
+      }
       return true;
     });
 
