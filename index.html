@@ -336,8 +336,44 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 /* Topbar glass */
 .topbar{background:rgba(13,15,26,0.6)!important;backdrop-filter:blur(20px)!important;-webkit-backdrop-filter:blur(20px)!important;border-bottom:1px solid rgba(240,165,0,0.4)!important;}
-.tb-nav-item{font-family:'Space Grotesk',sans-serif!important;}
-.tb-nav-item.on{color:var(--ac)!important;border-bottom-color:var(--ac)!important;}
+/* Nav items style glass/pill (cohérence dashboard) */
+.tb-nav{gap:6px!important;padding:0 4px;align-items:center!important;}
+.tb-nav-item{
+  font-family:'Space Grotesk',sans-serif!important;
+  display:flex!important;align-items:center;gap:7px;
+  padding:8px 16px!important;
+  font-size:13px;font-weight:600!important;
+  color:#9b9ec7!important;
+  cursor:pointer;
+  border-bottom:none!important;
+  border-radius:12px!important;
+  background:transparent!important;
+  border:1px solid transparent!important;
+  white-space:nowrap;position:relative;
+  height:auto!important;
+  transition:all 0.25s cubic-bezier(0.34,1.56,0.64,1)!important;
+}
+.tb-nav-item:hover{
+  color:#fff!important;
+  background:rgba(255,255,255,0.05)!important;
+  border-color:rgba(255,255,255,0.08)!important;
+  transform:translateY(-1px);
+}
+.tb-nav-item.on{
+  color:#f0a500!important;
+  background:rgba(240,165,0,0.10)!important;
+  border-color:rgba(240,165,0,0.35)!important;
+  box-shadow:0 0 18px rgba(240,165,0,0.18),inset 0 1px 0 rgba(255,255,255,0.08);
+  border-bottom:1px solid rgba(240,165,0,0.35)!important;
+}
+.tb-nav-badge{
+  background:rgba(231,76,60,0.85)!important;
+  color:#fff!important;
+  border-radius:10px;padding:2px 8px!important;
+  font-size:10px;font-weight:800;
+  margin-left:4px;
+  font-family:'JetBrains Mono',monospace!important;
+}
 
 /* Sidebar glass */
 /* ─── SIDEBAR CATÉGORIES STYLE GLASS (cohérence dashboard) ─── */
@@ -634,13 +670,12 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
       <div class="tb-logo-sub">Dépôt Bus Citaro</div>
     </div>
     <div class="tb-nav">
-      <!-- Items masqués via CSS (.tb-nav-hidden) — gardés pour le JS qui les référence -->
-      <div class="tb-nav-item tb-nav-hidden" id="navDashboard" onclick="switchSection('dashboard')">🏠 Accueil</div>
-      <div class="tb-nav-item on tb-nav-hidden" id="navPieces">🔩 Pièces</div>
-      <div class="tb-nav-item tb-nav-hidden" id="navOutillage">🔧 Outillages</div>
+      <div class="tb-nav-item" id="navDashboard" onclick="switchSection('dashboard')" style="display:none;">🏠 Accueil</div>
+      <div class="tb-nav-item on" id="navPieces">🔩 Pièces</div>
+      <div class="tb-nav-item" id="navOutillage">🔧 Outillages</div>
       <div class="tb-nav-item" id="navPanier">🛒 Panier <span class="tb-nav-badge hidden" id="panierBadge" style="background:var(--rd);">0</span></div>
-      <div class="tb-nav-item tb-nav-hidden" id="navCommandes" onclick="switchSection('commandes')">📋 Commandes <span class="tb-nav-badge hidden" id="commandesBadge" style="background:var(--ac);color:#111;">0</span></div>
-      <div class="tb-nav-item tb-nav-hidden" id="navRetours" onclick="switchSection('retours')">📦 Retours</div>
+      <div class="tb-nav-item" id="navCommandes" onclick="switchSection('commandes')" style="display:none;">📋 Commandes <span class="tb-nav-badge hidden" id="commandesBadge" style="background:var(--ac);color:#111;">0</span></div>
+      <div class="tb-nav-item" id="navRetours" onclick="switchSection('retours')" style="display:none;">📦 Retours</div>
     </div>
     <!-- Alertes entre nav et droite -->
     <div id="tbAlerts">
@@ -1111,6 +1146,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=40"></script>
+<script src="app.js?v=41"></script>
 </body>
 </html>
