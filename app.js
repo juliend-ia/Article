@@ -67,7 +67,37 @@ function showToast(msg, type) {
 }
 
 // ── AUTH ──
+// Délai d'inactivité avant déconnexion automatique (4 heures)
+var SESSION_TIMEOUT_MS = 4 * 3600 * 1000;
+
+function updateLastActivity() {
+  if (!currentUser || !currentUser.login) return;
+  if (currentUser.role === 'borne') return; // borne ne se déconnecte jamais
+  try { localStorage.setItem('lastActivity', String(Date.now())); } catch(e) {}
+}
+
+function isSessionExpired() {
+  try {
+    // Borne : pas de timeout
+    var cu = localStorage.getItem('currentUser');
+    if (cu) {
+      var u = JSON.parse(cu);
+      if (u && (u.role === 'borne' || u.login === 'borne')) return false;
+    }
+    var last = parseInt(localStorage.getItem('lastActivity') || '0', 10);
+    if (!last) return false;
+    return (Date.now() - last) > SESSION_TIMEOUT_MS;
+  } catch(e) { return false; }
+}
+
 async function checkAuth() {
+  // Vérifier d'abord l'expiration de session
+  if (isSessionExpired()) {
+    localStorage.removeItem(SKEY2);
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('lastActivity');
+    return;
+  }
   var stored = localStorage.getItem(SKEY2);
   if (!stored) return;
   // Vérification via RPC sécurisée (jamais le password_hash n'est envoyé au client)
@@ -87,6 +117,7 @@ async function checkAuth() {
     currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:role, token:stored, peut_modifier:dbUser.peut_modifier!==false};
     if (ATOKENS.indexOf(stored) < 0) ATOKENS.push(stored);
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
+    updateLastActivity();
     document.getElementById('loginOverlay').classList.add('hidden');
     document.getElementById('appRoot').classList.remove('hidden');
     initKioskMode();
@@ -113,6 +144,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       currentUser = {login:dbUser.login,prenom:dbUser.prenom,role:role,token:h,peut_modifier:dbUser.peut_modifier!==false};
       if (ATOKENS.indexOf(h)<0) ATOKENS.push(h);
       localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
+      updateLastActivity();
       document.getElementById('loginOverlay').classList.add('hidden');
       document.getElementById('appRoot').classList.remove('hidden');
       initKioskMode(); initUI(); loadArticles(); return;
@@ -299,14 +331,56 @@ function initUI() {
 var _zxingReader = null;
 var _zxingStream = null;
 
+// Mapping AZERTY belge/français → chiffres (scanner USB en mode QWERTY US)
+var AZERTY_TO_DIGIT = {
+  '&':'1', 'é':'2', '"':'3', "'":'4', '(':'5',
+  '§':'6', '-':'6', '!':'8', 'è':'7', '_':'8',
+  'ç':'9', 'à':'0'
+};
+
+// Convertit une chaîne contenant des caractères AZERTY mal tapés en chiffres
+function azertyToDigits(str) {
+  if (!str) return '';
+  var out = '';
+  for (var i=0; i<str.length; i++) {
+    var c = str[i];
+    if (AZERTY_TO_DIGIT[c]) out += AZERTY_TO_DIGIT[c];
+    else if (/[0-9]/.test(c)) out += c;
+    // sinon on ignore
+  }
+  return out;
+}
+
+// Auto-correction live du champ Numéro d'ordre (sur input)
+function autoFixOrdreAZERTY(input) {
+  var fixed = azertyToDigits(input.value);
+  if (fixed !== input.value) {
+    var pos = input.selectionStart;
+    input.value = fixed;
+    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) {}
+  }
+}
+
 function fillNumeroOrdre(val) {
   val = String(val || '').trim();
   if (!val) return;
+  // Auto-correction si le scan contient des caractères AZERTY mal mappés
+  var digits = azertyToDigits(val);
+  if (digits.length === 8 && /^\d{8}$/.test(digits)) val = digits;
+  // Validation : 8 chiffres exactement
+  if (!/^\d{8}$/.test(val)) {
+    var status = document.getElementById('scannerStatus');
+    var result = document.getElementById('scannerResult');
+    if (status) status.textContent = '❌ Pas un N° d\'ordre — il faut 8 chiffres';
+    if (result) { result.textContent = val; result.style.color = '#e74c3c'; }
+    showToast('Code-barre invalide — 8 chiffres attendus','err');
+    return;
+  }
   var input = document.getElementById('numeroOrdre');
   if (input) input.value = val;
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
-  if (result) result.textContent = '✓ ' + val;
+  if (result) { result.textContent = '✓ ' + val; result.style.color = '#2ecc71'; }
   if (status) status.textContent = 'Code-barre détecté !';
   showToast('N° d\'ordre : ' + val, 'success');
   setTimeout(function(){ stopBarcodeScanner(); }, 900);
@@ -326,6 +400,14 @@ async function startBarcodeScanner() {
   if (result) result.textContent = '';
   if (status) status.textContent = 'Démarrage caméra...';
   overlay.classList.remove('hidden');
+
+  // Astuce PWA : afficher uniquement sur iOS Safari hors mode standalone
+  var hint = document.getElementById('scannerPwaHint');
+  if (hint) {
+    var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    hint.style.display = (isIOS && !isStandalone) ? 'block' : 'none';
+  }
 
   // Brancher l'input file (alternative : choisir une photo)
   var fileInput = document.getElementById('scannerFileInput');
@@ -1045,6 +1127,7 @@ function startDashboardClock() {
 
 function switchSection(section) {
   _currentSection = section;
+  updateLastActivity();
   ['sectionDashboard','sectionPieces','sectionPanier','sectionCommandes','sectionRetours','sectionOutillage'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.style.display='none';
   });
