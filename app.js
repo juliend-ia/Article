@@ -2669,7 +2669,20 @@ function initRealtime() {
     ws.onmessage=function(e) {
       try {
         var msg=JSON.parse(e.data); if (msg.event==='phx_reply') return;
-        if (msg.topic&&msg.topic.indexOf('bons_commande')>=0) { updateBadgeAttente(); if (_currentSection==='panier') loadHistorique(); }
+        if (msg.topic&&msg.topic.indexOf('bons_commande')>=0) {
+          updateBadgeAttente();
+          // Rafraîchir la page Commandes si on est dessus
+          if (_currentSection==='commandes') loadHistorique();
+          // Rafraîchir le dashboard si on est dessus (compteur "à préparer")
+          if (_currentSection==='dashboard') refreshDashboard();
+          // Détection event type pour notification fine
+          if (msg.payload && msg.payload.data) {
+            var evtType = msg.payload.data.type;
+            var newRec = msg.payload.data.record;
+            var oldRec = msg.payload.data.old_record;
+            if (evtType === 'UPDATE' && newRec && oldRec) onBonUpdated(newRec, oldRec);
+          }
+        }
         if (msg.topic&&msg.topic.indexOf('articles')>=0) { loadArticlesSilent(); }
         if (msg.topic&&msg.topic.indexOf('outillage')>=0) {
           if (_currentSection==='outillage') loadOutillage();
@@ -2685,26 +2698,66 @@ function initRealtime() {
   _pollingInterval=setInterval(async function() {
     if (currentUser.role!=='admin'&&currentUser.role!=='magasinier') return;
     try {
+      // 1. Détection nouveau bon
       var data=await supa('GET','bons_commande?select=id,login,numero_agent,numero_ordre,articles,date_creation&order=date_creation.desc&limit=1');
       if (data&&data.length) {
         var latest=data[0];
         var isNewer=_lastBonCreatedAt===null||latest.date_creation>_lastBonCreatedAt;
         if (_lastBonId!==null&&latest.id!==_lastBonId&&isNewer) {
           _lastBonId=latest.id; _lastBonCreatedAt=latest.date_creation; onNouveauBon(latest);
-        } else { if (_lastBonId===null) { _lastBonId=latest.id; _lastBonCreatedAt=latest.date_creation; } updateBadgeAttente(); }
-      } else updateBadgeAttente();
+        } else { if (_lastBonId===null) { _lastBonId=latest.id; _lastBonCreatedAt=latest.date_creation; } }
+      }
+      // 2. Toujours rafraîchir : badges + page Commandes + dashboard si visibles
+      updateBadgeAttente();
+      if (_currentSection==='commandes') loadHistorique();
+      else if (_currentSection==='dashboard') refreshDashboard();
     } catch(e) {}
-  },12000);
+  }, 5000); // 5 secondes = vraie sensation de live
 }
 
 function onNouveauBon(record) {
   if (currentUser.role!=='admin'&&currentUser.role!=='magasinier') return;
   if (!record||!record.id||!record.numero_ordre) return;
-  if (record.login&&record.login===currentUser.login) { updateBadgeAttente(); if (_currentSection==='panier') loadHistorique(); return; }
+  if (record.login&&record.login===currentUser.login) {
+    updateBadgeAttente();
+    if (_currentSection==='commandes') loadHistorique();
+    if (_currentSection==='dashboard') refreshDashboard();
+    return;
+  }
   if (_notifCooldown) return;
   _notifCooldown=true; setTimeout(function(){_notifCooldown=false;},5000);
-  if (_currentSection==='panier') loadHistorique();
+  if (_currentSection==='commandes') loadHistorique();
+  if (_currentSection==='dashboard') refreshDashboard();
   playDing(); showNotifCommande(record); updateBadgeAttente();
+}
+
+// Notification discrète quand un bon est modifié par un autre magasinier
+// (SAP coché, Pris en charge, Statut changé)
+function onBonUpdated(newRec, oldRec) {
+  if (currentUser.role!=='admin' && currentUser.role!=='magasinier') return;
+  if (!newRec || !oldRec) return;
+  var moi = currentUser.prenom || currentUser.login || '';
+  var ordre = newRec.numero_ordre || '';
+
+  // SAP fait par quelqu'un d'autre
+  if (newRec.sap_effectue && !oldRec.sap_effectue) {
+    showToast('✓ Bon ' + ordre + ' marqué SAP fait','success');
+  }
+  // Statut préparation passé à "prêt"
+  else if (newRec.preparation_statut === 'pret' && oldRec.preparation_statut !== 'pret') {
+    showToast('✅ Bon ' + ordre + ' marqué Prêt','success');
+  }
+  // Nouveau magasinier qui prend le bon (marqueur [PRIS:...])
+  else {
+    var oldPris = (oldRec.message||'').match(/\[PRIS:([^\]]+)\]/);
+    var newPris = (newRec.message||'').match(/\[PRIS:([^\]]+)\]/);
+    var oldNoms = oldPris ? oldPris[1].split(',').map(function(s){return s.trim();}) : [];
+    var newNoms = newPris ? newPris[1].split(',').map(function(s){return s.trim();}) : [];
+    var ajoutes = newNoms.filter(function(n){return oldNoms.indexOf(n)<0 && n !== moi;});
+    if (ajoutes.length > 0) {
+      showToast('👷 ' + ajoutes.join(', ') + ' prend le bon ' + ordre,'success');
+    }
+  }
 }
 
 async function loadArticlesSilent() {
