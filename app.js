@@ -399,10 +399,53 @@ function startArticleScanner() {
   if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = '📷 Scanner une étiquette pièce';
 }
 
-// Dispatcher : route le code-barre scanné selon le mode actif
+// Dispatcher intelligent : route automatiquement selon le contenu scanné et la page courante
 function handleScannedCode(val) {
-  if (_scanMode === 'article') return handleArticleScan(val);
+  val = String(val || '').trim();
+  if (!val) return;
+
+  // 1️⃣ Tentative de conversion AZERTY pour avoir un candidat numérique
+  var digits = azertyToDigits(val);
+  var numCandidate = /^\d+$/.test(val) ? val : (/^\d+$/.test(digits) ? digits : null);
+
+  // 2️⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
+  //    et naviguer vers la page Panier si on n'y est pas
+  if (numCandidate && /^83\d{6}$/.test(numCandidate)) {
+    if (_currentSection !== 'panier') switchSection('panier');
+    return fillNumeroOrdre(numCandidate);
+  }
+
+  // 3️⃣ Sinon c'est un article : routing selon le mode/section
+  if (_scanMode === 'article' || _currentSection === 'panier') {
+    return handleArticleScan(val);
+  }
+  if (_currentSection === 'pieces') {
+    return handleArticleSearch(val);
+  }
+  // Cas par défaut : tente comme N° d'ordre
   return fillNumeroOrdre(val);
+}
+
+// Remplit la barre de recherche Pièces avec le code scanné (visuel, pas d'ajout panier)
+function handleArticleSearch(val) {
+  val = String(val || '').trim();
+  if (!val) return;
+  var digits = azertyToDigits(val);
+  var query = (/^\d+$/.test(val) || /^\d+$/.test(digits)) ? (digits || val) : val;
+  var input = document.getElementById('si');
+  if (input) {
+    input.value = query;
+    displayCount = 30;
+    doSearch();
+    var clr = document.getElementById('clearSearch');
+    if (clr) clr.style.display = query ? 'block' : 'none';
+  }
+  var result = document.getElementById('scannerResult');
+  var status = document.getElementById('scannerStatus');
+  if (status) status.textContent = '🔍 Recherche dans le catalogue';
+  if (result) { result.textContent = query; result.style.color = '#3498db'; }
+  showToast('🔍 ' + query, 'success');
+  setTimeout(function(){ stopBarcodeScanner(); }, 700);
 }
 
 // Recherche l'article par son numéro et l'ajoute au panier
@@ -1072,27 +1115,28 @@ document.getElementById('si').addEventListener('input', function() {
   if (clr) clr.style.display=this.value?'block':'none';
 });
 
-// Détection scanner USB : touche Entrée + numéro pur = ajout direct au panier
+// Détection scanner USB sur la barre de recherche Pièces (touche Entrée)
+// Logique intelligente :
+//  - 8 chiffres commençant par 83  → N° d'ordre → champ numeroOrdre + navigation panier
+//  - Numéro d'article connu        → recherche/filtre du catalogue (visuel)
+//  - Texte normal                  → comportement standard (recherche)
 document.getElementById('si').addEventListener('keydown', function(e) {
   if (e.key !== 'Enter') return;
-  // Tentative de conversion AZERTY si nécessaire
   var raw = this.value.trim();
   if (!raw) return;
   var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
-  if (!num || !/^\d+$/.test(num)) return; // pas un numéro pur → laisse le comportement normal
-  var art = articles.filter(function(a){return a.num === num;})[0];
-  if (!art) {
-    showToast('Article inconnu : ' + num, 'err');
+  // Si c'est un N° d'ordre (83XXXXXX) → router vers le panier
+  if (num && /^83\d{6}$/.test(num)) {
+    e.preventDefault();
+    this.value = '';
+    doSearch();
+    var clr=document.getElementById('clearSearch');
+    if (clr) clr.style.display='none';
+    switchSection('panier');
+    setTimeout(function(){ fillNumeroOrdre(num); }, 100);
     return;
   }
-  e.preventDefault();
-  ajouterPanier(art.num);
-  showToast('✓ ' + art.nom + ' ajouté au panier', 'success');
-  // Vider le champ pour préparer le scan suivant
-  this.value = '';
-  doSearch();
-  var clr=document.getElementById('clearSearch');
-  if (clr) clr.style.display='none';
+  // Sinon on laisse la recherche faire son travail (juste filtrer)
 });
 document.getElementById('clearSearch').addEventListener('click', function() {
   document.getElementById('si').value=''; this.style.display='none'; displayCount=30; doSearch();
