@@ -361,6 +361,26 @@ function autoFixOrdreAZERTY(input) {
   }
 }
 
+// Smart convert : ne convertit QUE si l'input est composé exclusivement de
+// chiffres et caractères AZERTY-chiffres (donc pas de lettres comme "amortisseur")
+function smartAzertyConvert(str) {
+  if (!str || str.length < 3) return str;
+  // Le set : chiffres + tous les caractères AZERTY mappés vers chiffres
+  if (/^[0-9&é"'(§\-è_!çà]+$/.test(str)) {
+    return azertyToDigits(str);
+  }
+  return str;
+}
+
+// Auto-correction live champ recherche pièces (uniquement si l'input ressemble à un scan)
+function autoFixSearchAZERTY(input) {
+  var fixed = smartAzertyConvert(input.value);
+  if (fixed !== input.value) {
+    input.value = fixed;
+    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) {}
+  }
+}
+
 function fillNumeroOrdre(val) {
   val = String(val || '').trim();
   if (!val) return;
@@ -994,6 +1014,8 @@ function renderGrid(q) {
 }
 
 document.getElementById('si').addEventListener('input', function() {
+  // Conversion AZERTY → chiffres si l'input ressemble à un scan d'étiquette
+  autoFixSearchAZERTY(this);
   displayCount=30; doSearch();
   var clr=document.getElementById('clearSearch');
   if (clr) clr.style.display=this.value?'block':'none';
@@ -2980,7 +3002,7 @@ async function uploadPhoto(file, bucket) {
 document.addEventListener('DOMContentLoaded', function() {
   var outilSearchEl=document.getElementById('outilSearch');
   var clearOutilEl=document.getElementById('clearOutilSearch');
-  if (outilSearchEl) outilSearchEl.addEventListener('input', function(){ doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
+  if (outilSearchEl) outilSearchEl.addEventListener('input', function(){ autoFixSearchAZERTY(this); doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
   if (clearOutilEl) clearOutilEl.addEventListener('click', function(){ if (outilSearchEl) outilSearchEl.value=''; doOutilSearch(); this.style.display='none'; });
 
   var addBtn=document.getElementById('outilAddBtn');
