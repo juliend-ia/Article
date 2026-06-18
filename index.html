@@ -677,9 +677,9 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
       <div class="tb-nav-item" id="navRetours" onclick="switchSection('retours')" style="display:none;">📦 Retours</div>
       <div class="tb-nav-item" id="navPanier">🛒 Panier <span class="tb-nav-badge hidden" id="panierBadge" style="background:var(--rd);">0</span></div>
     </div>
-    <!-- Alertes entre nav et droite -->
+    <!-- Alertes entre nav et droite — badgeSAP retiré (info déjà sur le bouton Commandes) -->
     <div id="tbAlerts">
-      <span class="tb-alert tb-alert-sap hidden" id="badgeSAP" onclick="switchSection('commandes')">📋 Commandes en attente : <b id="badgeSAPVal">0</b></span>
+      <span class="tb-alert tb-alert-sap hidden" id="badgeSAP" style="display:none!important;" onclick="switchSection('commandes')">📋 Commandes en attente : <b id="badgeSAPVal">0</b></span>
       <span class="tb-alert tb-alert-outil hidden" id="badgeOutil" onclick="switchSection('outillage')">🔧 <b id="badgeOutilVal">0</b> outil(s) en prêt</span>
     </div>
     <div class="tb-right">
@@ -1149,6 +1149,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=44"></script>
+<script src="app.js?v=45"></script>
 </body>
 </html>
