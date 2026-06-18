@@ -330,6 +330,7 @@ function initUI() {
 // ══════════════════════════════════════════════════════════
 var _zxingReader = null;
 var _zxingStream = null;
+var _scanMode = 'ordre'; // 'ordre' (panier) ou 'article' (catalogue → ajout panier)
 
 // Mapping AZERTY belge/français → chiffres (scanner USB en mode QWERTY US)
 var AZERTY_TO_DIGIT = {
@@ -379,6 +380,56 @@ function autoFixSearchAZERTY(input) {
     input.value = fixed;
     try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) {}
   }
+}
+
+// Lance le scanner en mode "ordre" : scan remplit le N° d'ordre du panier
+function startOrdreScanner() {
+  _scanMode = 'ordre';
+  startBarcodeScanner();
+  var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = '📷 Scanner le N° d\'ordre';
+}
+
+// Lance le scanner en mode "article" : un scan ajoute la pièce au panier
+function startArticleScanner() {
+  _scanMode = 'article';
+  startBarcodeScanner();
+  // Adapter le titre de la modal
+  var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = '📷 Scanner une étiquette pièce';
+}
+
+// Dispatcher : route le code-barre scanné selon le mode actif
+function handleScannedCode(val) {
+  if (_scanMode === 'article') return handleArticleScan(val);
+  return fillNumeroOrdre(val);
+}
+
+// Recherche l'article par son numéro et l'ajoute au panier
+function handleArticleScan(val) {
+  val = String(val || '').trim();
+  if (!val) return;
+  // Conversion AZERTY → chiffres si scan en mauvais layout
+  var digits = azertyToDigits(val);
+  // On accepte soit le résultat direct, soit la conversion AZERTY
+  var candidates = [val, digits].filter(function(v){return v && v.length > 0;});
+  var art = null;
+  for (var i=0; i<candidates.length && !art; i++) {
+    art = articles.filter(function(a){return a.num === candidates[i];})[0];
+  }
+  var result = document.getElementById('scannerResult');
+  var status = document.getElementById('scannerStatus');
+  if (!art) {
+    if (status) status.textContent = '❌ Article inconnu dans le catalogue';
+    if (result) { result.textContent = candidates[0]; result.style.color = '#e74c3c'; }
+    showToast('Article inconnu : ' + candidates[0], 'err');
+    return;
+  }
+  ajouterPanier(art.num);
+  if (status) status.textContent = '✓ Ajouté au panier !';
+  if (result) { result.textContent = art.num + ' — ' + art.nom; result.style.color = '#2ecc71'; result.style.fontSize = '14px'; }
+  showToast('✓ ' + art.nom + ' ajouté au panier', 'success');
+  setTimeout(function(){ stopBarcodeScanner(); }, 1200);
 }
 
 function fillNumeroOrdre(val) {
@@ -442,7 +493,7 @@ async function startBarcodeScanner() {
         var reader = new ZXing.BrowserMultiFormatReader();
         var res = await reader.decodeFromImageUrl(url);
         URL.revokeObjectURL(url);
-        if (res && res.text) fillNumeroOrdre(res.text);
+        if (res && res.text) handleScannedCode(res.text);
         else { if (status) status.textContent = 'Aucun code-barre trouvé dans la photo'; }
       } catch(e) {
         if (status) status.textContent = 'Aucun code-barre trouvé — essaie une meilleure photo';
@@ -459,7 +510,7 @@ async function startBarcodeScanner() {
       'scannerVideo',
       function(res, err) {
         if (res && res.text) {
-          fillNumeroOrdre(res.text);
+          handleScannedCode(res.text);
         }
         // err ignorée volontairement : ZXing émet une erreur à chaque frame sans code détecté
       }
@@ -1019,6 +1070,29 @@ document.getElementById('si').addEventListener('input', function() {
   displayCount=30; doSearch();
   var clr=document.getElementById('clearSearch');
   if (clr) clr.style.display=this.value?'block':'none';
+});
+
+// Détection scanner USB : touche Entrée + numéro pur = ajout direct au panier
+document.getElementById('si').addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter') return;
+  // Tentative de conversion AZERTY si nécessaire
+  var raw = this.value.trim();
+  if (!raw) return;
+  var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
+  if (!num || !/^\d+$/.test(num)) return; // pas un numéro pur → laisse le comportement normal
+  var art = articles.filter(function(a){return a.num === num;})[0];
+  if (!art) {
+    showToast('Article inconnu : ' + num, 'err');
+    return;
+  }
+  e.preventDefault();
+  ajouterPanier(art.num);
+  showToast('✓ ' + art.nom + ' ajouté au panier', 'success');
+  // Vider le champ pour préparer le scan suivant
+  this.value = '';
+  doSearch();
+  var clr=document.getElementById('clearSearch');
+  if (clr) clr.style.display='none';
 });
 document.getElementById('clearSearch').addEventListener('click', function() {
   document.getElementById('si').value=''; this.style.display='none'; displayCount=30; doSearch();
