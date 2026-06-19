@@ -1,4 +1,4 @@
-var CACHE = 'magasin2k-v53';
+var CACHE = 'magasin2k-v54';
 var ASSETS = [
   '/Article/',
   '/Article/index.html',

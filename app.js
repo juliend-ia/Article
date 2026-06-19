@@ -2098,6 +2098,8 @@ async function exportBon(id) {
         +'</div>'
       +'</div>'
 
+      // Script d'impression auto au chargement
+      +'<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script>'
       +'</body></html>';
 
     var w=window.open('','_blank','width=900,height=700');
