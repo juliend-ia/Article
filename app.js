@@ -1115,17 +1115,27 @@ document.getElementById('si').addEventListener('input', function() {
   if (clr) clr.style.display=this.value?'block':'none';
 });
 
-// Détection scanner USB sur la barre de recherche Pièces (touche Entrée)
-// Logique intelligente :
-//  - 8 chiffres commençant par 83  → N° d'ordre → champ numeroOrdre + navigation panier
-//  - Numéro d'article connu        → recherche/filtre du catalogue (visuel)
-//  - Texte normal                  → comportement standard (recherche)
+// Raccourcis clavier sur la barre de recherche Pièces (Entrée + Échap)
 document.getElementById('si').addEventListener('keydown', function(e) {
+  // Échap : vider le champ + reset recherche
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    if (this.value) {
+      this.value = '';
+      var clr=document.getElementById('clearSearch');
+      if (clr) clr.style.display='none';
+      displayCount=30; doSearch();
+    } else {
+      this.blur(); // ferme le clavier mobile si déjà vide
+    }
+    return;
+  }
+  // Entrée : routing intelligent
   if (e.key !== 'Enter') return;
   var raw = this.value.trim();
-  if (!raw) return;
+  if (!raw) { this.blur(); return; }
   var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
-  // Si c'est un N° d'ordre (83XXXXXX) → router vers le panier
+  // N° d'ordre (83XXXXXX) → router vers le panier
   if (num && /^83\d{6}$/.test(num)) {
     e.preventDefault();
     this.value = '';
@@ -1136,7 +1146,8 @@ document.getElementById('si').addEventListener('keydown', function(e) {
     setTimeout(function(){ fillNumeroOrdre(num); }, 100);
     return;
   }
-  // Sinon on laisse la recherche faire son travail (juste filtrer)
+  // Sinon : blur pour fermer le clavier mobile (la recherche live est déjà appliquée)
+  this.blur();
 });
 document.getElementById('clearSearch').addEventListener('click', function() {
   document.getElementById('si').value=''; this.style.display='none'; displayCount=30; doSearch();
@@ -3120,7 +3131,16 @@ async function uploadPhoto(file, bucket) {
 document.addEventListener('DOMContentLoaded', function() {
   var outilSearchEl=document.getElementById('outilSearch');
   var clearOutilEl=document.getElementById('clearOutilSearch');
-  if (outilSearchEl) outilSearchEl.addEventListener('input', function(){ autoFixSearchAZERTY(this); doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
+  if (outilSearchEl) {
+    outilSearchEl.addEventListener('input', function(){ autoFixSearchAZERTY(this); doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display=this.value?'block':'none'; });
+    outilSearchEl.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        if (this.value) { this.value=''; doOutilSearch(); if (clearOutilEl) clearOutilEl.style.display='none'; }
+        else this.blur();
+      } else if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+    });
+  }
   if (clearOutilEl) clearOutilEl.addEventListener('click', function(){ if (outilSearchEl) outilSearchEl.value=''; doOutilSearch(); this.style.display='none'; });
 
   var addBtn=document.getElementById('outilAddBtn');
@@ -3347,7 +3367,10 @@ document.addEventListener('DOMContentLoaded', function(){
   var btn = document.getElementById('retourLoadBtn');
   if (btn) btn.addEventListener('click', loadRetourOrdre);
   var inp = document.getElementById('retourOrdreInput');
-  if (inp) inp.addEventListener('keydown', function(e){ if (e.key==='Enter') loadRetourOrdre(); });
+  if (inp) inp.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); loadRetourOrdre(); this.blur(); }
+    else if (e.key === 'Escape') { e.preventDefault(); if (this.value) this.value=''; else this.blur(); }
+  });
 });
 
 // ── SERVICE WORKER (PWA) ──
