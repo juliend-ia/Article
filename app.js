@@ -292,7 +292,8 @@ function initUI() {
   if (navDash) navDash.style.display = showDash ? '' : 'none';
 
   // Commandes : visible pour tous SAUF brigadier
-  var showCmd = (role !== 'brigadier');
+  // Commandes : magasinier et admin uniquement (pas agent, brigadier ni borne)
+  var showCmd = (role === 'magasinier' || role === 'admin');
   var navCmd = document.getElementById('navCommandes');
   if (navCmd) navCmd.style.display = showCmd ? '' : 'none';
   var bnCmd = document.getElementById('bnCommandes');
