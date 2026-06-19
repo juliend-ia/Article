@@ -2988,6 +2988,12 @@ function doOutilSearch() {
 
   res.innerHTML=fil.map(function(o) {
     var isPret=!!o.agent_pret;
+    var isDemande=!!o.demande_par;
+    var myLogin = (currentUser.role === 'borne' ? _borneAgentNum : currentUser.login) || '';
+    var isMyPret = isPret && o.agent_pret === myLogin;
+    var isMyDemande = isDemande && o.demande_par === myLogin;
+    var isRequester = currentUser.role==='agent' || currentUser.role==='brigadier' || currentUser.role==='borne';
+    var isStaff = currentUser.role==='admin' || currentUser.role==='magasinier';
     var canRetour=currentUser.role==='admin'||currentUser.role==='magasinier'||currentUser.role==='brigadier';
     // Photo — zone fixe 100px
     var photoHtml='';
@@ -3001,12 +3007,41 @@ function doOutilSearch() {
         +'</div>';
     }
     // Badge statut prêt
-    var pretBadge=isPret
-      ?'<div style="background:rgba(231,76,60,0.12);border:1px solid #e74c3c;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:#e74c3c;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
-          +'<div>🔴 EN PRÊT<br><span style="font-size:9px;color:var(--mu);">Agent '+esc(o.agent_pret)+(o.date_pret?' · '+formatDateBelge(o.date_pret):'')+'</span></div>'
-          +(canRetour?'<div onclick="retourOutil(\''+o.id+'\')" style="background:#2ecc71;color:#111;border-radius:5px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">✓ Retour</div>':'')
-        +'</div>'
-      :'';
+    var pretBadge='';
+    if (isPret) {
+      var pretLabel = isMyPret ? '🟢 VOUS L\'AVEZ' : '🔴 EN PRÊT';
+      var pretColor = isMyPret ? '#2ecc71' : '#e74c3c';
+      var pretBg    = isMyPret ? 'rgba(46,204,113,0.12)' : 'rgba(231,76,60,0.12)';
+      pretBadge = '<div style="background:'+pretBg+';border:1px solid '+pretColor+';border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:'+pretColor+';margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
+        +'<div>'+pretLabel+'<br><span style="font-size:9px;color:var(--mu);">Agent '+esc(o.agent_pret)+(o.date_pret?' · '+formatDateBelge(o.date_pret):'')+'</span></div>'
+        +(canRetour?'<div onclick="retourOutil(\''+o.id+'\')" style="background:#2ecc71;color:#111;border-radius:5px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;flex-shrink:0;">✓ Retour</div>':'')
+        +'</div>';
+    }
+
+    // Badge demande en attente
+    var demandeBadge='';
+    if (isDemande && !isPret) {
+      var demColor = isMyDemande ? '#f0a500' : '#3498db';
+      var demBg    = isMyDemande ? 'rgba(240,165,0,0.12)' : 'rgba(52,152,219,0.12)';
+      var demLabel = isMyDemande ? '🟡 EN ATTENTE' : '📥 DEMANDÉ';
+      demandeBadge = '<div style="background:'+demBg+';border:1px solid '+demColor+';border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:'+demColor+';margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
+        +'<div>'+demLabel+'<br><span style="font-size:9px;color:var(--mu);">Agent '+esc(o.demande_par)+(o.demande_date?' · '+formatDateBelge(o.demande_date):'')+'</span></div>'
+        +(isStaff
+          ? '<div style="display:flex;gap:4px;">'
+            +'<div onclick="acceptDemandePret(\''+o.id+'\')" style="background:#2ecc71;color:#111;border-radius:5px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;">✓ Accepter</div>'
+            +'<div onclick="refuseDemandePret(\''+o.id+'\')" style="background:#e74c3c;color:#fff;border-radius:5px;padding:4px 8px;font-size:10px;font-weight:700;cursor:pointer;">✕ Refuser</div>'
+          +'</div>'
+          : (isMyDemande
+            ? '<div onclick="cancelDemandePret(\''+o.id+'\')" style="background:rgba(231,76,60,0.12);border:1px solid #e74c3c;color:#e74c3c;border-radius:5px;padding:3px 7px;font-size:10px;font-weight:700;cursor:pointer;">Annuler</div>'
+            : ''))
+        +'</div>';
+    }
+
+    // Bouton "Demander cet outil" pour agent / brigadier / borne (si dispo)
+    var demanderBtn='';
+    if (isRequester && !isPret && !isDemande && myLogin) {
+      demanderBtn = '<div onclick="demanderPret(\''+o.id+'\')" style="background:rgba(46,204,113,0.10);border:1px solid #2ecc71;color:#2ecc71;border-radius:6px;padding:8px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;margin-bottom:6px;">📥 Demander cet outil</div>';
+    }
     // Panneau enregistrer prêt
     var pretPanel=isPret?''
       :'<div id="pretPanel-'+o.id+'" style="display:none;background:var(--sf);border:1px solid var(--ac);border-radius:6px;padding:7px;margin-bottom:6px;" onclick="event.stopPropagation()">'
@@ -3034,6 +3069,8 @@ function doOutilSearch() {
         +(o.location&&currentUser.role!=='agent'?'<div class="card-loc">📍 '+esc(o.location)+'</div>':'')
         +(o.tags?'<div style="font-size:10px;color:var(--mu);margin-bottom:6px;">'+esc(o.tags)+'</div>':'')
         +pretBadge
+        +demandeBadge
+        +demanderBtn
         +pretPanel
         +editBtns
       +'</div>'
@@ -3078,6 +3115,63 @@ async function retourOutil(id) {
     await supa('PATCH','outillage?id=eq.'+id,{agent_pret:null,date_pret:null});
     logAction('Retour outillage: '+(o?o.nom:id));
     showToast('Retour enregistré ✓','success'); await loadOutillage();
+  } catch(e) { showToast('Erreur','err'); }
+}
+
+// ── DEMANDES DE PRÊT OUTILLAGE ──
+// Agent demande un outil
+async function demanderPret(id) {
+  var myLogin = (currentUser.role === 'borne' ? _borneAgentNum : currentUser.login) || '';
+  if (!myLogin) { showToast('Login agent manquant', 'err'); return; }
+  var o = outillage.filter(function(x){return x.id===id;})[0];
+  try {
+    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: myLogin, demande_date: new Date().toISOString()});
+    logAction('Demande prêt outillage: '+(o?o.nom:id), 'Par: '+myLogin);
+    showToast('📥 Demande envoyée — En attente du magasinier','success');
+    await loadOutillage();
+  } catch(e) { showToast('Erreur demande','err'); }
+}
+
+// Agent annule sa demande (avant acceptation)
+async function cancelDemandePret(id) {
+  if (!confirm('Annuler ta demande ?')) return;
+  var o = outillage.filter(function(x){return x.id===id;})[0];
+  try {
+    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null});
+    logAction('Annule demande prêt: '+(o?o.nom:id));
+    showToast('Demande annulée','success');
+    await loadOutillage();
+  } catch(e) { showToast('Erreur','err'); }
+}
+
+// Magasinier accepte une demande → l'outil passe en prêt pour l'agent demandeur
+async function acceptDemandePret(id) {
+  var o = outillage.filter(function(x){return x.id===id;})[0];
+  if (!o || !o.demande_par) { showToast('Demande introuvable','err'); return; }
+  var agent = o.demande_par;
+  try {
+    await supa('PATCH', 'outillage?id=eq.'+id, {
+      agent_pret: agent,
+      date_pret: new Date().toISOString(),
+      demande_par: null,
+      demande_date: null
+    });
+    logAction('Accepte demande prêt: '+o.nom, 'Agent: '+agent);
+    showToast('✓ Outil prêté à '+agent,'success');
+    await loadOutillage();
+  } catch(e) { showToast('Erreur acceptation','err'); }
+}
+
+// Magasinier refuse une demande
+async function refuseDemandePret(id) {
+  var o = outillage.filter(function(x){return x.id===id;})[0];
+  if (!o || !o.demande_par) return;
+  if (!confirm('Refuser la demande de '+o.demande_par+' ?')) return;
+  try {
+    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null});
+    logAction('Refuse demande prêt: '+o.nom, 'Agent: '+o.demande_par);
+    showToast('Demande refusée','success');
+    await loadOutillage();
   } catch(e) { showToast('Erreur','err'); }
 }
 
