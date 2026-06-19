@@ -12,9 +12,9 @@ var _serviceVisible = true; // état du décompte service sur le dashboard (par 
 
 // ── ICÔNES PAR CATÉGORIE ──
 var CAT_ICONS = {
-  'MOTEUR':'⚙','FREINAGE':'⬤','AEROSOL':'▲','AÉROSOL':'▲','ELECTRIQUE':'⚡','ÉLECTRIQUE':'⚡',
+  'MOTEUR':'','FREINAGE':'⬤','AEROSOL':'▲','AÉROSOL':'▲','ELECTRIQUE':'','ÉLECTRIQUE':'',
   'SUSPENSION':'◉','CARROSSERIE':'◻','FILTRES':'▣','FILTRE':'▣','HUILES':'◈','HUILE':'◈',
-  'JOINTS':'◯','JOINT':'◯','ECLAIRAGE':'✦','ÉCLAIRAGE':'✦','DEFAULT':'◆'
+  'JOINTS':'◯','JOINT':'◯','ECLAIRAGE':'','ÉCLAIRAGE':'','DEFAULT':'◆'
 };
 function getCatIcon(cat) {
   if (!cat) return CAT_ICONS['DEFAULT'];
@@ -223,7 +223,7 @@ function initUI() {
   _soundEnabled = localStorage.getItem('soundEnabled_'+currentUser.login) !== 'false';
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
-    if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'🔔':'🔕'; }
+    if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'':''; }
     else btnSound.style.display='none';
   }
 
@@ -388,7 +388,7 @@ function startOrdreScanner() {
   _scanMode = 'ordre';
   startBarcodeScanner();
   var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
-  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = '📷 Scanner le N° d\'ordre';
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = ' Scanner le N° d\'ordre';
 }
 
 // Lance le scanner en mode "article" : un scan ajoute la pièce au panier
@@ -397,7 +397,7 @@ function startArticleScanner() {
   startBarcodeScanner();
   // Adapter le titre de la modal
   var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
-  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = '📷 Scanner une étiquette pièce';
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = ' Scanner une étiquette pièce';
 }
 
 // Dispatcher intelligent : route automatiquement selon le contenu scanné et la page courante
@@ -405,18 +405,18 @@ function handleScannedCode(val) {
   val = String(val || '').trim();
   if (!val) return;
 
-  // 1️⃣ Tentative de conversion AZERTY pour avoir un candidat numérique
+  // 1⃣ Tentative de conversion AZERTY pour avoir un candidat numérique
   var digits = azertyToDigits(val);
   var numCandidate = /^\d+$/.test(val) ? val : (/^\d+$/.test(digits) ? digits : null);
 
-  // 2️⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
+  // 2⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
   //    et naviguer vers la page Panier si on n'y est pas
   if (numCandidate && /^83\d{6}$/.test(numCandidate)) {
     if (_currentSection !== 'panier') switchSection('panier');
     return fillNumeroOrdre(numCandidate);
   }
 
-  // 3️⃣ Sinon c'est un article : routing selon le mode/section
+  // 3⃣ Sinon c'est un article : routing selon le mode/section
   if (_scanMode === 'article' || _currentSection === 'panier') {
     return handleArticleScan(val);
   }
@@ -443,9 +443,9 @@ function handleArticleSearch(val) {
   }
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
-  if (status) status.textContent = '🔍 Recherche dans le catalogue';
+  if (status) status.textContent = ' Recherche dans le catalogue';
   if (result) { result.textContent = query; result.style.color = '#3498db'; }
-  showToast('🔍 ' + query, 'success');
+  showToast(' ' + query, 'success');
   setTimeout(function(){ stopBarcodeScanner(); }, 700);
 }
 
@@ -464,7 +464,7 @@ function handleArticleScan(val) {
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
   if (!art) {
-    if (status) status.textContent = '❌ Article inconnu dans le catalogue';
+    if (status) status.textContent = ' Article inconnu dans le catalogue';
     if (result) { result.textContent = candidates[0]; result.style.color = '#e74c3c'; }
     showToast('Article inconnu : ' + candidates[0], 'err');
     return;
@@ -486,7 +486,7 @@ function fillNumeroOrdre(val) {
   if (!/^\d{8}$/.test(val)) {
     var status = document.getElementById('scannerStatus');
     var result = document.getElementById('scannerResult');
-    if (status) status.textContent = '❌ Pas un N° d\'ordre — il faut 8 chiffres';
+    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres';
     if (result) { result.textContent = val; result.style.color = '#e74c3c'; }
     showToast('Code-barre invalide — 8 chiffres attendus','err');
     return;
@@ -610,7 +610,7 @@ function secretLogoClick() {
     _logoTimer = setTimeout(function() { _logoClicks = 0; }, 2000);
     if (_logoClicks >= 5) {
       _logoClicks = 0;
-      var pwd = prompt('🔐 Code administrateur :');
+      var pwd = prompt(' Code administrateur :');
       if (!pwd) return;
       // Vérification du code admin via RPC sécurisée
       hashStr('Djulien:' + pwd).then(async function(h) {
@@ -1002,7 +1002,7 @@ function renderGrid(q) {
   var grid = document.getElementById('p1');
   var lm = document.getElementById('lm');
   if (!filtered.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 20px;font-size:14px;"><div style="font-size:40px;margin-bottom:12px;">🔍</div>Aucun article trouvé</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 20px;font-size:14px;"><div style="font-size:40px;margin-bottom:12px;"></div>Aucun article trouvé</div>';
     lm.classList.add('hidden'); return;
   }
   var n = Math.min(filtered.length, displayCount);
@@ -1014,7 +1014,7 @@ function renderGrid(q) {
     if (a.bus_std) tags += '<span class="tag tag-std">STD</span>';
     if (a.bus_art) tags += '<span class="tag tag-art">ART</span>';
     if (a.chimique) tags += '<span class="tag tag-chim">CHIM.</span>';
-    if (a.reparable) tags += '<span class="tag tag-rep">🔧 RÉP.</span>';
+    if (a.reparable) tags += '<span class="tag tag-rep"> RÉP.</span>';
     if (a.interne) tags += '<span class="tag tag-int">INTERNE</span>';
     var badgeHtml = tags ? '<div class="card-photo-badge">'+tags+'</div>' : '';
     // Zone image 170px — photo si dispo, placeholder sinon
@@ -1035,8 +1035,8 @@ function renderGrid(q) {
     var extra = '';
     // Boutons bas de card : panier + icônes modifier/supprimer
     var editIconBtns = window._canEdit
-      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'">✏️</div>'
-        +'<div class="btn-del-card" data-num="'+esc(a.num)+'">🗑</div>'
+      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'"></div>'
+        +'<div class="btn-del-card" data-num="'+esc(a.num)+'"></div>'
       : '';
     var bottomRow = '<div class="card-bottom-row">'
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
@@ -1067,7 +1067,7 @@ function renderGrid(q) {
       +'<div class="card-body">'
         +'<div class="card-num">'+hl(a.num,q)+'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
-        +(a.location?'<div class="card-loc">📍 '+esc(a.location)+'</div>':'')
+        +(a.location?'<div class="card-loc"> '+esc(a.location)+'</div>':'')
         +extra
         +bottomRow
       +'</div>'
@@ -1335,7 +1335,7 @@ function switchSection(section) {
     var inp = document.getElementById('retourOrdreInput');
     if (inp) inp.value = '';
     var l = document.getElementById('retourBonsList');
-    if (l) l.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:48px;margin-bottom:12px;opacity:0.4;">📦</div><div style="font-size:14px;font-weight:600;">Saisis un numéro d\'ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Tu verras les pièces sorties et pourras choisir celles à retourner</div></div>';
+    if (l) l.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:48px;margin-bottom:12px;opacity:0.4;"></div><div style="font-size:14px;font-weight:600;">Saisis un numéro d\'ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Tu verras les pièces sorties et pourras choisir celles à retourner</div></div>';
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
@@ -1555,7 +1555,7 @@ function updateBadge() {
 
 function renderPanier() {
   var list=document.getElementById('panierList');
-  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:48px;margin-bottom:12px;">🛒</div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ton panier est vide</div><div style="font-size:11px;color:var(--mu);">Ajoute des pièces depuis le catalogue</div></div>'; return; }
+  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:48px;margin-bottom:12px;"></div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ton panier est vide</div><div style="font-size:11px;color:var(--mu);">Ajoute des pièces depuis le catalogue</div></div>'; return; }
   var h='';
   for (var i=0;i<panier.length;i++) {
     var p=panier[i];
@@ -1565,14 +1565,14 @@ function renderPanier() {
     var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
     var photoHtml = photoUrl
       ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/\'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'])" style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
-      : '<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,rgba(15,21,37,0.6) 0%,rgba(20,29,53,0.4) 100%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
+      : '<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,rgba(15,21,37,0.6) 0%,rgba(20,29,53,0.4) 100%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
     h+='<div class="panier-item">'
       +photoHtml
       +'<div class="panier-item-info">'
         +'<div class="panier-item-num">'+esc(p.num)+'</div>'
         +'<div class="panier-item-nom">'+esc(p.nom)+'</div>'
-        +(p.location?'<div class="panier-item-loc">📍 '+esc(p.location)+'</div>':'')
-        +(p.entretien?'<div style="margin-top:4px;background:rgba(52,152,219,0.12);border:1px solid #3498db;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:800;color:#3498db;display:inline-block;">⚙ Sortie en ZLMM2</div>':'')
+        +(p.location?'<div class="panier-item-loc"> '+esc(p.location)+'</div>':'')
+        +(p.entretien?'<div style="margin-top:4px;background:rgba(52,152,219,0.12);border:1px solid #3498db;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:800;color:#3498db;display:inline-block;"> Sortie en ZLMM2</div>':'')
       +'</div>'
       +'<div class="qty-wrap">'
         +'<div class="qty-btn" data-i="'+i+'" data-d="-1">−</div>'
@@ -1623,7 +1623,7 @@ function showConfirmAgent(ordre, nbArts, totalQty) {
   var el=document.getElementById('confirmAgent');
   if (!el) { el=document.createElement('div'); el.id='confirmAgent'; el.style.cssText='position:fixed;inset:0;background:rgba(15,17,23,0.92);display:flex;align-items:center;justify-content:center;z-index:800;padding:24px;'; document.body.appendChild(el); }
   el.innerHTML='<div style="background:#1a1d27;border:2px solid #2ecc71;border-radius:16px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
-    +'<div style="font-size:48px;margin-bottom:12px;">✅</div>'
+    +'<div style="font-size:48px;margin-bottom:12px;"></div>'
     +'<div style="font-size:20px;font-weight:700;color:#2ecc71;margin-bottom:8px;">Commande envoyée !</div>'
     +'<div style="font-size:14px;color:#e8eaf0;margin-bottom:6px;">Le magasin a bien reçu ta demande.</div>'
     +'<div style="font-size:13px;color:#7a8099;margin-bottom:20px;">Ordre <strong style="color:#f0a500;">'+esc(ordre)+'</strong> · '+nbArts+' article(s) · '+totalQty+' pièce(s)</div>'
@@ -1646,7 +1646,7 @@ function filterCommandes(query) {
   var info = document.getElementById('cmdSearchInfo');
   if (clr) clr.style.display = _cmdSearch ? 'block' : 'none';
   if (info) {
-    if (_cmdSearch) { info.style.display = 'block'; info.textContent = '🔍 Filtre actif sur "' + (query.trim()) + '"'; }
+    if (_cmdSearch) { info.style.display = 'block'; info.textContent = ' Filtre actif sur "' + (query.trim()) + '"'; }
     else { info.style.display = 'none'; }
   }
   loadHistorique();
@@ -1728,9 +1728,9 @@ async function loadHistorique() {
       var sapDone=b.sap_effectue||false;
       var prepStatut = b.preparation_statut || 'en_prep';
       var statutCfg = {
-        'en_attente': {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
-        'en_prep':    {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
-        'pret':       {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
+        'en_attente': {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
+        'en_prep':    {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
+        'pret':       {label:' Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
       };
       var sc = statutCfg[prepStatut] || statutCfg['en_prep'];
 
@@ -1739,7 +1739,7 @@ async function loadHistorique() {
       var statutBtns = '';
       if (canChangeStatut) {
         var statuts = ['en_prep','pret'];
-        var labels  = ['🔧','✅'];
+        var labels  = ['',''];
         var titles  = ['En préparation','Prête'];
         statutBtns = '<div style="display:flex;gap:4px;margin-bottom:8px;">';
         for (var si=0;si<statuts.length;si++) {
@@ -1765,13 +1765,13 @@ async function loadHistorique() {
         var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
         var photoBtn = photoUrl
           ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
-          : '<div style="width:48px;height:48px;border-radius:8px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
+          : '<div style="width:48px;height:48px;border-radius:8px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
         detailRows+='<div class="bon-detail-row">'
           +photoBtn
           +'<div style="flex:1;min-width:0;">'
-            +'<div style="font-size:14px;font-weight:800;color:var(--ac);">'+esc(art.num)+(art.reparable?' <span style="font-size:11px;background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:4px;padding:1px 6px;color:#9b59b6;">🔧 Rép.</span>':'')+'</div>'
+            +'<div style="font-size:14px;font-weight:800;color:var(--ac);">'+esc(art.num)+(art.reparable?' <span style="font-size:11px;background:rgba(155,89,182,0.15);border:1px solid #9b59b6;border-radius:4px;padding:1px 6px;color:#9b59b6;"> Rép.</span>':'')+'</div>'
             +'<div style="font-size:13px;color:var(--tx);margin-top:2px;">'+esc(art.nom)+'</div>'
-            +(art.location?'<div style="font-size:11px;color:var(--mu);margin-top:1px;">📍 '+esc(art.location)+'</div>':'')
+            +(art.location?'<div style="font-size:11px;color:var(--mu);margin-top:1px;"> '+esc(art.location)+'</div>':'')
           +'</div>'
           +'<div class="bon-qty">×'+art.qty+'</div>'
           +'</div>';
@@ -1781,8 +1781,8 @@ async function loadHistorique() {
       var hasEntretien = arts.some(function(a){return a.entretien;});
       var hasReparable = arts.some(function(a){return a.reparable;});
       var alertBadges = '';
-      if (hasEntretien) alertBadges += '<div style="background:rgba(52,152,219,0.12);border:1.5px solid #3498db;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#3498db;display:flex;align-items:center;gap:8px;margin-bottom:6px;">⚙ Certains articles doivent être sortis en <strong>ZLMM2</strong></div>';
-      if (hasReparable) alertBadges += '<div style="background:rgba(155,89,182,0.12);border:1.5px solid #9b59b6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#9b59b6;display:flex;align-items:center;gap:8px;margin-bottom:6px;">🔧 Certains articles sont réparables — sortie en réparable</div>';
+      if (hasEntretien) alertBadges += '<div style="background:rgba(52,152,219,0.12);border:1.5px solid #3498db;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#3498db;display:flex;align-items:center;gap:8px;margin-bottom:6px;"> Certains articles doivent être sortis en <strong>ZLMM2</strong></div>';
+      if (hasReparable) alertBadges += '<div style="background:rgba(155,89,182,0.12);border:1.5px solid #9b59b6;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:800;color:#9b59b6;display:flex;align-items:center;gap:8px;margin-bottom:6px;"> Certains articles sont réparables — sortie en réparable</div>';
 
       // Extraire les noms des magasiniers qui ont pris le bon
       var prisMatch = (b.message||'').match(/\[PRIS:([^\]]+)\]/);
@@ -1798,14 +1798,14 @@ async function loadHistorique() {
               +'<div class="histo-num">N° '+esc(b.numero_ordre)+'</div>'
               +'<div style="color:var(--mu);font-size:13px;">▼</div>'
             +'</div>'
-            +'<div class="histo-date">🕒 '+dateStr+'</div>'
+            +'<div class="histo-date"> '+dateStr+'</div>'
             +'<div class="histo-meta-row">'
-              +(b.login?'<span class="histo-chip histo-chip-agent">👤 '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · '+esc(b.numero_agent):'')+'</span>':'')
-              +(busMatch?'<span class="histo-chip histo-chip-bus">🚌 '+esc(busMatch[1])+'</span>':'')
-              +'<span class="histo-chip histo-chip-count">📦 '+arts.length+' article'+(arts.length>1?'s':'')+'</span>'
-              +(prisNoms.length?'<span class="histo-chip histo-chip-pris">👷 '+esc(prisNoms.join(', '))+'</span>':'')
+              +(b.login?'<span class="histo-chip histo-chip-agent"> '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · '+esc(b.numero_agent):'')+'</span>':'')
+              +(busMatch?'<span class="histo-chip histo-chip-bus"> '+esc(busMatch[1])+'</span>':'')
+              +'<span class="histo-chip histo-chip-count"> '+arts.length+' article'+(arts.length>1?'s':'')+'</span>'
+              +(prisNoms.length?'<span class="histo-chip histo-chip-pris"> '+esc(prisNoms.join(', '))+'</span>':'')
             +'</div>'
-            +(msgRest?'<div class="histo-msg">💬 '+esc(msgRest)+'</div>':'')
+            +(msgRest?'<div class="histo-msg"> '+esc(msgRest)+'</div>':'')
           +'</div>'
           +(function(){
             var parts = sc.label.trim().split(' ');
@@ -1830,18 +1830,18 @@ async function loadHistorique() {
             +'</label>'
             +'<label class="histo-chk" style="color:'+(jySuis?'#6495ed':'var(--mu)')+';background:'+(jySuis?'rgba(100,149,237,0.08)':'transparent')+';" onclick="event.stopPropagation()">'
               +'<input type="checkbox" class="chk-pris" data-id="'+b.id+'" '+(jySuis?'checked':'')+' style="width:16px;height:16px;accent-color:#6495ed;cursor:pointer;"/>'
-              +'🙋 Je prends'
+              +' Je prends'
             +'</label>'
             +'<div class="histo-btns-spacer"></div>'
-            +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">📋 Copier</div>'
-            +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;">🖨️ Bon</div>'
-            +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">✏️ Modifier</div>'
-            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">🗑</div>'
+            +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'"> Copier</div>'
+            +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;"> Bon</div>'
+            +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'"> Modifier</div>'
+            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'"></div>'
           +'</div>';
           }())
         )
         +'<div class="bon-detail">'
-          +'<div class="bon-detail-title">📦 Articles à préparer</div>'
+          +'<div class="bon-detail-title"> Articles à préparer</div>'
           +detailRows
         +'</div>'
       +'</div>';
@@ -1858,9 +1858,9 @@ async function loadHistorique() {
         var item = this.closest('.histo-item');
         var allBtns = item.querySelectorAll('.btn-statut');
         var cfgMap = {
-          'en_attente':{label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
-          'en_prep':   {label:'🔧 En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
-          'pret':      {label:'✅ Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
+          'en_attente':{label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
+          'en_prep':   {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
+          'pret':      {label:' Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
         };
         var sc = cfgMap[statut]||cfgMap['en_attente'];
         // Reset tous les boutons du bon
@@ -1890,9 +1890,9 @@ async function loadHistorique() {
         // Envoyer en base
         try {
           await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
-          if (statut==='pret') showToast('✅ Commande marquée prête !','success');
-          else if (statut==='en_prep') showToast('🔧 En préparation','success');
-          else showToast('🔧 En préparation','success');
+          if (statut==='pret') showToast(' Commande marquée prête !','success');
+          else if (statut==='en_prep') showToast(' En préparation','success');
+          else showToast(' En préparation','success');
           updateBadgeAttente();
         } catch(e2) { showToast('Erreur','err'); }
       });
@@ -1900,7 +1900,7 @@ async function loadHistorique() {
     list.querySelectorAll('.btn-del-bon').forEach(function(el) {
       el.addEventListener('click', async function() {
         var id=this.getAttribute('data-id'), sapFait=this.getAttribute('data-sap')==='true';
-        var msg=sapFait?'Supprimer ce bon ?':'⚠️ Ce bon n\'a pas encore été sorti sur SAP !\nSupprimer quand même ?';
+        var msg=sapFait?'Supprimer ce bon ?':' Ce bon n\'a pas encore été sorti sur SAP !\nSupprimer quand même ?';
         if (!confirm(msg)) return;
         try { await supa('DELETE','bons_commande?id=eq.'+id); showToast('Bon supprimé !','success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur','err'); }
       });
@@ -1935,7 +1935,7 @@ async function loadHistorique() {
           msg = msg.replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
           if (noms.length) msg = (msg ? msg+' ' : '') + '[PRIS:'+noms.join(',')+']';
           await supa('PATCH','bons_commande?id=eq.'+id, {message: msg||null});
-          showToast(val?'👷 '+moi+' a pris ce bon ✓':moi+' s\'est retiré','success');
+          showToast(val?' '+moi+' a pris ce bon ✓':moi+' s\'est retiré','success');
           loadHistorique();
         } catch(e) { showToast('Erreur','err'); }
       });
@@ -1957,7 +1957,7 @@ function toggleBon(el) {
 }
 
 async function rouvrirBon(id, sapFait) {
-  var msg=sapFait?'⚠️ Ce bon a déjà été sorti sur SAP !\nModifier peut créer une incohérence.\nContinuer ?':'Rouvrir ce bon dans le panier pour le modifier ?';
+  var msg=sapFait?' Ce bon a déjà été sorti sur SAP !\nModifier peut créer une incohérence.\nContinuer ?':'Rouvrir ce bon dans le panier pour le modifier ?';
   if (!confirm(msg)) return;
   try {
     var data=await supa('GET','bons_commande?id=eq.'+id+'&select=*');
@@ -2004,9 +2004,9 @@ async function exportBon(id) {
       var a=arts[i];
       if (a.entretien) hasEntretien=true;
       var special='';
-      if (a.chimique) special='<div style="color:#e74c3c;font-size:11px;margin-top:3px;font-weight:600;">⚠ Produit chimique — manipulation avec précaution</div>';
-      if (a.reparable) special='<div style="color:#9b59b6;font-size:11px;margin-top:3px;font-weight:600;">🔧 Réparable — retour atelier requis</div>';
-      if (a.entretien) special+='<div style="color:#3498db;font-size:11px;margin-top:3px;font-weight:600;">⚙ Sortie en ZLMM2</div>';
+      if (a.chimique) special='<div style="color:#e74c3c;font-size:11px;margin-top:3px;font-weight:600;"> Produit chimique — manipulation avec précaution</div>';
+      if (a.reparable) special='<div style="color:#9b59b6;font-size:11px;margin-top:3px;font-weight:600;"> Réparable — retour atelier requis</div>';
+      if (a.entretien) special+='<div style="color:#3498db;font-size:11px;margin-top:3px;font-weight:600;"> Sortie en ZLMM2</div>';
       lignes+='<tr style="border-bottom:1px solid #e8e8e8;">'
         +'<td style="padding:10px 8px;font-weight:700;font-family:monospace;font-size:13px;color:#111;white-space:nowrap;">'+esc(a.num)+'</td>'
         +'<td style="padding:10px 8px;"><div style="font-weight:700;font-size:13px;color:#111;">'+esc(a.nom)+'</div>'+special+'</td>'
@@ -2031,7 +2031,7 @@ async function exportBon(id) {
 
       // Bouton imprimer
       +'<div class="no-print" style="margin-bottom:24px;text-align:right;">'
-        +'<button onclick="window.print()" style="background:#f0a500;color:#111;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;">🖨️ Imprimer</button>'
+        +'<button onclick="window.print()" style="background:#f0a500;color:#111;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;"> Imprimer</button>'
         +'<button onclick="window.close()" style="margin-left:10px;background:#eee;color:#555;border:none;border-radius:8px;padding:12px 20px;font-size:15px;cursor:pointer;">✕ Fermer</button>'
       +'</div>'
 
@@ -2066,12 +2066,12 @@ async function exportBon(id) {
         +'</div>'
         +(function(){var p=(bon.message||'').match(/\[PRIS:([^\]]+)\]/);return p?'<div style="flex:1;background:#eaf2fb;border-left:3px solid #6495ed;border-radius:4px;padding:10px 14px;">'
           +'<div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Magasinier</div>'
-          +'<div style="font-size:15px;font-weight:700;color:#2471a3;">👷 '+esc(p[1])+'</div>'
+          +'<div style="font-size:15px;font-weight:700;color:#2471a3;"> '+esc(p[1])+'</div>'
         +'</div>':'';}())
       +'</div>'
 
       // Alerte ZLMM2 si entretien
-      +(hasEntretien?'<div style="background:#eaf4fd;border:1px solid #3498db;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#2471a3;font-weight:600;">⚙ Certains articles doivent être sortis en <strong>ZLMM2</strong> — voir détail ci-dessous.</div>':'')
+      +(hasEntretien?'<div style="background:#eaf4fd;border:1px solid #3498db;border-radius:6px;padding:10px 14px;margin-bottom:16px;font-size:12px;color:#2471a3;font-weight:600;"> Certains articles doivent être sortis en <strong>ZLMM2</strong> — voir détail ci-dessous.</div>':'')
 
       // Tableau
       +'<table style="width:100%;border-collapse:collapse;margin-bottom:24px;">'
@@ -2186,7 +2186,7 @@ function toggleSound() {
   _soundEnabled=!_soundEnabled;
   localStorage.setItem('soundEnabled_'+currentUser.login, _soundEnabled?'true':'false');
   var btn=document.getElementById('btnSound');
-  if (btn) { btn.textContent=_soundEnabled?'🔔':'🔕'; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
+  if (btn) { btn.textContent=_soundEnabled?'':''; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
   showToast(_soundEnabled?'Son activé':'Son coupé','success');
 }
 
@@ -2216,8 +2216,8 @@ function showNotifCommande(record) {
   if (!el) { el=document.createElement('div'); el.id='notifCommande'; el.style.cssText='position:fixed;top:-120px;left:50%;transform:translateX(-50%);z-index:850;transition:top 0.4s cubic-bezier(0.34,1.56,0.64,1);width:calc(100% - 32px);max-width:420px;'; document.body.appendChild(el); }
   el.innerHTML='<div style="background:#1a1d27;border:2px solid #f0a500;border-radius:14px;padding:14px 16px;box-shadow:0 8px 32px rgba(0,0,0,0.5);">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
-      +'<div><div style="font-size:13px;font-weight:700;color:#f0a500;margin-bottom:4px;">🔔 Nouvelle commande !</div>'
-        +'<div style="font-size:12px;color:#e8eaf0;">👤 '+esc(login)+(agent?' · 🪪 Agent '+esc(agent):'')+'</div>'
+      +'<div><div style="font-size:13px;font-weight:700;color:#f0a500;margin-bottom:4px;"> Nouvelle commande !</div>'
+        +'<div style="font-size:12px;color:#e8eaf0;"> '+esc(login)+(agent?' ·  Agent '+esc(agent):'')+'</div>'
         +'<div style="font-size:12px;color:#7a8099;margin-top:2px;">Ordre <strong style="color:#f0a500;">'+esc(ordre)+'</strong> · '+arts+' article(s)</div></div>'
       +'<div onclick="fermerNotif()" style="color:#7a8099;font-size:18px;cursor:pointer;padding:0 4px;">✕</div>'
     +'</div></div>';
@@ -2365,7 +2365,7 @@ async function loadAdminModifArticles() {
     function renderModifs(filtre) {
       var liste = filtre==='all' ? filtres : filtres.filter(function(a){ return ((a.action||'')+(a.details||'')).toLowerCase().indexOf(filtre)>=0; });
       var h = '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;">';
-      [['all','Tout'],['photo','📷 Photo'],['modifi','✏️ Modif'],['catégor','📦 Catégor'],['ajout','➕ Ajout'],['supprim','🗑 Supprim'],['outil','🔧 Outillage']].forEach(function(f) {
+      [['all','Tout'],['photo',' Photo'],['modifi',' Modif'],['catégor',' Catégor'],['ajout',' Ajout'],['supprim',' Supprim'],['outil',' Outillage']].forEach(function(f) {
         h += '<div onclick="adminModifFiltre(\''+f[0]+'\')" style="padding:4px 12px;border-radius:16px;font-size:11px;font-weight:700;cursor:pointer;border:1.5px solid '+(filtre===f[0]?'var(--ac)':'var(--br)')+';color:'+(filtre===f[0]?'var(--ac)':'var(--mu)')+';background:'+(filtre===f[0]?'rgba(240,165,0,0.08)':'var(--sf)')+';">'+f[1]+'</div>';
       });
       h += '</div>';
@@ -2375,7 +2375,7 @@ async function loadAdminModifArticles() {
         var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
         var isPhoto = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('photo')>=0;
         var isCat   = ((a.action||'')+(a.details||'')).toLowerCase().indexOf('catégor')>=0 || ((a.action||'')+(a.details||'')).toLowerCase().indexOf('categor')>=0;
-        var icon = isPhoto ? '📷' : isCat ? '📦' : '✏️';
+        var icon = isPhoto ? '' : isCat ? '' : '';
         h += '<div style="display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid var(--br);">'
           +'<div style="font-size:18px;flex-shrink:0;margin-top:1px;">'+icon+'</div>'
           +'<div style="flex:1;min-width:0;">'
@@ -2480,7 +2480,7 @@ async function loadAdminDashboard() {
         var pct = Math.round((a.qty/maxQ)*100);
         h += '<div style="margin-bottom:8px;">'
           +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">'
-            +'<span style="color:var(--tx);font-weight:600;">'+['🥇','🥈','🥉','4.','5.'][i]+' '+esc(a.nom)+'</span>'
+            +'<span style="color:var(--tx);font-weight:600;">'+['','','','4.','5.'][i]+' '+esc(a.nom)+'</span>'
             +'<span style="color:var(--ac);font-weight:700;">×'+a.qty+'</span>'
           +'</div>'
           +'<div style="height:4px;background:var(--br);border-radius:2px;">'
@@ -2541,11 +2541,11 @@ async function loadAdminHistoBons() {
       var dt = supaDate(b.date_creation);
       var dateStr = dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
       var sapDone = b.sap_effectue;
-      var sc = {en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
+      var sc = {en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:''},pret:{c:'2ecc71',l:''}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
       h += '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div>'
           +'<div style="font-size:13px;font-weight:700;color:var(--ac);">Ordre '+esc(b.numero_ordre)+'</div>'
-          +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' · 👤 '+esc(b.login)+'</div>'
+          +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' ·  '+esc(b.login)+'</div>'
           +'<div style="font-size:10px;color:var(--mu);">'+arts.length+' article(s)</div>'
         +'</div>'
         +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
@@ -2569,10 +2569,10 @@ async function loadAdminHistoBons() {
           var arts=b.articles||[];
           var dt=supaDate(b.date_creation);
           var dateStr=dt.toLocaleDateString('fr-FR')+' '+dt.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-          var sc={en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:'🔧'},pret:{c:'2ecc71',l:'✅'}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
+          var sc={en_attente:{c:'f0a500',l:'⏳'},en_prep:{c:'3498db',l:''},pret:{c:'2ecc71',l:''}}[b.preparation_statut||'en_attente']||{c:'f0a500',l:'⏳'};
           return '<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
             +'<div><div style="font-size:13px;font-weight:700;color:var(--ac);">Ordre '+esc(b.numero_ordre)+'</div>'
-            +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' · 👤 '+esc(b.login)+'</div>'
+            +'<div style="font-size:10px;color:var(--mu);">'+dateStr+' ·  '+esc(b.login)+'</div>'
             +'<div style="font-size:10px;color:var(--mu);">'+arts.length+' article(s)</div></div>'
             +'<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;">'
             +'<div style="font-size:10px;color:#'+sc.c+';">'+sc.l+'</div>'
@@ -2605,11 +2605,11 @@ async function loadAdminHistoOutillage() {
 
     if (enPret.length) {
       h += '<div style="background:rgba(231,76,60,0.06);border:1.5px solid #e74c3c;border-radius:10px;padding:12px;margin-bottom:12px;">'
-        +'<div style="font-size:11px;color:#e74c3c;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">🔴 Outils actuellement en prêt</div>';
+        +'<div style="font-size:11px;color:#e74c3c;font-weight:800;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;"> Outils actuellement en prêt</div>';
       enPret.forEach(function(o) {
         h += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(231,76,60,0.15);">'
           +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
-          +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
+          +(o.location?'<div style="font-size:10px;color:var(--mu);"> '+esc(o.location)+'</div>':'')+'</div>'
           +'<div style="text-align:right;"><div style="font-size:11px;color:#e74c3c;font-weight:700;">Agent '+esc(o.agent_pret)+'</div>'
           +(o.date_pret?'<div style="font-size:10px;color:var(--mu);">Depuis '+supaDate(o.date_pret).toLocaleDateString('fr-FR')+'</div>':'')
           +'</div></div>';
@@ -2622,9 +2622,9 @@ async function loadAdminHistoOutillage() {
       var isPret = !!o.agent_pret;
       h += '<div style="background:var(--sf);border:1px solid '+(isPret?'#e74c3c':'var(--br)')+';border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div><div style="font-size:12px;font-weight:700;color:var(--tx);">'+esc(o.nom)+'</div>'
-        +(o.location?'<div style="font-size:10px;color:var(--mu);">📍 '+esc(o.location)+'</div>':'')+'</div>'
+        +(o.location?'<div style="font-size:10px;color:var(--mu);"> '+esc(o.location)+'</div>':'')+'</div>'
         +'<div style="font-size:11px;font-weight:700;color:'+(isPret?'#e74c3c':'#2ecc71')+';text-align:right;">'
-        +(isPret?'🔴 Agent '+esc(o.agent_pret):'🟢 Disponible')+'</div>'
+        +(isPret?' Agent '+esc(o.agent_pret):' Disponible')+'</div>'
         +'</div>';
     });
     el.innerHTML = h;
@@ -2643,7 +2643,7 @@ async function loadDemandesCompte() {
       var d=data[i], date=supaDate(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:14px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'
-          +'<div><div style="font-size:14px;font-weight:700;">👤 '+esc(d.prenom)+' — Matricule '+esc(d.matricule)+'</div><div style="font-size:11px;color:var(--mu);margin-top:3px;">Demande le '+date+'</div></div>'
+          +'<div><div style="font-size:14px;font-weight:700;"> '+esc(d.prenom)+' — Matricule '+esc(d.matricule)+'</div><div style="font-size:11px;color:var(--mu);margin-top:3px;">Demande le '+date+'</div></div>'
           +'<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" onclick="refuserCompte(\''+esc(d.id)+'\')">✕ Refuser</div>'
         +'</div>'
         +'<div style="margin-top:10px;background:var(--cd);border-radius:8px;padding:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">'
@@ -2683,9 +2683,9 @@ async function loadDemandes() {
     for (var i=0;i<data.length;i++) {
       var d=data[i], date=supaDate(d.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:8px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
-        +'<div><div style="font-size:14px;font-weight:700;">👤 '+esc(d.login)+'</div><div style="font-size:11px;color:var(--mu);margin-top:2px;">'+date+'</div></div>'
+        +'<div><div style="font-size:14px;font-weight:700;"> '+esc(d.login)+'</div><div style="font-size:11px;color:var(--mu);margin-top:2px;">'+date+'</div></div>'
         +'<div style="display:flex;gap:6px;">'
-          +'<div style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;" onclick="ouvrirResetModal(\''+esc(d.id)+'\',\''+esc(d.login)+'\')">🔑 Réinit</div>'
+          +'<div style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;font-weight:600;" onclick="ouvrirResetModal(\''+esc(d.id)+'\',\''+esc(d.login)+'\')"> Réinit</div>'
           +'<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" onclick="ignorerDemande(\''+esc(d.id)+'\')">Ignorer</div>'
         +'</div></div>';
     }
@@ -2724,8 +2724,8 @@ async function loadUtilisateurs() {
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div><div style="font-size:14px;font-weight:600;">'+esc(u.prenom)+'</div><div style="font-size:11px;color:var(--mu);">'+esc(u.login)+' · '+(u.role==='admin'?'<span style="color:var(--ac);">Admin</span>':esc(u.role))+'</div>'+(u.actif?'':'<div style="font-size:10px;color:var(--rd);">Inactif</div>')+'</div>'
         +'<div style="display:flex;gap:6px;">'
-          +'<div style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="editUser(this)">✏️</div>'
-          +(u.login!=='Djulien'?'<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="deleteUser(this)">🗑</div>':'')
+          +'<div style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="editUser(this)"></div>'
+          +(u.login!=='Djulien'?'<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="deleteUser(this)"></div>':'')
         +'</div></div>';
     }
     list.innerHTML=h;
@@ -2897,7 +2897,7 @@ function onBonUpdated(newRec, oldRec) {
   }
   // Statut préparation passé à "prêt"
   else if (newRec.preparation_statut === 'pret' && oldRec.preparation_statut !== 'pret') {
-    showToast('✅ Bon ' + ordre + ' marqué Prêt','success');
+    showToast(' Bon ' + ordre + ' marqué Prêt','success');
   }
   // Nouveau magasinier qui prend le bon (marqueur [PRIS:...])
   else {
@@ -2907,7 +2907,7 @@ function onBonUpdated(newRec, oldRec) {
     var newNoms = newPris ? newPris[1].split(',').map(function(s){return s.trim();}) : [];
     var ajoutes = newNoms.filter(function(n){return oldNoms.indexOf(n)<0 && n !== moi;});
     if (ajoutes.length > 0) {
-      showToast('👷 ' + ajoutes.join(', ') + ' prend le bon ' + ordre,'success');
+      showToast(' ' + ajoutes.join(', ') + ' prend le bon ' + ordre,'success');
     }
   }
 }
@@ -2983,9 +2983,9 @@ function doOutilSearch() {
   });
   var count=document.getElementById('outilCount');
   var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
-  if (count) count.textContent=fil.length+' outil(s)'+(enPret?' · ⚠️ '+enPret+' en prêt':'');
+  if (count) count.textContent=fil.length+' outil(s)'+(enPret?' ·  '+enPret+' en prêt':'');
   var res=document.getElementById('outilRes'); if (!res) return;
-  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;grid-column:1/-1;"><div style="font-size:36px;margin-bottom:10px;">🔧</div>Aucun outil trouvé</div>'; return; }
+  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;grid-column:1/-1;"><div style="font-size:36px;margin-bottom:10px;"></div>Aucun outil trouvé</div>'; return; }
 
   res.innerHTML=fil.map(function(o) {
     var isPret=!!o.agent_pret;
@@ -3004,13 +3004,13 @@ function doOutilSearch() {
         +'</div>';
     } else {
       photoHtml='<div style="width:100%;height:100px;border-radius:10px 10px 0 0;flex-shrink:0;background:#0d0f18;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--br);">'
-        +'<div style="font-size:28px;opacity:0.15;">🔧</div>'
+        +'<div style="font-size:28px;opacity:0.15;"></div>'
         +'</div>';
     }
     // Badge statut prêt
     var pretBadge='';
     if (isPret) {
-      var pretLabel = isMyPret ? '🟢 VOUS L\'AVEZ' : '🔴 EN PRÊT';
+      var pretLabel = isMyPret ? ' VOUS L\'AVEZ' : ' EN PRÊT';
       var pretColor = isMyPret ? '#2ecc71' : '#e74c3c';
       var pretBg    = isMyPret ? 'rgba(46,204,113,0.12)' : 'rgba(231,76,60,0.12)';
       pretBadge = '<div style="background:'+pretBg+';border:1px solid '+pretColor+';border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:'+pretColor+';margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
@@ -3024,7 +3024,7 @@ function doOutilSearch() {
     if (isDemande && !isPret) {
       var demColor = isMyDemande ? '#f0a500' : '#3498db';
       var demBg    = isMyDemande ? 'rgba(240,165,0,0.12)' : 'rgba(52,152,219,0.12)';
-      var demLabel = isMyDemande ? '🟡 EN ATTENTE' : '📥 DEMANDÉ';
+      var demLabel = isMyDemande ? ' EN ATTENTE' : ' DEMANDÉ';
       demandeBadge = '<div style="background:'+demBg+';border:1px solid '+demColor+';border-radius:6px;padding:4px 8px;font-size:10px;font-weight:800;color:'+demColor+';margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;gap:6px;" onclick="event.stopPropagation()">'
         +'<div>'+demLabel+'<br><span style="font-size:9px;color:var(--mu);">Agent '+esc(o.demande_par)+(o.demande_date?' · '+formatDateBelge(o.demande_date):'')+'</span></div>'
         +(isStaff
@@ -3041,7 +3041,7 @@ function doOutilSearch() {
     // Bouton "Demander cet outil" pour agent / brigadier / borne (si dispo)
     var demanderBtn='';
     if (isRequester && !isPret && !isDemande && myLogin) {
-      demanderBtn = '<div onclick="demanderPret(\''+o.id+'\')" style="background:rgba(46,204,113,0.10);border:1px solid #2ecc71;color:#2ecc71;border-radius:6px;padding:8px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;margin-bottom:6px;">📥 Demander cet outil</div>';
+      demanderBtn = '<div onclick="demanderPret(\''+o.id+'\')" style="background:rgba(46,204,113,0.10);border:1px solid #2ecc71;color:#2ecc71;border-radius:6px;padding:8px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;margin-bottom:6px;"> Demander cet outil</div>';
     }
     // Panneau enregistrer prêt
     var pretPanel=isPret?''
@@ -3056,9 +3056,9 @@ function doOutilSearch() {
     var pretBtnStyle='background:rgba('+(isPret?'231,76,60':'46,204,113')+',0.1);border:1px solid '+(isPret?'#e74c3c':'#2ecc71')+';';
     var editBtns=window._canEdit
       ?'<div class="card-edit-btns" onclick="event.stopPropagation()">'
-          +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?'🔴 Prêt':'🟢 Prêt')+'</div>'
-          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">✏️ Modifier</div>'
-          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">🗑 Suppr.</div>'
+          +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?' Prêt':' Prêt')+'</div>'
+          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;"> Modifier</div>'
+          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;"> Suppr.</div>'
         +'</div>'
       :'';
     return '<div class="piece-card" style="border-left:3px solid '+(isPret?'#e74c3c':'var(--br)')+';cursor:default;">'
@@ -3067,7 +3067,7 @@ function doOutilSearch() {
         +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
           +'<div class="card-name" style="margin-bottom:0;">'+esc(o.nom)+'</div>'
         +'</div>'
-        +(o.location&&currentUser.role!=='agent'?'<div class="card-loc">📍 '+esc(o.location)+'</div>':'')
+        +(o.location&&currentUser.role!=='agent'?'<div class="card-loc"> '+esc(o.location)+'</div>':'')
         +(o.tags?'<div style="font-size:10px;color:var(--mu);margin-bottom:6px;">'+esc(o.tags)+'</div>':'')
         +pretBadge
         +demandeBadge
@@ -3128,7 +3128,7 @@ async function demanderPret(id) {
   try {
     await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: myLogin, demande_date: new Date().toISOString()});
     logAction('Demande prêt outillage: '+(o?o.nom:id), 'Par: '+myLogin);
-    showToast('📥 Demande envoyée — En attente du magasinier','success');
+    showToast(' Demande envoyée — En attente du magasinier','success');
     await loadOutillage();
   } catch(e) { showToast('Erreur demande','err'); }
 }
@@ -3301,14 +3301,14 @@ async function loadRetourOrdre() {
   var list = document.getElementById('retourBonsList');
   var num = (input.value||'').trim();
   if (!num) { showToast('Saisis un numéro d\'ordre','err'); return; }
-  list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:30px;">🔍 Recherche...</div>';
+  list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:30px;"> Recherche...</div>';
   _retourSelected = {};
   try {
     // On exclut les bons retours déjà créés (marqueur [RETOUR])
     var bons = await supa('GET','bons_commande?numero_ordre=eq.'+encodeURIComponent(num)+'&statut=in.(valide,archive)&order=date_creation.desc&select=*');
     _retourBons = (bons||[]).filter(function(b){ return !(b.message||'').includes('[RETOUR'); });
     if (!_retourBons.length) {
-      list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:42px;margin-bottom:10px;">🔎</div><div style="font-size:14px;font-weight:600;">Aucun bon trouvé pour cet ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Vérifie le numéro d\'ordre</div></div>';
+      list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:42px;margin-bottom:10px;"></div><div style="font-size:14px;font-weight:600;">Aucun bon trouvé pour cet ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Vérifie le numéro d\'ordre</div></div>';
       return;
     }
     renderRetourBons();
@@ -3317,7 +3317,7 @@ async function loadRetourOrdre() {
 
 function renderRetourBons() {
   var list = document.getElementById('retourBonsList');
-  var h = '<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:10px;padding-left:4px;">📋 PIÈCES SORTIES SUR CET ORDRE</div>';
+  var h = '<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:10px;padding-left:4px;"> PIÈCES SORTIES SUR CET ORDRE</div>';
   _retourBons.forEach(function(bon){
     var arts = bon.articles || [];
     var dt = supaDate(bon.date_creation);
@@ -3325,7 +3325,7 @@ function renderRetourBons() {
     h += '<div style="background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:14px 16px;margin-bottom:12px;">'
       +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
         +'<div><div style="font-size:13px;font-weight:800;color:var(--ac);font-family:monospace;">Bon original — '+esc(bon.numero_ordre)+'</div>'
-        +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+dateStr+' · 👤 '+esc(bon.login||'—')+'</div></div>'
+        +'<div style="font-size:11px;color:var(--mu);margin-top:2px;">'+dateStr+' ·  '+esc(bon.login||'—')+'</div></div>'
         +(bon.sap_effectue?'<div style="font-size:10px;font-weight:700;color:var(--gn);">✓ SAP fait</div>':'')
       +'</div>';
     arts.forEach(function(a){
@@ -3333,7 +3333,7 @@ function renderRetourBons() {
       var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
       var photoHtml = photoUrl
         ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
-        : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;">📷</div>';
+        : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
       var sel = _retourSelected[a.num] || 0;
       var maxQty = a.qty;
       h += '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,0.05);">'
@@ -3356,7 +3356,7 @@ function renderRetourBons() {
   // Footer : action + résultat
   h += '<div id="retourFooter" style="position:sticky;bottom:0;background:linear-gradient(180deg,transparent,#0a0a18 30%);padding:14px 0 4px;margin-top:6px;">'
     +'<div id="retourSummary" style="font-size:12px;color:var(--mu);margin-bottom:10px;text-align:center;">Sélectionne les quantités à retourner</div>'
-    +'<button class="btn-valider" id="retourCreateBtn" style="width:100%;padding:14px;font-size:15px;">📦 Créer le bon de retour</button>'
+    +'<button class="btn-valider" id="retourCreateBtn" style="width:100%;padding:14px;font-size:15px;"> Créer le bon de retour</button>'
     +'<div id="retourResult"></div>'
     +'</div>';
   list.innerHTML = h;
@@ -3432,11 +3432,11 @@ function renderRetourResult(arts, ordre, newId) {
   if (!res) return;
   var lines = arts.map(function(a){ return a.num+'\t'+a.qty+'\t\t2K\t\tRET-'+ordre+'\t10'; }).join('\n');
   var html = '<div style="margin-top:18px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.4);border-radius:14px;padding:18px;">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;">✅</div><div><div style="font-size:14px;font-weight:800;color:var(--gn);">Bon retour créé</div><div style="font-size:11px;color:var(--mu);">Ordre original: '+esc(ordre)+' · '+arts.length+' article(s)</div></div></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;"></div><div><div style="font-size:14px;font-weight:800;color:var(--gn);">Bon retour créé</div><div style="font-size:11px;color:var(--mu);">Ordre original: '+esc(ordre)+' · '+arts.length+' article(s)</div></div></div>'
     +'<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:6px;">Format SAP retour</div>'
     +'<pre style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:var(--tx);overflow-x:auto;white-space:pre;margin-bottom:12px;">'+esc(lines)+'</pre>'
     +'<div style="display:flex;gap:8px;">'
-      +'<button id="retourCopyBtn" class="btn-valider" style="flex:1;padding:12px;">📋 Copier pour SAP</button>'
+      +'<button id="retourCopyBtn" class="btn-valider" style="flex:1;padding:12px;"> Copier pour SAP</button>'
       +'<button id="retourResetBtn" style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);color:var(--tx);border-radius:10px;padding:10px 16px;font-weight:700;font-size:13px;cursor:pointer;">↺ Nouveau retour</button>'
     +'</div>'
     +'</div>';
