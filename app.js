@@ -239,6 +239,12 @@ function initUI() {
   }
   applyServiceVisibility();
 
+  // Bouton mode photo rapide (magasinier/admin uniquement)
+  var btnPhoto = document.getElementById('btnPhotoMode');
+  if (btnPhoto) {
+    btnPhoto.style.display = (role === 'magasinier' || role === 'admin') ? 'flex' : 'none';
+  }
+
   // Admin
   var navAdmin = document.getElementById('navAdmin');
   if (navAdmin) navAdmin.style.display = role==='admin'?'block':'none';
@@ -404,6 +410,17 @@ function startArticleScanner() {
 function handleScannedCode(val) {
   val = String(val || '').trim();
   if (!val) return;
+
+  // Mode photo rapide : on remplit le champ et on lance la recherche article
+  if (_scanMode === 'photoMode') {
+    var digits = azertyToDigits(val);
+    var candidate = /^\d+$/.test(val) ? val : (digits || val);
+    var inp = document.getElementById('photoModeNum');
+    if (inp) inp.value = candidate;
+    stopBarcodeScanner();
+    setTimeout(function(){ photoModeFindArticle(); }, 200);
+    return;
+  }
 
   // 1⃣ Tentative de conversion AZERTY pour avoir un candidat numérique
   var digits = azertyToDigits(val);
@@ -2029,12 +2046,6 @@ async function exportBon(id) {
       +'}'
       +'</style></head><body>'
 
-      // Bouton imprimer
-      +'<div class="no-print" style="margin-bottom:24px;text-align:right;">'
-        +'<button onclick="window.print()" style="background:#f0a500;color:#111;border:none;border-radius:8px;padding:12px 28px;font-size:15px;font-weight:800;cursor:pointer;"> Imprimer</button>'
-        +'<button onclick="window.close()" style="margin-left:10px;background:#eee;color:#555;border:none;border-radius:8px;padding:12px 20px;font-size:15px;cursor:pointer;">✕ Fermer</button>'
-      +'</div>'
-
       // En-tête
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;">'
         +'<div>'
@@ -2098,13 +2109,23 @@ async function exportBon(id) {
         +'</div>'
       +'</div>'
 
-      // Script d'impression auto au chargement
-      +'<script>window.addEventListener("load",function(){setTimeout(function(){window.print();},250);});<\/script>'
       +'</body></html>';
 
-    var w=window.open('','_blank','width=900,height=700');
-    w.document.write(html);
-    w.document.close();
+    // Impression directe via iframe caché (pas de nouvelle fenêtre à fermer)
+    var oldFrame = document.getElementById('printFrame');
+    if (oldFrame) oldFrame.remove();
+    var iframe = document.createElement('iframe');
+    iframe.id = 'printFrame';
+    iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:0;height:0;border:0;';
+    document.body.appendChild(iframe);
+    var idoc = iframe.contentWindow.document;
+    idoc.open(); idoc.write(html); idoc.close();
+    iframe.onload = function() {
+      setTimeout(function() {
+        try { iframe.contentWindow.focus(); iframe.contentWindow.print(); } catch(e){ console.error(e); }
+        setTimeout(function(){ if (iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 1500);
+      }, 250);
+    };
   } catch(e) { showToast('Erreur','err'); console.error(e); }
 }
 
@@ -3475,6 +3496,115 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
     navigator.serviceWorker.register('/Article/sw.js').catch(function() {});
   });
+}
+
+// ══════════════════════════════════════════════════════════
+// MODE PHOTO RAPIDE (depuis n'importe où dans l'app)
+// ══════════════════════════════════════════════════════════
+var _photoModeArticle = null;
+
+function startPhotoMode() {
+  var ov = document.getElementById('photoModeOverlay');
+  if (!ov) return;
+  photoModeReset();
+  ov.classList.remove('hidden');
+  setTimeout(function(){
+    var inp = document.getElementById('photoModeNum');
+    if (inp) inp.focus();
+  }, 200);
+}
+
+function closePhotoMode() {
+  var ov = document.getElementById('photoModeOverlay');
+  if (ov) ov.classList.add('hidden');
+  _photoModeArticle = null;
+}
+
+function photoModeReset() {
+  _photoModeArticle = null;
+  var s1 = document.getElementById('photoMode_step1');
+  var s2 = document.getElementById('photoMode_step2');
+  var inp = document.getElementById('photoModeNum');
+  var st = document.getElementById('photoModeStatus');
+  var f = document.getElementById('photoModeFile');
+  if (s1) s1.style.display = '';
+  if (s2) s2.style.display = 'none';
+  if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
+  if (st) st.textContent = '';
+  if (f) f.value = '';
+}
+
+function photoModeFindArticle() {
+  var inp = document.getElementById('photoModeNum');
+  var raw = (inp.value || '').trim();
+  if (!raw) { var st = document.getElementById('photoModeStatus'); if (st){st.textContent='Saisis un numéro';st.style.color='#e74c3c';} return; }
+  // Conversion AZERTY → chiffres si nécessaire
+  var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
+  var art = articles.filter(function(a){return a.num === num;})[0];
+  var st = document.getElementById('photoModeStatus');
+  if (!art) {
+    if (st) { st.textContent = 'Article inconnu : '+num; st.style.color = '#e74c3c'; }
+    showToast('Article inconnu','err');
+    return;
+  }
+  _photoModeArticle = art;
+  // Compter les photos existantes
+  var photos = art.photo ? art.photo.split(',').filter(function(s){return s.trim();}) : [];
+  // Afficher l'étape 2
+  document.getElementById('photoMode_step1').style.display = 'none';
+  document.getElementById('photoMode_step2').style.display = '';
+  document.getElementById('photoModeArtNum').textContent = art.num;
+  document.getElementById('photoModeArtNom').textContent = art.nom;
+  document.getElementById('photoModeArtCount').textContent = photos.length + ' photo(s) existante(s)';
+  if (st) { st.textContent = ''; st.style.color = '#9b9ec7'; }
+}
+
+// Lance le scanner pour remplir automatiquement le numéro
+function photoModeStartScan() {
+  _scanMode = 'photoMode';
+  startBarcodeScanner();
+  var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
+  if (titre) titre.textContent = '📷 Scanner numéro article';
+}
+
+async function photoModeUpload(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (!_photoModeArticle) { showToast('Article perdu — recommence','err'); return; }
+  var st = document.getElementById('photoModeStatus');
+  if (st) { st.textContent = 'Upload en cours...'; st.style.color = '#f0a500'; }
+  try {
+    var compressed = await compressImage(file);
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = _photoModeArticle.num + '/' + Date.now() + '.' + ext;
+    var res = await fetch(SURL+'/storage/v1/object/photos-articles/'+path, {
+      method:'POST',
+      headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':compressed.type||'image/jpeg'},
+      body: compressed
+    });
+    if (!res.ok) throw new Error('upload failed');
+    var url = SURL + '/storage/v1/object/public/photos-articles/' + path;
+    // Ajouter à la liste des photos de l'article
+    var existing = _photoModeArticle.photo ? _photoModeArticle.photo.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    existing.push(url);
+    var newPhotoStr = existing.join(',');
+    await supa('PATCH','articles?num=eq.'+encodeURIComponent(_photoModeArticle.num), {photo: newPhotoStr});
+    // Update local cache
+    _photoModeArticle.photo = newPhotoStr;
+    for (var i=0;i<articles.length;i++) { if (articles[i].num === _photoModeArticle.num) { articles[i].photo = newPhotoStr; break; } }
+    logAction('Ajout photo article: '+_photoModeArticle.num+' (mode photo rapide)');
+    showToast('Photo ajoutée à '+_photoModeArticle.num,'success');
+    // Rafraîchir le compteur
+    document.getElementById('photoModeArtCount').textContent = existing.length + ' photo(s) existante(s)';
+    if (st) { st.textContent = 'Photo ajoutée ✓ Tu peux en ajouter une autre.'; st.style.color = '#2ecc71'; }
+    input.value = '';
+    // Rafraîchir la grille si on est sur Pièces
+    if (_currentSection === 'pieces') doSearch();
+  } catch(e) {
+    if (st) { st.textContent = 'Erreur upload — réessaie'; st.style.color = '#e74c3c'; }
+    showToast('Erreur upload photo','err');
+    input.value = '';
+  }
 }
 
 initRealtime();
