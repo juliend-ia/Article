@@ -3654,7 +3654,7 @@ document.addEventListener('keydown', function(e) {
     _usbBuf = '';
 
     if (inField) {
-      // Frappe dans un champ : si scan détecté, on convertit AZERTY et on route
+      // Frappe dans un champ : si scan détecté, on convertit AZERTY
       var fieldVal = (t.value || '').trim();
       if (!fieldVal) return;
       if (wasScan) {
@@ -3663,9 +3663,26 @@ document.addEventListener('keydown', function(e) {
           fieldVal = d; t.value = d;
         }
       }
-      // Champs déjà gérés par leur propre handler → laisser passer
-      // Sinon, si scan rapide détecté, on prend la main pour router
-      if (wasScan && t.id !== 'si' && t.id !== 'photoModeNum' && t.id !== 'numeroOrdre' && t.id !== 'retourOrdreInput') {
+
+      // Cas spéciaux pour les champs "N° d'ordre" :
+      // si la valeur scannée N'EST PAS un vrai N° d'ordre (83 + 6 chiffres),
+      // c'est un article qui a atterri là par erreur — on le route comme article
+      if (wasScan && (t.id === 'numeroOrdre' || t.id === 'retourOrdreInput')) {
+        if (!/^83\d{6}$/.test(fieldVal)) {
+          e.preventDefault();
+          t.value = '';                     // vider le champ N° d'ordre
+          handleScannedCode(fieldVal);      // re-router (→ panier sur Panier)
+          return;
+        }
+        // C'est bien un N° d'ordre, laisser le handler du champ traiter
+        return;
+      }
+
+      // Champs de recherche : leur handler propre gère Enter
+      if (t.id === 'si' || t.id === 'photoModeNum') return;
+
+      // Autre champ + scan rapide : on prend la main
+      if (wasScan) {
         e.preventDefault();
         handleScannedCode(fieldVal);
         t.value = '';
