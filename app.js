@@ -223,7 +223,7 @@ function initUI() {
   _soundEnabled = localStorage.getItem('soundEnabled_'+currentUser.login) !== 'false';
   var btnSound = document.getElementById('btnSound');
   if (btnSound) {
-    if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'':''; }
+    if (role !== 'agent' && role !== 'borne') { btnSound.style.display='flex'; btnSound.textContent=_soundEnabled?'♪':'🔇'; btnSound.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
     else btnSound.style.display='none';
   }
 
@@ -1064,8 +1064,8 @@ function renderGrid(q) {
     var extra = '';
     // Boutons bas de card : panier + icônes modifier/supprimer
     var editIconBtns = window._canEdit
-      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'"></div>'
-        +'<div class="btn-del-card" data-num="'+esc(a.num)+'"></div>'
+      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'" title="Modifier">✏️</div>'
+        +'<div class="btn-del-card" data-num="'+esc(a.num)+'" title="Supprimer">🗑️</div>'
       : '';
     var bottomRow = '<div class="card-bottom-row">'
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
@@ -2221,7 +2221,7 @@ function toggleSound() {
   _soundEnabled=!_soundEnabled;
   localStorage.setItem('soundEnabled_'+currentUser.login, _soundEnabled?'true':'false');
   var btn=document.getElementById('btnSound');
-  if (btn) { btn.textContent=_soundEnabled?'':''; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
+  if (btn) { btn.textContent=_soundEnabled?'♪':'🔇'; btn.style.color=_soundEnabled?'var(--ac)':'var(--mu)'; }
   showToast(_soundEnabled?'Son activé':'Son coupé','success');
 }
 
@@ -3091,9 +3091,9 @@ function doOutilSearch() {
     var pretBtnStyle='background:rgba('+(isPret?'231,76,60':'46,204,113')+',0.1);border:1px solid '+(isPret?'#e74c3c':'#2ecc71')+';';
     var editBtns=window._canEdit
       ?'<div class="card-edit-btns" onclick="event.stopPropagation()">'
-          +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?' Prêt':' Prêt')+'</div>'
-          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;"> Modifier</div>'
-          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;"> Suppr.</div>'
+          +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?'🔒 Prêt':'🔓 Prêt')+'</div>'
+          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">✏️ Modifier</div>'
+          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">🗑️ Suppr.</div>'
         +'</div>'
       :'';
     return '<div class="piece-card" style="border-left:3px solid '+(isPret?'#e74c3c':'var(--br)')+';cursor:default;">'
