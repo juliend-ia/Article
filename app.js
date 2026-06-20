@@ -531,7 +531,7 @@ function fillNumeroOrdre(val) {
     return;
   }
   var input = document.getElementById('numeroOrdre');
-  if (input) input.value = val;
+  if (input) { input.value = val; input.blur(); }   // libère le focus pour que le prochain scan n'écrase pas
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
   if (result) { result.textContent = '✓ ' + val; result.style.color = '#2ecc71'; }
@@ -3797,6 +3797,16 @@ document.addEventListener('keydown', function(e) {
   if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
     _usbBuf += e.key;
   }
+});
+
+// Auto-blur du champ Numéro d'ordre dès qu'il contient un N° complet et valide.
+// Empêche le prochain scan d'article d'atterrir et d'écraser le numéro.
+document.addEventListener('DOMContentLoaded', function(){
+  var ord = document.getElementById('numeroOrdre');
+  if (ord) ord.addEventListener('input', function(){
+    var v = (this.value||'').trim();
+    if (/^\d{8}$/.test(v)) { var self=this; setTimeout(function(){ self.blur(); }, 50); }
+  });
 });
 
 initRealtime();
