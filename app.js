@@ -432,7 +432,15 @@ function handleScannedCode(val) {
   var digits = azertyToDigits(val);
   var numCandidate = /^\d+$/.test(val) ? val : (/^\d+$/.test(digits) ? digits : null);
 
-  // 2⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
+  // 2⃣ Page Retours : tout scan numérique alimente directement le champ N° d'ordre
+  if (_currentSection === 'retours') {
+    var inpRet = document.getElementById('retourOrdreInput');
+    if (inpRet) inpRet.value = numCandidate || val;
+    loadRetourOrdre();
+    return;
+  }
+
+  // 3⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
   //    et naviguer vers la page Panier si on n'y est pas
   if (numCandidate && /^83\d{6}$/.test(numCandidate)) {
     if (_currentSection !== 'panier') switchSection('panier');
@@ -3328,6 +3336,11 @@ async function loadRetourOrdre() {
   var list = document.getElementById('retourBonsList');
   var num = (input.value||'').trim();
   if (!num) { showToast('Saisis un numéro d\'ordre','err'); return; }
+  // Conversion AZERTY si le scanner USB a tapé en QWERTY US
+  if (!/^\d+$/.test(num)) {
+    var digits = azertyToDigits(num);
+    if (/^\d+$/.test(digits)) { num = digits; input.value = digits; }
+  }
   list.innerHTML = '<div style="text-align:center;color:var(--mu);padding:30px;"> Recherche...</div>';
   _retourSelected = {};
   try {
@@ -3610,6 +3623,71 @@ async function photoModeUpload(input) {
     input.value = '';
   }
 }
+
+// ══════════════════════════════════════════════════════════
+// CAPTEUR GLOBAL SCANNER USB
+// Détecte une rafale rapide de frappes (clavier "scanner" USB)
+// suivie d'Enter, et la route via handleScannedCode même quand
+// aucune barre de recherche n'est focus.
+// ══════════════════════════════════════════════════════════
+var _usbBuf = '';
+var _usbLast = 0;
+var SCAN_INTERVAL_MS = 80;   // intervalle max entre 2 frappes scanner
+var SCAN_MIN_LEN     = 4;    // longueur min pour considérer comme scan
+
+document.addEventListener('keydown', function(e) {
+  // Si le scanner caméra ZXing est ouvert, on n'interfère pas
+  var ov = document.getElementById('scannerOverlay');
+  if (ov && !ov.classList.contains('hidden')) return;
+
+  var t = e.target;
+  var tag = t && t.tagName;
+  var inField = (tag === 'INPUT' || tag === 'TEXTAREA' || (t && t.isContentEditable));
+
+  var now = Date.now();
+  var dt = now - _usbLast;
+  _usbLast = now;
+
+  if (e.key === 'Enter') {
+    var bufVal = _usbBuf;
+    var wasScan = bufVal.length >= SCAN_MIN_LEN && dt < 100;
+    _usbBuf = '';
+
+    if (inField) {
+      // Frappe dans un champ : si scan détecté, on convertit AZERTY et on route
+      var fieldVal = (t.value || '').trim();
+      if (!fieldVal) return;
+      if (wasScan) {
+        var d = azertyToDigits(fieldVal);
+        if (/^\d+$/.test(d) && !/^\d+$/.test(fieldVal)) {
+          fieldVal = d; t.value = d;
+        }
+      }
+      // Champs déjà gérés par leur propre handler → laisser passer
+      // Sinon, si scan rapide détecté, on prend la main pour router
+      if (wasScan && t.id !== 'si' && t.id !== 'photoModeNum' && t.id !== 'numeroOrdre' && t.id !== 'retourOrdreInput') {
+        e.preventDefault();
+        handleScannedCode(fieldVal);
+        t.value = '';
+      }
+      return;
+    }
+
+    // Hors de tout champ : si rafale = scan, on route
+    if (wasScan) {
+      e.preventDefault();
+      handleScannedCode(bufVal);
+    }
+    return;
+  }
+
+  // Reset du buffer si la frappe précédente est trop ancienne (= humaine)
+  if (dt > SCAN_INTERVAL_MS) _usbBuf = '';
+  // Accumule les caractères imprimables
+  if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    _usbBuf += e.key;
+  }
+});
 
 initRealtime();
 checkAuth();
