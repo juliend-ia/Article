@@ -521,13 +521,18 @@ function fillNumeroOrdre(val) {
   // Auto-correction si le scan contient des caractères AZERTY mal mappés
   var digits = azertyToDigits(val);
   if (digits.length === 8 && /^\d{8}$/.test(digits)) val = digits;
-  // Validation : 8 chiffres exactement
-  if (!/^\d{8}$/.test(val)) {
+  // Validation stricte : 8 chiffres commençant par 83 (format STIB-MIVB)
+  if (!/^83\d{6}$/.test(val)) {
+    // Si la valeur est 8 chiffres mais commence par autre chose, c'est un article
+    if (/^\d{8}$/.test(val) && _currentSection === 'panier') {
+      handleArticleScan(val);
+      return;
+    }
     var status = document.getElementById('scannerStatus');
     var result = document.getElementById('scannerResult');
-    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres';
+    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres commençant par 83';
     if (result) { result.textContent = val; result.style.color = '#e74c3c'; }
-    showToast('Code-barre invalide — 8 chiffres attendus','err');
+    showToast('Pas un N° d\'ordre (doit commencer par 83)','err');
     return;
   }
   var input = document.getElementById('numeroOrdre');
