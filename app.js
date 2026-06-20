@@ -1591,6 +1591,8 @@ function ajouterPanier(num) {
   if (ex) { ex.qty++; showToast('Quantité mise à jour !','success'); }
   else { panier.push({num:a.num,nom:a.nom,location:a.location||'',qty:1,reparable:a.reparable||false,interne:a.interne||false,entretien:a.entretien||false}); showToast('Ajouté au panier !','success'); }
   updateBadge();
+  // Si on est déjà sur la page Panier, rafraîchir l'affichage en live
+  if (_currentSection === 'panier' && typeof renderPanier === 'function') renderPanier();
 }
 
 function updateBadge() {
