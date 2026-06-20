@@ -1361,6 +1361,13 @@ function switchSection(section) {
     document.getElementById('sectionPanier').style.display='flex';
     document.getElementById('navPanier').classList.add('on');
     renderPanier();
+    // Forcer la perte de focus pour que le scanner USB ne tape pas
+    // par défaut dans le champ N° d'ordre — il sera capté par le dispatcher global.
+    setTimeout(function(){
+      if (document.activeElement && document.activeElement.tagName === 'INPUT') {
+        document.activeElement.blur();
+      }
+    }, 100);
   } else if (section==='commandes') {
     document.getElementById('sectionCommandes').style.display='flex';
     var nc = document.getElementById('navCommandes');
@@ -3806,30 +3813,49 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Garde-fou sur le champ Numéro d'ordre.
-// 1) Si pollution détectée (>8 chars = N° + article scannés collés) :
-//    tronquer aux 8 premiers, blur, et router le reste comme article scanné.
-// 2) Si valeur valide (8 chiffres) : auto-blur pour éviter futur scan dedans.
+// Garde-fou multi-couches sur le champ Numéro d'ordre.
+// Sur la page Panier, ce champ ne doit accueillir QUE des N° d'ordre (83XXXXXX).
+// Tout scan d'article doit être routé vers handleScannedCode (→ ajout panier).
+//
+// On utilise un debounce 60ms après le dernier 'input' pour analyser la valeur
+// finale (gère le cas où le scanner tape rafale + Enter avant qu'on agisse).
+var _ordInputTimer = null;
 document.addEventListener('DOMContentLoaded', function(){
   var ord = document.getElementById('numeroOrdre');
-  if (ord) ord.addEventListener('input', function(){
+  if (!ord) return;
+
+  ord.addEventListener('input', function(){
     var self = this;
-    var v = (self.value||'').trim();
-    // Cas 1 : pollution
-    if (v.length > 8 && /^\d/.test(v)) {
-      var head = v.substring(0, 8);
-      var tail = v.substring(8);
-      if (/^\d{8}$/.test(head)) {
-        self.value = head;
+    clearTimeout(_ordInputTimer);
+    _ordInputTimer = setTimeout(function(){
+      var v = (self.value||'').trim();
+      if (!v) return;
+
+      // CAS 1 — pollution évidente : 8 premiers = N° d'ordre, puis caractères en plus
+      if (v.length > 8 && /^83\d{6}/.test(v)) {
+        self.value = v.substring(0, 8);
         self.blur();
-        if (tail) setTimeout(function(){ handleScannedCode(tail); }, 100);
+        var tail = v.substring(8);
+        if (tail.length >= 3) handleScannedCode(tail);
         return;
       }
-    }
-    // Cas 2 : N° valide
-    if (/^\d{8}$/.test(v)) {
-      setTimeout(function(){ self.blur(); }, 50);
-    }
+
+      // CAS 2 — la valeur ne ressemble PAS à un début de N° d'ordre :
+      // c'est probablement un article qui a atterri là (scanner USB ou collage).
+      // On vide et on route comme un scan d'article.
+      // (sur Panier uniquement, pour ne pas casser la saisie manuelle ailleurs)
+      if (_currentSection === 'panier' && v.length >= 4 && !/^8(3)?$/.test(v) && !/^83\d{0,6}$/.test(v)) {
+        self.value = '';
+        self.blur();
+        handleScannedCode(v);
+        return;
+      }
+
+      // CAS 3 — N° d'ordre valide complet : blur pour libérer le focus
+      if (/^\d{8}$/.test(v)) {
+        self.blur();
+      }
+    }, 60);
   });
 });
 
