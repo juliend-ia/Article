@@ -417,7 +417,7 @@ function handleScannedCode(val) {
   val = String(val || '').trim();
   if (!val) return;
 
-  // Mode photo rapide : on remplit le champ et on lance la recherche article
+  // Mode photo rapide (topbar) : on remplit le champ et on lance la recherche article
   if (_scanMode === 'photoMode') {
     var digits = azertyToDigits(val);
     var candidate = /^\d+$/.test(val) ? val : (digits || val);
@@ -425,6 +425,16 @@ function handleScannedCode(val) {
     if (inp) inp.value = candidate;
     stopBarcodeScanner();
     setTimeout(function(){ photoModeFindArticle(); }, 200);
+    return;
+  }
+  // Mode photo rapide intégré dans l'onglet Admin > Photos
+  if (_scanMode === 'adminPhoto') {
+    var digitsA = azertyToDigits(val);
+    var candA = /^\d+$/.test(val) ? val : (digitsA || val);
+    var inpA = document.getElementById('adminPhotoNum');
+    if (inpA) inpA.value = candA;
+    stopBarcodeScanner();
+    setTimeout(function(){ adminPhotoFind(); }, 200);
     return;
   }
 
@@ -3617,6 +3627,89 @@ async function photoModeUpload(input) {
     input.value = '';
     // Rafraîchir la grille si on est sur Pièces
     if (_currentSection === 'pieces') doSearch();
+  } catch(e) {
+    if (st) { st.textContent = 'Erreur upload — réessaie'; st.style.color = '#e74c3c'; }
+    showToast('Erreur upload photo','err');
+    input.value = '';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// MODE PHOTO RAPIDE — version intégrée dans l'onglet Admin > Photos
+// ══════════════════════════════════════════════════════════
+var _adminPhotoArt = null;
+
+function adminPhotoReset() {
+  _adminPhotoArt = null;
+  var s1 = document.getElementById('adminPhoto_step1');
+  var s2 = document.getElementById('adminPhoto_step2');
+  var inp = document.getElementById('adminPhotoNum');
+  var st = document.getElementById('adminPhotoStatus');
+  var stu = document.getElementById('adminPhotoUpStatus');
+  if (s1) s1.style.display = '';
+  if (s2) s2.style.display = 'none';
+  if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
+  if (st) st.textContent = '';
+  if (stu) stu.textContent = '';
+}
+
+function adminPhotoFind() {
+  var inp = document.getElementById('adminPhotoNum');
+  var raw = (inp.value || '').trim();
+  var st = document.getElementById('adminPhotoStatus');
+  if (!raw) { if (st){st.textContent='Saisis un numéro';st.style.color='#e74c3c';} return; }
+  var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
+  var art = articles.filter(function(a){return a.num === num;})[0];
+  if (!art) {
+    if (st) { st.textContent = 'Article inconnu : '+num; st.style.color = '#e74c3c'; }
+    showToast('Article inconnu','err');
+    return;
+  }
+  _adminPhotoArt = art;
+  var photos = art.photo ? art.photo.split(',').filter(function(s){return s.trim();}) : [];
+  document.getElementById('adminPhoto_step1').style.display = 'none';
+  document.getElementById('adminPhoto_step2').style.display = '';
+  document.getElementById('adminPhotoArtNum').textContent = art.num;
+  document.getElementById('adminPhotoArtNom').textContent = art.nom;
+  document.getElementById('adminPhotoArtCount').textContent = photos.length + ' photo(s) existante(s)';
+  if (st) { st.textContent = ''; }
+}
+
+function adminPhotoScan() {
+  _scanMode = 'adminPhoto';
+  startBarcodeScanner();
+  var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
+  if (titre) titre.textContent = '📷 Scanner numéro article';
+}
+
+async function adminPhotoUpload(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (!_adminPhotoArt) { showToast('Article perdu — recommence','err'); return; }
+  var st = document.getElementById('adminPhotoUpStatus');
+  if (st) { st.textContent = 'Upload en cours...'; st.style.color = '#f0a500'; }
+  try {
+    var compressed = await compressImage(file);
+    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    var path = _adminPhotoArt.num + '/' + Date.now() + '.' + ext;
+    var res = await fetch(SURL+'/storage/v1/object/photos-articles/'+path, {
+      method:'POST',
+      headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':compressed.type||'image/jpeg'},
+      body: compressed
+    });
+    if (!res.ok) throw new Error('upload failed');
+    var url = SURL + '/storage/v1/object/public/photos-articles/' + path;
+    var existing = _adminPhotoArt.photo ? _adminPhotoArt.photo.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
+    existing.push(url);
+    var newPhotoStr = existing.join(',');
+    await supa('PATCH','articles?num=eq.'+encodeURIComponent(_adminPhotoArt.num), {photo: newPhotoStr});
+    _adminPhotoArt.photo = newPhotoStr;
+    for (var i=0;i<articles.length;i++) { if (articles[i].num === _adminPhotoArt.num) { articles[i].photo = newPhotoStr; break; } }
+    logAction('Ajout photo article: '+_adminPhotoArt.num+' (admin mode photo)');
+    showToast('Photo ajoutée à '+_adminPhotoArt.num,'success');
+    document.getElementById('adminPhotoArtCount').textContent = existing.length + ' photo(s) existante(s)';
+    if (st) { st.textContent = 'Photo ajoutée ✓ Tu peux en ajouter une autre.'; st.style.color = '#2ecc71'; }
+    input.value = '';
   } catch(e) {
     if (st) { st.textContent = 'Erreur upload — réessaie'; st.style.color = '#e74c3c'; }
     showToast('Erreur upload photo','err');

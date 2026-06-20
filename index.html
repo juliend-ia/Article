@@ -824,6 +824,7 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
             <div class="admin-tab" data-tab="bons" onclick="switchAdminTab('bons')"> Bons</div>
             <div class="admin-tab" data-tab="modifs" onclick="switchAdminTab('modifs')"> Modifications</div>
             <div class="admin-tab" data-tab="actions" onclick="switchAdminTab('actions')"> Actions</div>
+            <div class="admin-tab" data-tab="photos" onclick="switchAdminTab('photos')">📷 Photos</div>
           </div>
 
           <!-- Contenu onglet Tableau de bord -->
@@ -875,6 +876,40 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
           <!-- Contenu onglet Actions -->
           <div class="admin-tab-content hidden" id="adminTab-actions">
             <div class="admin-section"><h2> Historique des actions</h2><div id="actionsList"></div></div>
+          </div>
+
+          <!-- Contenu onglet Photos (mode photo rapide intégré) -->
+          <div class="admin-tab-content hidden" id="adminTab-photos">
+            <div class="admin-section">
+              <h2>📷 Mode photo rapide</h2>
+              <p style="font-size:12px;color:var(--mu);margin-bottom:16px;">Ajoute des photos aux articles rapidement depuis ton téléphone. Saisis ou scanne le numéro d'article, puis prends/choisis la photo — elle est enregistrée instantanément.</p>
+
+              <!-- Étape 1 -->
+              <div id="adminPhoto_step1">
+                <div class="field"><label>Numéro d'article</label>
+                  <div style="display:flex;gap:8px;align-items:stretch;">
+                    <input type="text" id="adminPhotoNum" inputmode="numeric" placeholder="ex: 41512345" style="flex:1;" onkeydown="if(event.key==='Enter'){event.preventDefault();adminPhotoFind();}"/>
+                    <div onclick="adminPhotoScan()" title="Scanner code-barre" style="background:rgba(240,165,0,0.12);border:1.5px solid rgba(240,165,0,0.4);color:#f0a500;border-radius:10px;padding:0 18px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0;">📷</div>
+                  </div>
+                </div>
+                <div onclick="adminPhotoFind()" style="background:rgba(46,204,113,0.12);border:1.5px solid rgba(46,204,113,0.4);color:#2ecc71;border-radius:10px;padding:12px;text-align:center;font-size:14px;font-weight:700;cursor:pointer;margin-top:10px;">Chercher l'article ▶</div>
+                <div id="adminPhotoStatus" style="text-align:center;font-size:12px;color:#9b9ec7;min-height:18px;margin-top:10px;"></div>
+              </div>
+
+              <!-- Étape 2 -->
+              <div id="adminPhoto_step2" style="display:none;">
+                <div style="background:rgba(240,165,0,0.06);border:1px solid rgba(240,165,0,0.2);border-radius:10px;padding:14px;margin-bottom:14px;">
+                  <div style="font-size:18px;font-weight:800;color:var(--ac);" id="adminPhotoArtNum"></div>
+                  <div style="font-size:13px;color:var(--tx);margin-top:4px;" id="adminPhotoArtNom"></div>
+                  <div style="font-size:11px;color:var(--mu);margin-top:6px;" id="adminPhotoArtCount"></div>
+                </div>
+                <label class="edit-photo-btn" style="display:block;text-align:center;cursor:pointer;">📷 Prendre / Choisir photo
+                  <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="adminPhotoUpload(this)"/>
+                </label>
+                <div id="adminPhotoUpStatus" style="text-align:center;font-size:12px;color:#9b9ec7;min-height:18px;margin-top:10px;"></div>
+                <div onclick="adminPhotoReset()" style="margin-top:10px;text-align:center;font-size:12px;color:var(--mu);cursor:pointer;text-decoration:underline;">← Changer d'article</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -1193,6 +1228,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=59"></script>
+<script src="app.js?v=60"></script>
 </body>
 </html>
