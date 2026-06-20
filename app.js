@@ -397,13 +397,19 @@ function startOrdreScanner() {
   if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = ' Scanner le N° d\'ordre';
 }
 
-// Lance le scanner en mode "article" : un scan ajoute la pièce au panier
+// Lance le scanner sans imposer de mode : le dispatcher route selon la page courante
+//   - Page Panier  → la pièce s'ajoute au panier
+//   - Page Pièces  → la pièce s'affiche dans le catalogue (recherche visuelle)
+//   - N° d'ordre (83XXXXXX) toujours détecté et envoyé au champ Numéro d'ordre
 function startArticleScanner() {
-  _scanMode = 'article';
+  _scanMode = 'auto';
   startBarcodeScanner();
-  // Adapter le titre de la modal
   var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
-  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = ' Scanner une étiquette pièce';
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) {
+    titre.textContent = _currentSection === 'panier'
+      ? ' Scanner — ajouter au panier'
+      : ' Scanner — rechercher dans le catalogue';
+  }
 }
 
 // Dispatcher intelligent : route automatiquement selon le contenu scanné et la page courante
@@ -433,15 +439,13 @@ function handleScannedCode(val) {
     return fillNumeroOrdre(numCandidate);
   }
 
-  // 3⃣ Sinon c'est un article : routing selon le mode/section
-  if (_scanMode === 'article' || _currentSection === 'panier') {
-    return handleArticleScan(val);
-  }
-  if (_currentSection === 'pieces') {
-    return handleArticleSearch(val);
-  }
-  // Cas par défaut : tente comme N° d'ordre
-  return fillNumeroOrdre(val);
+  // 3⃣ Sinon c'est un article : routing PUREMENT selon la page courante
+  //    (le mode 'ordre' explicite reste prioritaire pour le bouton du champ N°)
+  if (_scanMode === 'ordre') return fillNumeroOrdre(val);
+  if (_currentSection === 'panier') return handleArticleScan(val);   // ajout panier
+  if (_currentSection === 'pieces') return handleArticleSearch(val); // recherche visuelle
+  // Cas par défaut (autre section) : recherche dans le catalogue
+  return handleArticleSearch(val);
 }
 
 // Remplit la barre de recherche Pièces avec le code scanné (visuel, pas d'ajout panier)
