@@ -239,12 +239,6 @@ function initUI() {
   }
   applyServiceVisibility();
 
-  // Bouton mode photo rapide (magasinier/admin uniquement)
-  var btnPhoto = document.getElementById('btnPhotoMode');
-  if (btnPhoto) {
-    btnPhoto.style.display = (role === 'magasinier' || role === 'admin') ? 'flex' : 'none';
-  }
-
   // Admin
   var navAdmin = document.getElementById('navAdmin');
   if (navAdmin) navAdmin.style.display = role==='admin'?'block':'none';
@@ -417,16 +411,6 @@ function handleScannedCode(val) {
   val = String(val || '').trim();
   if (!val) return;
 
-  // Mode photo rapide (topbar) : on remplit le champ et on lance la recherche article
-  if (_scanMode === 'photoMode') {
-    var digits = azertyToDigits(val);
-    var candidate = /^\d+$/.test(val) ? val : (digits || val);
-    var inp = document.getElementById('photoModeNum');
-    if (inp) inp.value = candidate;
-    stopBarcodeScanner();
-    setTimeout(function(){ photoModeFindArticle(); }, 200);
-    return;
-  }
   // Mode photo rapide intégré dans l'onglet Admin > Photos
   if (_scanMode === 'adminPhoto') {
     var digitsA = azertyToDigits(val);
@@ -3539,114 +3523,6 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// ══════════════════════════════════════════════════════════
-// MODE PHOTO RAPIDE (depuis n'importe où dans l'app)
-// ══════════════════════════════════════════════════════════
-var _photoModeArticle = null;
-
-function startPhotoMode() {
-  var ov = document.getElementById('photoModeOverlay');
-  if (!ov) return;
-  photoModeReset();
-  ov.classList.remove('hidden');
-  setTimeout(function(){
-    var inp = document.getElementById('photoModeNum');
-    if (inp) inp.focus();
-  }, 200);
-}
-
-function closePhotoMode() {
-  var ov = document.getElementById('photoModeOverlay');
-  if (ov) ov.classList.add('hidden');
-  _photoModeArticle = null;
-}
-
-function photoModeReset() {
-  _photoModeArticle = null;
-  var s1 = document.getElementById('photoMode_step1');
-  var s2 = document.getElementById('photoMode_step2');
-  var inp = document.getElementById('photoModeNum');
-  var st = document.getElementById('photoModeStatus');
-  var f = document.getElementById('photoModeFile');
-  if (s1) s1.style.display = '';
-  if (s2) s2.style.display = 'none';
-  if (inp) { inp.value = ''; setTimeout(function(){ inp.focus(); }, 50); }
-  if (st) st.textContent = '';
-  if (f) f.value = '';
-}
-
-function photoModeFindArticle() {
-  var inp = document.getElementById('photoModeNum');
-  var raw = (inp.value || '').trim();
-  if (!raw) { var st = document.getElementById('photoModeStatus'); if (st){st.textContent='Saisis un numéro';st.style.color='#e74c3c';} return; }
-  // Conversion AZERTY → chiffres si nécessaire
-  var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
-  var art = articles.filter(function(a){return a.num === num;})[0];
-  var st = document.getElementById('photoModeStatus');
-  if (!art) {
-    if (st) { st.textContent = 'Article inconnu : '+num; st.style.color = '#e74c3c'; }
-    showToast('Article inconnu','err');
-    return;
-  }
-  _photoModeArticle = art;
-  // Compter les photos existantes
-  var photos = art.photo ? art.photo.split(',').filter(function(s){return s.trim();}) : [];
-  // Afficher l'étape 2
-  document.getElementById('photoMode_step1').style.display = 'none';
-  document.getElementById('photoMode_step2').style.display = '';
-  document.getElementById('photoModeArtNum').textContent = art.num;
-  document.getElementById('photoModeArtNom').textContent = art.nom;
-  document.getElementById('photoModeArtCount').textContent = photos.length + ' photo(s) existante(s)';
-  if (st) { st.textContent = ''; st.style.color = '#9b9ec7'; }
-}
-
-// Lance le scanner pour remplir automatiquement le numéro
-function photoModeStartScan() {
-  _scanMode = 'photoMode';
-  startBarcodeScanner();
-  var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
-  if (titre) titre.textContent = '📷 Scanner numéro article';
-}
-
-async function photoModeUpload(input) {
-  var file = input.files && input.files[0];
-  if (!file) return;
-  if (!_photoModeArticle) { showToast('Article perdu — recommence','err'); return; }
-  var st = document.getElementById('photoModeStatus');
-  if (st) { st.textContent = 'Upload en cours...'; st.style.color = '#f0a500'; }
-  try {
-    var compressed = await compressImage(file);
-    var ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    var path = _photoModeArticle.num + '/' + Date.now() + '.' + ext;
-    var res = await fetch(SURL+'/storage/v1/object/photos-articles/'+path, {
-      method:'POST',
-      headers:{'apikey':SKEY,'Authorization':'Bearer '+SKEY,'Content-Type':compressed.type||'image/jpeg'},
-      body: compressed
-    });
-    if (!res.ok) throw new Error('upload failed');
-    var url = SURL + '/storage/v1/object/public/photos-articles/' + path;
-    // Ajouter à la liste des photos de l'article
-    var existing = _photoModeArticle.photo ? _photoModeArticle.photo.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
-    existing.push(url);
-    var newPhotoStr = existing.join(',');
-    await supa('PATCH','articles?num=eq.'+encodeURIComponent(_photoModeArticle.num), {photo: newPhotoStr});
-    // Update local cache
-    _photoModeArticle.photo = newPhotoStr;
-    for (var i=0;i<articles.length;i++) { if (articles[i].num === _photoModeArticle.num) { articles[i].photo = newPhotoStr; break; } }
-    logAction('Ajout photo article: '+_photoModeArticle.num+' (mode photo rapide)');
-    showToast('Photo ajoutée à '+_photoModeArticle.num,'success');
-    // Rafraîchir le compteur
-    document.getElementById('photoModeArtCount').textContent = existing.length + ' photo(s) existante(s)';
-    if (st) { st.textContent = 'Photo ajoutée ✓ Tu peux en ajouter une autre.'; st.style.color = '#2ecc71'; }
-    input.value = '';
-    // Rafraîchir la grille si on est sur Pièces
-    if (_currentSection === 'pieces') doSearch();
-  } catch(e) {
-    if (st) { st.textContent = 'Erreur upload — réessaie'; st.style.color = '#e74c3c'; }
-    showToast('Erreur upload photo','err');
-    input.value = '';
-  }
-}
 
 // ══════════════════════════════════════════════════════════
 // MODE PHOTO RAPIDE — version intégrée dans l'onglet Admin > Photos
@@ -3786,7 +3662,7 @@ document.addEventListener('keydown', function(e) {
       }
 
       // Champs de recherche : leur handler propre gère Enter
-      if (t.id === 'si' || t.id === 'photoModeNum') return;
+      if (t.id === 'si' || t.id === 'adminPhotoNum') return;
 
       // Autre champ + scan rapide : on prend la main
       if (wasScan) {

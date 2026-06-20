@@ -684,7 +684,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
     </div>
     <div class="tb-right">
       <div class="tb-sound" id="btnSound" onclick="toggleSound()" title="Activer/couper le son">♪</div>
-      <div class="tb-sound" id="btnPhotoMode" onclick="startPhotoMode()" title="Mode photo rapide — ajouter des photos aux articles" style="display:none;font-size:18px;">📷</div>
       <div class="tb-sound" id="btnService" onclick="toggleService()" title="Afficher / masquer le décompte du service" style="display:none;">⏱</div>
       <div id="navAdmin" style="display:none;"><button class="tb-admin-btn" id="btnAdmin">Admin</button></div>
       <button id="btnChangerAgent" style="display:none;background:rgba(240,165,0,0.1);border:1px solid rgba(240,165,0,0.35);color:var(--ac);border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;" onclick="showBorneEntry()">↩ Changer d'agent</button>
@@ -1155,47 +1154,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 </div>
 
 <!-- ─── SCANNER CODE-BARRE (compatible iOS Safari via ZXing-JS) ─── -->
-<!-- ── MODE PHOTO RAPIDE ── -->
-<div id="photoModeOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
-  <div style="width:100%;max-width:480px;background:rgba(20,22,40,0.95);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.12);border-radius:22px;padding:22px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
-      <div style="font-size:24px;">📷</div>
-      <div style="flex:1;">
-        <div style="font-size:16px;font-weight:800;color:#f0a500;">Mode photo rapide</div>
-        <div style="font-size:11px;color:#9b9ec7;margin-top:2px;">Ajoute une photo à un article en 3 clics</div>
-      </div>
-      <div onclick="closePhotoMode()" style="font-size:24px;color:#9b9ec7;cursor:pointer;line-height:1;padding:4px 8px;">✕</div>
-    </div>
-    <!-- Étape 1 : choisir l'article -->
-    <div id="photoMode_step1">
-      <div style="font-size:12px;color:#9b9ec7;margin-bottom:8px;letter-spacing:1px;text-transform:uppercase;font-weight:700;">1. Numéro article</div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;">
-        <input type="text" id="photoModeNum" placeholder="ex: 67001218 (ou scanne)" inputmode="numeric"
-          style="flex:1;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.10);border-radius:10px;padding:13px 14px;font-size:16px;color:#e8eaf0;outline:none;font-family:'JetBrains Mono','Consolas',monospace;letter-spacing:1px;"
-          onkeydown="if(event.key==='Enter'){event.preventDefault();photoModeFindArticle();}else if(event.key==='Escape'){event.preventDefault();closePhotoMode();}"/>
-        <div onclick="photoModeStartScan()" title="Scanner code-barre" style="background:rgba(240,165,0,0.12);border:1.5px solid rgba(240,165,0,0.4);color:#f0a500;border-radius:10px;padding:0 16px;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;flex-shrink:0;">📷</div>
-      </div>
-      <div onclick="photoModeFindArticle()" style="width:100%;background:rgba(46,204,113,0.12);border:1.5px solid rgba(46,204,113,0.4);color:#2ecc71;border-radius:10px;padding:12px;font-size:14px;font-weight:700;text-align:center;cursor:pointer;">Chercher l'article ▶</div>
-    </div>
-    <!-- Étape 2 : article trouvé, choisir/prendre photo -->
-    <div id="photoMode_step2" style="display:none;">
-      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px;margin-bottom:14px;">
-        <div style="font-size:11px;color:#9b9ec7;letter-spacing:1px;text-transform:uppercase;font-weight:700;margin-bottom:4px;">Article</div>
-        <div id="photoModeArtNum" style="font-size:18px;font-weight:800;color:#f0a500;font-family:'JetBrains Mono','Consolas',monospace;"></div>
-        <div id="photoModeArtNom" style="font-size:13px;color:#e8eaf0;margin-top:3px;"></div>
-        <div id="photoModeArtCount" style="font-size:11px;color:#9b9ec7;margin-top:6px;"></div>
-      </div>
-      <label style="width:100%;background:rgba(240,165,0,0.15);border:2px solid rgba(240,165,0,0.5);color:#f0a500;border-radius:12px;padding:18px;font-size:15px;font-weight:800;text-align:center;cursor:pointer;display:block;margin-bottom:8px;">
-        📷 Prendre / Choisir photo
-        <input type="file" id="photoModeFile" accept="image/*" capture="environment" style="display:none;" onchange="photoModeUpload(this)"/>
-      </label>
-      <div onclick="closePhotoMode()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);color:#9b9ec7;border-radius:10px;padding:10px;font-size:13px;text-align:center;cursor:pointer;margin-bottom:6px;">Annuler</div>
-      <div onclick="photoModeReset()" style="width:100%;background:rgba(52,152,219,0.10);border:1px solid rgba(52,152,219,0.30);color:#3498db;border-radius:10px;padding:10px;font-size:13px;text-align:center;cursor:pointer;">← Changer d'article</div>
-    </div>
-    <div id="photoModeStatus" style="margin-top:12px;font-size:12px;color:#9b9ec7;text-align:center;min-height:18px;"></div>
-  </div>
-</div>
-
 <div id="scannerOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.95);z-index:2000;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
   <div style="width:100%;max-width:480px;background:rgba(20,22,40,0.92);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.12);border-radius:22px;padding:20px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
@@ -1228,6 +1186,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=66"></script>
+<script src="app.js?v=67"></script>
 </body>
 </html>
