@@ -3806,13 +3806,30 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// Auto-blur du champ Numéro d'ordre dès qu'il contient un N° complet et valide.
-// Empêche le prochain scan d'article d'atterrir et d'écraser le numéro.
+// Garde-fou sur le champ Numéro d'ordre.
+// 1) Si pollution détectée (>8 chars = N° + article scannés collés) :
+//    tronquer aux 8 premiers, blur, et router le reste comme article scanné.
+// 2) Si valeur valide (8 chiffres) : auto-blur pour éviter futur scan dedans.
 document.addEventListener('DOMContentLoaded', function(){
   var ord = document.getElementById('numeroOrdre');
   if (ord) ord.addEventListener('input', function(){
-    var v = (this.value||'').trim();
-    if (/^\d{8}$/.test(v)) { var self=this; setTimeout(function(){ self.blur(); }, 50); }
+    var self = this;
+    var v = (self.value||'').trim();
+    // Cas 1 : pollution
+    if (v.length > 8 && /^\d/.test(v)) {
+      var head = v.substring(0, 8);
+      var tail = v.substring(8);
+      if (/^\d{8}$/.test(head)) {
+        self.value = head;
+        self.blur();
+        if (tail) setTimeout(function(){ handleScannedCode(tail); }, 100);
+        return;
+      }
+    }
+    // Cas 2 : N° valide
+    if (/^\d{8}$/.test(v)) {
+      setTimeout(function(){ self.blur(); }, 50);
+    }
   });
 });
 
