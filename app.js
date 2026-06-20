@@ -3747,7 +3747,21 @@ document.addEventListener('keydown', function(e) {
     _usbBuf = '';
 
     if (inField) {
-      // Frappe dans un champ : si scan détecté, on convertit AZERTY
+      // Pour les champs "N° d'ordre", on PRIVILÉGIE toujours le buffer scan
+      // (qui contient toutes les touches captées, même celles bloquées du DOM).
+      // Évite que le champ se retrouve pollué (N° + article collés).
+      if (wasScan && (t.id === 'numeroOrdre' || t.id === 'retourOrdreInput')) {
+        var d1 = azertyToDigits(bufVal);
+        var scanned = /^\d+$/.test(bufVal) ? bufVal : (/^\d+$/.test(d1) ? d1 : bufVal);
+        e.preventDefault();
+        // Restaurer la valeur du champ : on enlève les chars de la rafale
+        // qui auraient pu passer avant qu'on détecte le burst
+        t.value = '';
+        handleScannedCode(scanned);
+        return;
+      }
+
+      // Autres champs : on lit la valeur du champ
       var fieldVal = (t.value || '').trim();
       if (!fieldVal) return;
       if (wasScan) {
@@ -3755,20 +3769,6 @@ document.addEventListener('keydown', function(e) {
         if (/^\d+$/.test(d) && !/^\d+$/.test(fieldVal)) {
           fieldVal = d; t.value = d;
         }
-      }
-
-      // Cas spéciaux pour les champs "N° d'ordre" :
-      // si la valeur scannée N'EST PAS un vrai N° d'ordre (83 + 6 chiffres),
-      // c'est un article qui a atterri là par erreur — on le route comme article
-      if (wasScan && (t.id === 'numeroOrdre' || t.id === 'retourOrdreInput')) {
-        if (!/^83\d{6}$/.test(fieldVal)) {
-          e.preventDefault();
-          t.value = '';                     // vider le champ N° d'ordre
-          handleScannedCode(fieldVal);      // re-router (→ panier sur Panier)
-          return;
-        }
-        // C'est bien un N° d'ordre, laisser le handler du champ traiter
-        return;
       }
 
       // Champs de recherche : leur handler propre gère Enter
@@ -3796,6 +3796,13 @@ document.addEventListener('keydown', function(e) {
   // Accumule les caractères imprimables
   if (e.key && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
     _usbBuf += e.key;
+    // Si rafale rapide détectée ET focus dans un champ "N° d'ordre",
+    // on BLOQUE la frappe au DOM pour ne pas polluer le champ.
+    // Le buffer global continue à collecter pour routage à l'Enter.
+    if (dt < SCAN_INTERVAL_MS && inField &&
+        (t.id === 'numeroOrdre' || t.id === 'retourOrdreInput')) {
+      e.preventDefault();
+    }
   }
 });
 
