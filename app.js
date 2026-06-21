@@ -797,10 +797,10 @@ function buildSidebar() {
     var h = '';
     for (var i=0;i<cats.length;i++) {
       var c=cats[i], on=(c===selectedCat);
-      h += '<div data-cat="'+esc(c)+'" style="display:inline-flex;flex-direction:column;align-items:center;padding:8px 14px 6px;cursor:pointer;border-bottom:3px solid '+(on?'var(--ac)':'transparent')+';flex-shrink:0;gap:3px;">'
-        +'<div style="width:30px;height:30px;border-radius:8px;background:'+(on?'rgba(240,165,0,0.12)':'#1a1d2e')+';border:1px solid '+(on?'rgba(240,165,0,0.3)':'#1e2235')+';display:flex;align-items:center;justify-content:center;font-size:13px;">'+getCatIcon(c)+'</div>'
-        +'<div style="font-size:10px;font-weight:700;color:'+(on?'var(--ac)':'#6a6d82')+';margin-top:1px;">'+esc(c==='TOUT'?'Tout':c)+'</div>'
-        +'<div style="font-size:9px;color:#4a5068;">'+(counts[c]||0)+'</div>'
+      h += '<div data-cat="'+esc(c)+'" style="display:inline-flex;flex-direction:column;align-items:center;padding:8px 14px 6px;cursor:pointer;border-bottom:3px solid '+(on?'var(--ac)':'transparent')+';flex-shrink:0;gap:3px;background:'+(on?'rgba(240,165,0,0.10)':'transparent')+';">'
+        +'<div style="width:30px;height:30px;border-radius:8px;background:'+(on?'var(--ac)':'#1a1d2e')+';border:1px solid '+(on?'var(--ac)':'#1e2235')+';"></div>'
+        +'<div style="font-size:10px;font-weight:'+(on?'800':'700')+';color:'+(on?'var(--ac)':'#9b9ec7')+';margin-top:1px;">'+esc(c==='TOUT'?'Tout':c)+'</div>'
+        +'<div style="font-size:9px;color:'+(on?'var(--ac)':'#4a5068')+';">'+(counts[c]||0)+'</div>'
         +'</div>';
     }
     bar.innerHTML = h;
@@ -1827,13 +1827,14 @@ async function loadHistorique() {
       var busMatch = (b.message||'').match(/^\[BUS:([^\]]+)\]/);
       var msgRest = (b.message||'').replace(/^\[BUS:[^\]]+\]\s*/,'').replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
 
-      h+='<div class="histo-item" style="'+(sapDone?'opacity:0.6;':'')+'border-left:none;">'
+      var isOpen = _openBons.has(String(b.id));
+      h+='<div class="histo-item" data-bon-id="'+esc(String(b.id))+'" style="'+(sapDone?'opacity:0.6;':'')+'border-left:none;">'
         // Header avec ordre + statut visuel à droite
         +'<div class="histo-header" onclick="toggleBon(this)" style="border-left-color:'+sc.border+';">'
           +'<div class="histo-header-left" style="border-left-color:'+sc.border+';">'
             +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
               +'<div class="histo-num">N° '+esc(b.numero_ordre)+'</div>'
-              +'<div style="color:var(--mu);font-size:13px;">▼</div>'
+              +'<div style="color:var(--mu);font-size:13px;">'+(isOpen?'▲':'▼')+'</div>'
             +'</div>'
             +'<div class="histo-date"> '+dateStr+'</div>'
             +'<div class="histo-meta-row">'
@@ -1870,14 +1871,14 @@ async function loadHistorique() {
               +' Je prends'
             +'</label>'
             +'<div class="histo-btns-spacer"></div>'
-            +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'"> Copier</div>'
-            +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'" style="background:rgba(100,149,237,0.1);border-color:#6495ed;color:#6495ed;"> Bon</div>'
-            +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'"> Modifier</div>'
-            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'"></div>'
+            +'<div class="histo-btn histo-btn-copy btn-copy-sap" data-id="'+b.id+'">Copier</div>'
+            +'<div class="histo-btn histo-btn-excel btn-dl" data-id="'+b.id+'">Bon</div>'
+            +'<div class="histo-btn histo-btn-reopen btn-reopen" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">Modifier</div>'
+            +'<div class="histo-btn histo-btn-del btn-del-bon" data-id="'+b.id+'" data-sap="'+(sapDone?'true':'false')+'">Supprimer</div>'
           +'</div>';
           }())
         )
-        +'<div class="bon-detail">'
+        +'<div class="bon-detail" style="display:'+(isOpen?'block':'none')+';">'
           +'<div class="bon-detail-title"> Articles à préparer</div>'
           +detailRows
         +'</div>'
@@ -1983,13 +1984,19 @@ async function loadHistorique() {
   } catch(e) { console.error(e); }
 }
 
+// Mémorise les bons ouverts pour qu'un re-render (realtime/polling) ne les referme pas
+var _openBons = window._openBons || (window._openBons = new Set());
 function toggleBon(el) {
+  var item = el.closest('.histo-item');
+  var bonId = item ? item.getAttribute('data-bon-id') : null;
   var detail=el.parentElement.querySelector('.bon-detail');
   var arrow=el.querySelector('div[style*="font-size:16px"]');
   if (detail.style.display==='none'||!detail.style.display) {
     detail.style.display='block'; if (arrow) arrow.textContent='▲';
+    if (bonId) _openBons.add(bonId);
   } else {
     detail.style.display='none'; if (arrow) arrow.textContent='▼';
+    if (bonId) _openBons.delete(bonId);
   }
 }
 
