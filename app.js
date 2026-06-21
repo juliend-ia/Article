@@ -3039,15 +3039,15 @@ function doOutilSearch() {
     var isRequester = currentUser.role==='agent' || currentUser.role==='brigadier' || currentUser.role==='borne';
     var isStaff = currentUser.role==='admin' || currentUser.role==='magasinier';
     var canRetour=currentUser.role==='admin'||currentUser.role==='magasinier'||currentUser.role==='brigadier';
-    // Photo — zone fixe 100px
+    // Photo — même format que les cards Pièces (classes card-photo-wrap / card-photo-placeholder)
     var photoHtml='';
     if (o.photo) {
-      photoHtml='<div style="width:100%;height:100px;overflow:hidden;border-radius:10px 10px 0 0;flex-shrink:0;cursor:pointer;" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])">'
-        +'<img src="'+esc(o.photo)+'" style="width:100%;height:100%;object-fit:cover;object-position:center;display:block;"/>'
+      photoHtml='<div class="card-photo-wrap" onclick="event.stopPropagation();openPhoto(\''+esc(o.photo)+'\',[\''+esc(o.photo)+'\'])">'
+        +'<img src="'+esc(o.photo)+'" alt="" loading="lazy"/>'
         +'</div>';
     } else {
-      photoHtml='<div style="width:100%;height:100px;border-radius:10px 10px 0 0;flex-shrink:0;background:#0d0f18;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--br);">'
-        +'<div style="font-size:28px;opacity:0.15;"></div>'
+      photoHtml='<div class="card-photo-placeholder">'
+        +'<div style="font-size:36px;opacity:0.12;">◆</div>'
         +'</div>';
     }
     // Badge statut prêt
