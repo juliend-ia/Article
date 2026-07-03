@@ -477,9 +477,9 @@ function handleScannedCode(val) {
     return;
   }
 
-  // 3⃣ Si c'est un N° d'ordre (8 chiffres commençant par 83) → remplir le champ numeroOrdre
+  // 3⃣ Si c'est un N° d'ordre (8 chiffres commençant par 82 ou 83) → remplir le champ numeroOrdre
   //    et naviguer vers la page Panier si on n'y est pas
-  if (numCandidate && /^83\d{6}$/.test(numCandidate)) {
+  if (numCandidate && /^8[23]\d{6}$/.test(numCandidate)) {
     if (_currentSection !== 'panier') switchSection('panier');
     return fillNumeroOrdre(numCandidate);
   }
@@ -548,8 +548,8 @@ function fillNumeroOrdre(val) {
   // Auto-correction si le scan contient des caractères AZERTY mal mappés
   var digits = azertyToDigits(val);
   if (digits.length === 8 && /^\d{8}$/.test(digits)) val = digits;
-  // Validation stricte : 8 chiffres commençant par 83 (format STIB-MIVB)
-  if (!/^83\d{6}$/.test(val)) {
+  // Validation stricte : 8 chiffres commençant par 82 ou 83 (format STIB-MIVB)
+  if (!/^8[23]\d{6}$/.test(val)) {
     // Si la valeur est 8 chiffres mais commence par autre chose, c'est un article
     if (/^\d{8}$/.test(val) && _currentSection === 'panier') {
       handleArticleScan(val);
@@ -557,9 +557,9 @@ function fillNumeroOrdre(val) {
     }
     var status = document.getElementById('scannerStatus');
     var result = document.getElementById('scannerResult');
-    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres commençant par 83';
+    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres commençant par 82 ou 83';
     if (result) { result.textContent = val; result.style.color = '#e74c3c'; }
-    showToast('Pas un N° d\'ordre (doit commencer par 83)','err');
+    showToast('Pas un N° d\'ordre (doit commencer par 82 ou 83)','err');
     return;
   }
   var input = document.getElementById('numeroOrdre');
@@ -1208,8 +1208,8 @@ document.getElementById('si').addEventListener('keydown', function(e) {
   var raw = this.value.trim();
   if (!raw) { this.blur(); return; }
   var num = /^\d+$/.test(raw) ? raw : azertyToDigits(raw);
-  // N° d'ordre (83XXXXXX) → router vers le panier
-  if (num && /^83\d{6}$/.test(num)) {
+  // N° d'ordre (82XXXXXX / 83XXXXXX) → router vers le panier
+  if (num && /^8[23]\d{6}$/.test(num)) {
     e.preventDefault();
     this.value = '';
     doSearch();
@@ -3794,7 +3794,7 @@ document.addEventListener('DOMContentLoaded', function(){
       if (!v) return;
 
       // CAS 1 — pollution évidente : 8 premiers = N° d'ordre, puis caractères en plus
-      if (v.length > 8 && /^83\d{6}/.test(v)) {
+      if (v.length > 8 && /^8[23]\d{6}/.test(v)) {
         self.value = v.substring(0, 8);
         self.blur();
         var tail = v.substring(8);
@@ -3806,7 +3806,7 @@ document.addEventListener('DOMContentLoaded', function(){
       // c'est probablement un article qui a atterri là (scanner USB ou collage).
       // On vide et on route comme un scan d'article.
       // (sur Panier uniquement, pour ne pas casser la saisie manuelle ailleurs)
-      if (_currentSection === 'panier' && v.length >= 4 && !/^8(3)?$/.test(v) && !/^83\d{0,6}$/.test(v)) {
+      if (_currentSection === 'panier' && v.length >= 4 && !/^8[23]?$/.test(v) && !/^8[23]\d{0,6}$/.test(v)) {
         self.value = '';
         self.blur();
         handleScannedCode(v);
