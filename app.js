@@ -1118,10 +1118,23 @@ function renderGrid(q) {
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
-    // Infos essentielles uniquement : catégorie (le reste — mots-clés, NPF,
-    // fournisseur, min/max — reste visible dans la fiche Modifier)
+    // Badges infos : mots-clés, catégorie, NPF, min/max (fournisseur → fiche Modifier)
     var extraItems = '';
+    if (a.tags) {
+      var tagsClean = a.tags.split(',').map(function(t){return t.trim();}).filter(function(t){
+        if (!t) return false;
+        var tl = t.toLowerCase();
+        return tl.indexOf('bus articule')<0 && tl.indexOf('bus standard')<0;
+      });
+      tagsClean.forEach(function(t){
+        extraItems += '<span class="card-extra-badge card-eb-kw">'+esc(t)+'</span>';
+      });
+    }
     if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
+    if (window._canEdit) {
+      if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
+      extraItems += '<span class="card-extra-badge">'+(a.min||0)+'/'+(a.max||0)+'</span>';
+    }
     if (extraItems) extra = '<div class="card-extra">'+extraItems+'</div>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
