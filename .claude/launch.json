@@ -1,0 +1,35 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Magasin 2K (static)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["serve", "-p", "3001", "/Users/durieujulien/Article"],
+      "port": 3001
+    },
+    {
+      "name": "NextLove — Expo (mobile)",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start"],
+      "port": 8081
+    },
+    {
+      "name": "NextLove — Expo Web",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["expo", "start", "--web"],
+      "port": 8081
+    },
+    {
+      "name": "MonGaragiste — Next.js dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "port": 3000
+    },
+    {
+      "name": "MonGaragiste — Prisma Studio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "db:studio"],
+      "port": 5555
+    }
+  ]
+}

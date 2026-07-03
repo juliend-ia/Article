@@ -48,6 +48,49 @@ function rpc(name, params) {
   });
 }
 
+// Confirmation stylée (remplace confirm() natif) — retourne une Promise<boolean>
+function confirmGlass(msg) {
+  return new Promise(function(resolve) {
+    var ov = document.getElementById('confirmGlassOverlay');
+    if (!ov) { resolve(window.confirm(msg)); return; }
+    document.getElementById('confirmGlassMsg').textContent = msg;
+    ov.classList.remove('hidden');
+    var ok = document.getElementById('confirmGlassOk');
+    var no = document.getElementById('confirmGlassCancel');
+    function done(v) {
+      ov.classList.add('hidden');
+      ok.onclick = null; no.onclick = null; ov.onclick = null;
+      document.removeEventListener('keydown', onKey);
+      resolve(v);
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); done(false); }
+      else if (e.key === 'Enter') { e.preventDefault(); done(true); }
+    }
+    ok.onclick = function(){ done(true); };
+    no.onclick = function(){ done(false); };
+    ov.onclick = function(e){ if (e.target === ov) done(false); };
+    document.addEventListener('keydown', onKey);
+  });
+}
+
+// Bandeau hors-ligne
+window.addEventListener('offline', function(){ var b=document.getElementById('offlineBanner'); if (b) b.style.display='block'; });
+window.addEventListener('online',  function(){ var b=document.getElementById('offlineBanner'); if (b) b.style.display='none'; showToast('Connexion rétablie','success'); });
+
+// Écriture sécurisée : essaie la RPC (vérification du rôle côté serveur),
+// retombe sur l'écriture directe si la fonction SQL n'est pas encore déployée.
+async function rpcw(name, params, fallback) {
+  try { return await rpc(name, params); }
+  catch(e) {
+    var m = String((e && e.message) || '');
+    if (fallback && (m.indexOf('PGRST202') >= 0 || m.indexOf('Could not find the function') >= 0)) {
+      return fallback();
+    }
+    throw e;
+  }
+}
+
 async function hashStr(s) {
   var enc = new TextEncoder().encode(s);
   var buf = await crypto.subtle.digest('SHA-256', enc);
@@ -736,7 +779,7 @@ async function loadArticles() {
       if (data.length<1000) break;
       page++;
     }
-    articles = all;
+    articles = all.filter(function(a){ return !a.supprime; }); // exclure la corbeille (soft delete)
     await loadSorties();
     buildSidebar();
     doSearch();
@@ -1110,25 +1153,23 @@ function renderGrid(q) {
     grid.style.gap = '8px';
   }
 
-  // Ajouter au panier
-  grid.querySelectorAll('.btn-add-panier').forEach(function(el) {
-    el.addEventListener('click', function(e) { e.stopPropagation(); ajouterPanier(this.getAttribute('data-num')); });
-  });
-  grid.querySelectorAll('.btn-edit-card').forEach(function(el) {
-    el.addEventListener('click', function(e) { e.stopPropagation(); openEdit(this.getAttribute('data-num')); });
-  });
-  grid.querySelectorAll('.btn-del-card').forEach(function(el) {
-    el.addEventListener('click', function(e) { e.stopPropagation(); delArticle(this.getAttribute('data-num')); });
-  });
-  // Clic photo : tous les img dans les cards pièces
-  grid.querySelectorAll('img[data-num]').forEach(function(el) {
-    el.addEventListener('click', function(e) {
-      e.stopPropagation();
-      var num = this.getAttribute('data-num');
-      var a = articles.filter(function(x){return x.num===num;})[0];
-      if (a && a.photo) { var photos=a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean); openPhoto(photos[0], photos); }
+  // Délégation d'événements : un seul listener sur la grille au lieu de
+  // centaines de listeners par card — bien plus fluide sur mobile
+  if (!grid._delegated) {
+    grid._delegated = true;
+    grid.addEventListener('click', function(e) {
+      var el;
+      if ((el = e.target.closest('.btn-add-panier'))) { e.stopPropagation(); ajouterPanier(el.getAttribute('data-num')); return; }
+      if ((el = e.target.closest('.btn-edit-card')))  { e.stopPropagation(); openEdit(el.getAttribute('data-num')); return; }
+      if ((el = e.target.closest('.btn-del-card')))   { e.stopPropagation(); delArticle(el.getAttribute('data-num')); return; }
+      if ((el = e.target.closest('img[data-num]'))) {
+        e.stopPropagation();
+        var num = el.getAttribute('data-num');
+        var a = articles.filter(function(x){return x.num===num;})[0];
+        if (a && a.photo) { var photos=a.photo.split(',').map(function(u){return u.trim();}).filter(Boolean); openPhoto(photos[0], photos); }
+      }
     });
-  });
+  }
 
   if (filtered.length>displayCount) {
     lm.classList.remove('hidden');
@@ -1136,12 +1177,15 @@ function renderGrid(q) {
   } else lm.classList.add('hidden');
 }
 
+var _searchDebounce = null;
 document.getElementById('si').addEventListener('input', function() {
   // Conversion AZERTY → chiffres si l'input ressemble à un scan d'étiquette
   autoFixSearchAZERTY(this);
-  displayCount=30; doSearch();
   var clr=document.getElementById('clearSearch');
   if (clr) clr.style.display=this.value?'block':'none';
+  // Debounce 150ms : évite de re-filtrer/re-rendre la grille à chaque frappe
+  clearTimeout(_searchDebounce);
+  _searchDebounce = setTimeout(function(){ displayCount=30; doSearch(); }, 150);
 });
 
 // Raccourcis clavier sur la barre de recherche Pièces (Entrée + Échap)
@@ -1427,7 +1471,9 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     interne:false, stock_securite:0
   };
   try {
-    await supa('POST','articles',[a]); articles.push(a);
+    await rpcw('magasin_save_article', {user_hash: currentUser.token, p_old_num: null, p_data: a},
+      function(){ return supa('POST','articles',[a]); });
+    articles.push(a);
     ['addNum','addNom','addCat','addTags','addLoc','addMin','addMax','addNpf','addFournisseur'].forEach(function(id) { document.getElementById(id).value=''; });
     setBusBtn('addBusStd','addBusStdBtn',false); setBusBtn('addBusArt','addBusArtBtn',false);
     setBusBtn('addChimique','addChimiqueBtn',false); setBusBtn('addReparable','addReparableBtn',false);
@@ -1438,10 +1484,11 @@ document.getElementById('addBtn').addEventListener('click', async function() {
 });
 
 async function delArticle(num) {
-  if (!confirm('Supprimer cet article ?')) return;
+  if (!(await confirmGlass('Supprimer cet article ?'))) return;
   var art = articles.filter(function(a){return a.num===num;})[0];
   try {
-    await supa('DELETE','articles?num=eq.'+encodeURIComponent(num));
+    await rpcw('magasin_delete_article', {user_hash: currentUser.token, p_num: num},
+      function(){ return supa('DELETE','articles?num=eq.'+encodeURIComponent(num)); });
     articles=articles.filter(function(a) { return a.num!==num; });
     logAction('Suppression article: '+num, art?art.nom:'');
     buildSidebar(); doSearch(); showToast('Supprimé','success');
@@ -1499,8 +1546,11 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     interne:false, stock_securite:0
   };
   try {
-    if (newNum!==editingNum) { await supa('DELETE','articles?num=eq.'+encodeURIComponent(editingNum)); await supa('POST','articles',[updated]); }
-    else { await supa('PATCH','articles?num=eq.'+encodeURIComponent(editingNum),updated); }
+    await rpcw('magasin_save_article', {user_hash: currentUser.token, p_old_num: editingNum, p_data: updated},
+      async function(){
+        if (newNum!==editingNum) { await supa('DELETE','articles?num=eq.'+encodeURIComponent(editingNum)); await supa('POST','articles',[updated]); }
+        else { await supa('PATCH','articles?num=eq.'+encodeURIComponent(editingNum),updated); }
+      });
     for (var i=0;i<articles.length;i++) { if (articles[i].num===editingNum) { articles[i]=updated; break; } }
     logAction('Modification article: '+newNum, 'Nom: '+nom+(updated.categorie?' | Cat: '+updated.categorie:'')+(newNum!==editingNum?' | Ancien N°: '+editingNum:''));
     document.getElementById('mo').classList.add('hidden'); editingNum=null;
@@ -1632,7 +1682,7 @@ function renderPanier() {
   });
 }
 
-document.getElementById('viderBtn').addEventListener('click', function() { if (!confirm('Vider le panier ?')) return; panier=[]; updateBadge(); renderPanier(); });
+document.getElementById('viderBtn').addEventListener('click', async function() { if (!(await confirmGlass('Vider le panier ?'))) return; panier=[]; updateBadge(); renderPanier(); });
 document.getElementById('validerBtn').addEventListener('click', async function() {
   var num=document.getElementById('numeroOrdre').value.trim();
   if (!num) { showToast('Saisis un numéro d\'ordre','err'); return; }
@@ -1645,7 +1695,9 @@ document.getElementById('validerBtn').addEventListener('click', async function()
     var bus = busInput ? busInput.value.trim().toUpperCase() : '';
     var fullMsg = bus ? '[BUS:'+bus+']'+(msg?' '+msg:'') : (msg||null);
     var agentNum = currentUser.role==='borne' ? _borneAgentNum : currentUser.login;
-    await supa('POST','bons_commande',[{numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:fullMsg,preparation_statut:'en_prep'}]);
+    var bonObj = {numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:fullMsg,preparation_statut:'en_prep'};
+    await rpcw('magasin_create_bon', {user_hash: currentUser.token, p_bon: bonObj},
+      function(){ return supa('POST','bons_commande',[bonObj]); });
     if (msgInput) msgInput.value = '';
     if (busInput) busInput.value = '';
     var nbArts=panier.length, totalQty=panier.reduce(function(s,x){return s+x.qty;},0);
@@ -1698,7 +1750,8 @@ function clearCommandesSearch() {
 async function autoArchiverBons() {
   try {
     var limite = new Date(Date.now() - 7*86400000).toISOString();
-    await supa('PATCH', 'bons_commande?sap_effectue=eq.true&statut=eq.valide&date_creation=lt.'+limite, {statut:'archive'});
+    await rpcw('magasin_archive_bons', {user_hash: currentUser.token},
+      function(){ return supa('PATCH', 'bons_commande?sap_effectue=eq.true&statut=eq.valide&date_creation=lt.'+limite, {statut:'archive'}); });
   } catch(e) {}
 }
 
@@ -1927,7 +1980,8 @@ async function loadHistorique() {
         if (headerLeft) headerLeft.style.borderLeftColor = sc.border;
         // Envoyer en base
         try {
-          await supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut});
+          await rpcw('magasin_patch_bon', {user_hash: currentUser.token, p_id: String(id), p_patch: {preparation_statut:statut}},
+            function(){ return supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut}); });
           if (statut==='pret') showToast(' Commande marquée prête !','success');
           else if (statut==='en_prep') showToast(' En préparation','success');
           else showToast(' En préparation','success');
@@ -1939,8 +1993,12 @@ async function loadHistorique() {
       el.addEventListener('click', async function() {
         var id=this.getAttribute('data-id'), sapFait=this.getAttribute('data-sap')==='true';
         var msg=sapFait?'Supprimer ce bon ?':' Ce bon n\'a pas encore été sorti sur SAP !\nSupprimer quand même ?';
-        if (!confirm(msg)) return;
-        try { await supa('DELETE','bons_commande?id=eq.'+id); showToast('Bon supprimé !','success'); loadHistorique(); updateBadgeAttente(); } catch(e) { showToast('Erreur','err'); }
+        if (!(await confirmGlass(msg))) return;
+        try {
+          await rpcw('magasin_delete_bon', {user_hash: currentUser.token, p_id: String(id)},
+            function(){ return supa('DELETE','bons_commande?id=eq.'+id); });
+          showToast('Bon supprimé !','success'); loadHistorique(); updateBadgeAttente();
+        } catch(e) { showToast('Erreur','err'); }
       });
     });
     list.querySelectorAll('.btn-copy-sap').forEach(function(el) { el.addEventListener('click', function(e) { e.stopPropagation(); copySAP(this.getAttribute('data-id')); }); });
@@ -1950,7 +2008,8 @@ async function loadHistorique() {
         try {
           var patch = {sap_effectue:val};
           if (val) patch.preparation_statut = 'pret';
-          await supa('PATCH','bons_commande?id=eq.'+id, patch);
+          await rpcw('magasin_patch_bon', {user_hash: currentUser.token, p_id: String(id), p_patch: patch},
+            function(){ return supa('PATCH','bons_commande?id=eq.'+id, patch); });
           showToast(val?'SAP fait ✓ — Commande marquée Prête !':'SAP non fait','success');
           loadHistorique(); updateBadgeAttente();
         } catch(e) { showToast('Erreur','err'); }
@@ -1972,7 +2031,8 @@ async function loadHistorique() {
           // Retirer l'ancien marqueur et réinjecter
           msg = msg.replace(/\s*\[PRIS:[^\]]+\]\s*/g,' ').trim();
           if (noms.length) msg = (msg ? msg+' ' : '') + '[PRIS:'+noms.join(',')+']';
-          await supa('PATCH','bons_commande?id=eq.'+id, {message: msg||null});
+          await rpcw('magasin_patch_bon', {user_hash: currentUser.token, p_id: String(id), p_patch: {message: msg||null}},
+            function(){ return supa('PATCH','bons_commande?id=eq.'+id, {message: msg||null}); });
           showToast(val?' '+moi+' a pris ce bon ✓':moi+' s\'est retiré','success');
           loadHistorique();
         } catch(e) { showToast('Erreur','err'); }
@@ -2002,7 +2062,7 @@ function toggleBon(el) {
 
 async function rouvrirBon(id, sapFait) {
   var msg=sapFait?' Ce bon a déjà été sorti sur SAP !\nModifier peut créer une incohérence.\nContinuer ?':'Rouvrir ce bon dans le panier pour le modifier ?';
-  if (!confirm(msg)) return;
+  if (!(await confirmGlass(msg))) return;
   try {
     var data=await supa('GET','bons_commande?id=eq.'+id+'&select=*');
     if (!data||!data.length) { showToast('Bon introuvable','err'); return; }
@@ -2011,7 +2071,8 @@ async function rouvrirBon(id, sapFait) {
     document.getElementById('numeroOrdre').value=bon.numero_ordre||'';
     var agentInput=document.getElementById('numeroAgent');
     if (agentInput&&bon.numero_agent) agentInput.value=bon.numero_agent;
-    await supa('DELETE','bons_commande?id=eq.'+id);
+    await rpcw('magasin_delete_bon', {user_hash: currentUser.token, p_id: String(id)},
+      function(){ return supa('DELETE','bons_commande?id=eq.'+id); });
     updateBadge(); switchSection('panier'); renderPanier(); loadHistorique(); updateBadgeAttente();
     showToast('Bon rechargé dans le panier !','success');
   } catch(e) { showToast('Erreur','err'); console.error(e); }
@@ -2719,7 +2780,7 @@ async function validerCompte(id, matricule, prenom, pwdHash) {
 }
 
 async function refuserCompte(id) {
-  if (!confirm('Refuser cette demande ?')) return;
+  if (!(await confirmGlass('Refuser cette demande ?'))) return;
   try { await supa('PATCH','demandes_compte?id=eq.'+id,{statut:'refuse'}); showToast('Demande refusée','success'); loadDemandesCompte(); } catch(e) { showToast('Erreur','err'); }
 }
 
@@ -2797,7 +2858,7 @@ async function createUser() {
 }
 
 async function deleteUser(el) {
-  var id=el.getAttribute('data-id'); if (!confirm('Supprimer cet utilisateur ?')) return;
+  var id=el.getAttribute('data-id'); if (!(await confirmGlass('Supprimer cet utilisateur ?'))) return;
   try { await rpc('magasin_delete_user',{admin_hash: currentUser.token, p_id: parseInt(id,10)}); showToast('Utilisateur supprimé','success'); loadUtilisateurs(); } catch(e) { showToast('Erreur','err'); }
 }
 
@@ -2898,6 +2959,7 @@ function initRealtime() {
 
   if (_pollingInterval) clearInterval(_pollingInterval);
   _pollingInterval=setInterval(async function() {
+    if (document.hidden) return; // onglet en arrière-plan : pas de requêtes inutiles
     if (currentUser.role!=='admin'&&currentUser.role!=='magasinier') return;
     try {
       // 1. Détection nouveau bon
@@ -2969,7 +3031,7 @@ async function loadArticlesSilent() {
       var data=await supa('GET','articles?select=*&order=nom.asc&limit=1000&offset='+(page*1000));
       if (!data||!data.length) break; all=all.concat(data); if (data.length<1000) break; page++;
     }
-    if (all.length>0) { articles=all; buildSidebar(); doSearch(); }
+    if (all.length>0) { articles=all.filter(function(a){ return !a.supprime; }); buildSidebar(); doSearch(); }
   } catch(e) {}
 }
 
@@ -3154,16 +3216,18 @@ async function confirmerPret(id) {
   if (!agent) { showToast('Saisir un numéro d\'agent','err'); return; }
   var o=outillage.filter(function(x){return x.id===id;})[0];
   try {
-    await supa('PATCH','outillage?id=eq.'+id,{agent_pret:agent,date_pret:new Date().toISOString()});
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'pret', p_agent: agent},
+      function(){ return supa('PATCH','outillage?id=eq.'+id,{agent_pret:agent,date_pret:new Date().toISOString()}); });
     logAction('Pret outillage: '+(o?o.nom:id),'Agent: '+agent);
     showToast('Prêt enregistré — Agent '+agent,'success'); await loadOutillage();
   } catch(e) { showToast('Erreur','err'); }
 }
 async function retourOutil(id) {
-  if (!confirm('Confirmer le retour ?')) return;
+  if (!(await confirmGlass('Confirmer le retour ?'))) return;
   var o=outillage.filter(function(x){return x.id===id;})[0];
   try {
-    await supa('PATCH','outillage?id=eq.'+id,{agent_pret:null,date_pret:null});
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'retour'},
+      function(){ return supa('PATCH','outillage?id=eq.'+id,{agent_pret:null,date_pret:null}); });
     logAction('Retour outillage: '+(o?o.nom:id));
     showToast('Retour enregistré ✓','success'); await loadOutillage();
   } catch(e) { showToast('Erreur','err'); }
@@ -3176,7 +3240,8 @@ async function demanderPret(id) {
   if (!myLogin) { showToast('Login agent manquant', 'err'); return; }
   var o = outillage.filter(function(x){return x.id===id;})[0];
   try {
-    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: myLogin, demande_date: new Date().toISOString()});
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'demande', p_agent: myLogin},
+      function(){ return supa('PATCH', 'outillage?id=eq.'+id, {demande_par: myLogin, demande_date: new Date().toISOString()}); });
     logAction('Demande prêt outillage: '+(o?o.nom:id), 'Par: '+myLogin);
     showToast(' Demande envoyée — En attente du magasinier','success');
     await loadOutillage();
@@ -3185,10 +3250,11 @@ async function demanderPret(id) {
 
 // Agent annule sa demande (avant acceptation)
 async function cancelDemandePret(id) {
-  if (!confirm('Annuler ta demande ?')) return;
+  if (!(await confirmGlass('Annuler ta demande ?'))) return;
   var o = outillage.filter(function(x){return x.id===id;})[0];
   try {
-    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null});
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'annule'},
+      function(){ return supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null}); });
     logAction('Annule demande prêt: '+(o?o.nom:id));
     showToast('Demande annulée','success');
     await loadOutillage();
@@ -3201,12 +3267,8 @@ async function acceptDemandePret(id) {
   if (!o || !o.demande_par) { showToast('Demande introuvable','err'); return; }
   var agent = o.demande_par;
   try {
-    await supa('PATCH', 'outillage?id=eq.'+id, {
-      agent_pret: agent,
-      date_pret: new Date().toISOString(),
-      demande_par: null,
-      demande_date: null
-    });
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'accept'},
+      function(){ return supa('PATCH', 'outillage?id=eq.'+id, {agent_pret: agent, date_pret: new Date().toISOString(), demande_par: null, demande_date: null}); });
     logAction('Accepte demande prêt: '+o.nom, 'Agent: '+agent);
     showToast('✓ Outil prêté à '+agent,'success');
     await loadOutillage();
@@ -3217,9 +3279,10 @@ async function acceptDemandePret(id) {
 async function refuseDemandePret(id) {
   var o = outillage.filter(function(x){return x.id===id;})[0];
   if (!o || !o.demande_par) return;
-  if (!confirm('Refuser la demande de '+o.demande_par+' ?')) return;
+  if (!(await confirmGlass('Refuser la demande de '+o.demande_par+' ?'))) return;
   try {
-    await supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null});
+    await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'refuse'},
+      function(){ return supa('PATCH', 'outillage?id=eq.'+id, {demande_par: null, demande_date: null}); });
     logAction('Refuse demande prêt: '+o.nom, 'Agent: '+o.demande_par);
     showToast('Demande refusée','success');
     await loadOutillage();
@@ -3255,9 +3318,10 @@ function openOutilEdit(id) {
 function closeOutilEdit() { document.getElementById('outilEditModal').classList.add('hidden'); }
 async function deleteOutil(id) {
   var o=outillage.filter(function(x){return x.id===id;})[0];
-  if (!confirm('Supprimer cet outil ?')) return;
+  if (!(await confirmGlass('Supprimer cet outil ?'))) return;
   try {
-    await supa('DELETE','outillage?id=eq.'+id);
+    await rpcw('magasin_delete_outil', {user_hash: currentUser.token, p_id: String(id)},
+      function(){ return supa('DELETE','outillage?id=eq.'+id); });
     logAction('Suppression outillage: '+(o?o.nom:id));
     showToast('Outil supprimé','success'); loadOutillage();
   } catch(e) { showToast('Erreur','err'); }
@@ -3293,7 +3357,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var nom=(document.getElementById('outilNom').value||'').trim(); if (!nom) { showToast('Désignation obligatoire','err'); return; }
     var obj={nom:nom,location:(document.getElementById('outilLoc').value||'').trim(),tags:(document.getElementById('outilTags').value||'').trim(),photo:_outilPhoto||null};
     try {
-      await supa('POST','outillage',[obj]);
+      await rpcw('magasin_save_outil', {user_hash: currentUser.token, p_id: null, p_data: obj},
+        function(){ return supa('POST','outillage',[obj]); });
       logAction('Ajout outillage: '+nom, obj.location?'Emplacement: '+obj.location:'');
       showToast('Outil enregistré !','success');
       document.getElementById('outilNom').value=''; document.getElementById('outilLoc').value=''; document.getElementById('outilTags').value='';
@@ -3324,7 +3389,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var id=document.getElementById('outilEditId').value, nom=(document.getElementById('outilEditNom').value||'').trim();
     if (!nom) { showToast('Désignation obligatoire','err'); return; }
     var obj={nom:nom,location:(document.getElementById('outilEditLoc').value||'').trim(),tags:(document.getElementById('outilEditTags').value||'').trim(),photo:_outilEditPhoto};
-    try { await supa('PATCH','outillage?id=eq.'+id,obj); logAction('Modification outillage: '+nom, obj.location?'Emplacement: '+obj.location:''); showToast('Outil modifié !','success'); closeOutilEdit(); loadOutillage(); } catch(e) { showToast('Erreur','err'); }
+    try {
+      await rpcw('magasin_save_outil', {user_hash: currentUser.token, p_id: String(id), p_data: obj},
+        function(){ return supa('PATCH','outillage?id=eq.'+id,obj); });
+      logAction('Modification outillage: '+nom, obj.location?'Emplacement: '+obj.location:'');
+      showToast('Outil modifié !','success'); closeOutilEdit(); loadOutillage();
+    } catch(e) { showToast('Erreur','err'); }
   });
 });
 
@@ -3474,8 +3544,9 @@ async function createBonRetour() {
   try {
     var msg = '[RETOUR:'+originalOrdre+']';
     var bon = { numero_ordre: originalOrdre, statut:'valide', articles: retourArts, login: currentUser.login||'', numero_agent: currentUser.login||null, message: msg, preparation_statut:'pret', sap_effectue:false };
-    var created = await supa('POST','bons_commande?select=id', bon);
-    var newId = (created && created[0] && created[0].id) || null;
+    var created = await rpcw('magasin_create_bon', {user_hash: currentUser.token, p_bon: bon},
+      function(){ return supa('POST','bons_commande?select=id', bon); });
+    var newId = (typeof created === 'number') ? created : ((created && created[0] && created[0].id) || null);
     logAction('Création bon retour ordre '+originalOrdre, retourArts.length+' article(s)');
     showToast('Bon retour créé ✓','success');
     renderRetourResult(retourArts, originalOrdre, newId);
@@ -3599,7 +3670,8 @@ async function adminPhotoUpload(input) {
     var existing = _adminPhotoArt.photo ? _adminPhotoArt.photo.split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
     existing.push(url);
     var newPhotoStr = existing.join(',');
-    await supa('PATCH','articles?num=eq.'+encodeURIComponent(_adminPhotoArt.num), {photo: newPhotoStr});
+    await rpcw('magasin_set_article_photo', {user_hash: currentUser.token, p_num: _adminPhotoArt.num, p_photo: newPhotoStr},
+      function(){ return supa('PATCH','articles?num=eq.'+encodeURIComponent(_adminPhotoArt.num), {photo: newPhotoStr}); });
     _adminPhotoArt.photo = newPhotoStr;
     for (var i=0;i<articles.length;i++) { if (articles[i].num === _adminPhotoArt.num) { articles[i].photo = newPhotoStr; break; } }
     logAction('Ajout photo article: '+_adminPhotoArt.num+' (admin mode photo)');
