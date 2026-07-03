@@ -1106,32 +1106,22 @@ function renderGrid(q) {
     var extra = '';
     // Boutons bas de card : panier + icônes modifier/supprimer
     var editIconBtns = window._canEdit
-      ? '<div class="btn-edit-card" data-num="'+esc(a.num)+'" title="Modifier">✏️</div>'
-        +'<div class="btn-del-card" data-num="'+esc(a.num)+'" title="Supprimer">🗑️</div>'
+      ? '<div class="card-menu-wrap">'
+          +'<div class="btn-menu-card" data-num="'+esc(a.num)+'" title="Options">⋮</div>'
+          +'<div class="card-menu">'
+            +'<div class="card-menu-item" data-action="edit" data-num="'+esc(a.num)+'">Modifier</div>'
+            +'<div class="card-menu-item card-menu-del" data-action="del" data-num="'+esc(a.num)+'">Supprimer</div>'
+          +'</div>'
+        +'</div>'
       : '';
     var bottomRow = '<div class="card-bottom-row">'
       +'<div class="btn-add-panier" data-num="'+esc(a.num)+'">+ Ajouter au panier</div>'
       +editIconBtns
       +'</div>';
-    // Badges infos
+    // Infos essentielles uniquement : catégorie (le reste — mots-clés, NPF,
+    // fournisseur, min/max — reste visible dans la fiche Modifier)
     var extraItems = '';
-    // Mots-clés mécanicien (champ tags) — filtrer les parasites résiduels
-    if (a.tags) {
-      var tagsClean = a.tags.split(',').map(function(t){return t.trim();}).filter(function(t){
-        if (!t) return false;
-        var tl = t.toLowerCase();
-        return tl.indexOf('bus articule')<0 && tl.indexOf('bus standard')<0;
-      });
-      tagsClean.forEach(function(t){
-        extraItems += '<span class="card-extra-badge card-eb-kw">'+esc(t)+'</span>';
-      });
-    }
     if (a.categorie) extraItems += '<span class="card-extra-badge">'+esc(a.categorie)+'</span>';
-    if (window._canEdit) {
-      if (a.npf) extraItems += '<span class="card-extra-badge">NPF <b>'+esc(a.npf)+'</b></span>';
-      if (a.fournisseur) extraItems += '<span class="card-extra-badge">'+esc(a.fournisseur)+'</span>';
-      extraItems += '<span class="card-extra-badge">'+(a.min||0)+'/'+(a.max||0)+'</span>';
-    }
     if (extraItems) extra = '<div class="card-extra">'+extraItems+'</div>';
     h += '<div class="piece-card" data-num="'+esc(a.num)+'">'
       + photoHtml
@@ -1159,9 +1149,23 @@ function renderGrid(q) {
     grid._delegated = true;
     grid.addEventListener('click', function(e) {
       var el;
+      if ((el = e.target.closest('.btn-menu-card'))) {
+        e.stopPropagation();
+        var menu = el.parentElement.querySelector('.card-menu');
+        var wasOpen = menu && menu.classList.contains('open');
+        closeCardMenus();
+        if (menu && !wasOpen) menu.classList.add('open');
+        return;
+      }
+      if ((el = e.target.closest('.card-menu-item'))) {
+        e.stopPropagation();
+        var numM = el.getAttribute('data-num');
+        closeCardMenus();
+        if (el.getAttribute('data-action') === 'edit') openEdit(numM);
+        else delArticle(numM);
+        return;
+      }
       if ((el = e.target.closest('.btn-add-panier'))) { e.stopPropagation(); ajouterPanier(el.getAttribute('data-num')); return; }
-      if ((el = e.target.closest('.btn-edit-card')))  { e.stopPropagation(); openEdit(el.getAttribute('data-num')); return; }
-      if ((el = e.target.closest('.btn-del-card')))   { e.stopPropagation(); delArticle(el.getAttribute('data-num')); return; }
       if ((el = e.target.closest('img[data-num]'))) {
         e.stopPropagation();
         var num = el.getAttribute('data-num');
@@ -2043,6 +2047,12 @@ async function loadHistorique() {
     });
   } catch(e) { console.error(e); }
 }
+
+// Ferme tous les menus ⋮ des cards (clic ailleurs, action choisie, re-render)
+function closeCardMenus() {
+  document.querySelectorAll('.card-menu.open').forEach(function(m){ m.classList.remove('open'); });
+}
+document.addEventListener('click', closeCardMenus);
 
 // Mémorise les bons ouverts pour qu'un re-render (realtime/polling) ne les referme pas
 var _openBons = window._openBons || (window._openBons = new Set());
