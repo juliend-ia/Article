@@ -430,7 +430,7 @@ function startOrdreScanner() {
   _scanMode = 'ordre';
   startBarcodeScanner();
   var titre = document.querySelector('#scannerOverlay div[style*="color:#f0a500"]');
-  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = ' Scanner le N° d\'ordre';
+  if (titre && titre.textContent.indexOf('Scanner') >= 0) titre.textContent = 'Scanner le N° d\'ordre';
 }
 
 // Lance le scanner sans imposer de mode : le dispatcher route selon la page courante
@@ -508,9 +508,9 @@ function handleArticleSearch(val) {
   }
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
-  if (status) status.textContent = ' Recherche dans le catalogue';
+  if (status) status.textContent = 'Recherche dans le catalogue';
   if (result) { result.textContent = query; result.style.color = '#3498db'; }
-  showToast(' ' + query, 'success');
+  showToast(query, 'success');
   setTimeout(function(){ stopBarcodeScanner(); }, 700);
 }
 
@@ -529,7 +529,7 @@ function handleArticleScan(val) {
   var result = document.getElementById('scannerResult');
   var status = document.getElementById('scannerStatus');
   if (!art) {
-    if (status) status.textContent = ' Article inconnu dans le catalogue';
+    if (status) status.textContent = 'Article inconnu dans le catalogue';
     if (result) { result.textContent = candidates[0]; result.style.color = '#e74c3c'; }
     showToast('Article inconnu : ' + candidates[0], 'err');
     return;
@@ -556,7 +556,7 @@ function fillNumeroOrdre(val) {
     }
     var status = document.getElementById('scannerStatus');
     var result = document.getElementById('scannerResult');
-    if (status) status.textContent = ' Pas un N° d\'ordre — il faut 8 chiffres commençant par 82 ou 83';
+    if (status) status.textContent = 'Pas un N° d\'ordre — il faut 8 chiffres commençant par 82 ou 83';
     if (result) { result.textContent = val; result.style.color = '#e74c3c'; }
     showToast('Pas un N° d\'ordre (doit commencer par 82 ou 83)','err');
     return;
@@ -1072,7 +1072,7 @@ function renderGrid(q) {
   var grid = document.getElementById('p1');
   var lm = document.getElementById('lm');
   if (!filtered.length) {
-    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 20px;font-size:14px;"><div style="font-size:40px;margin-bottom:12px;"></div>Aucun article trouvé</div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 20px;font-size:14px;">Aucun article trouvé</div>';
     lm.classList.add('hidden'); return;
   }
   var n = Math.min(filtered.length, displayCount);
@@ -1140,7 +1140,7 @@ function renderGrid(q) {
       +'<div class="card-body">'
         +'<div class="card-num">'+hl(a.num,q)+'</div>'
         +'<div class="card-name">'+hl(a.nom,q)+'</div>'
-        +(a.location?'<div class="card-loc"> '+esc(a.location)+'</div>':'')
+        +(a.location?'<div class="card-loc">'+esc(a.location)+'</div>':'')
         +extra
         +bottomRow
       +'</div>'
@@ -1430,7 +1430,7 @@ function switchSection(section) {
     var inp = document.getElementById('retourOrdreInput');
     if (inp) inp.value = '';
     var l = document.getElementById('retourBonsList');
-    if (l) l.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:48px;margin-bottom:12px;opacity:0.4;"></div><div style="font-size:14px;font-weight:600;">Saisis un numéro d\'ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Tu verras les pièces sorties et pourras choisir celles à retourner</div></div>';
+    if (l) l.innerHTML = '<div style="text-align:center;color:var(--mu);padding:50px 20px;"><div style="font-size:14px;font-weight:600;">Saisis un numéro d\'ordre</div><div style="font-size:11px;color:var(--mu2);margin-top:6px;">Tu verras les pièces sorties et pourras choisir celles à retourner</div></div>';
   } else if (section==='outillage') {
     document.getElementById('sectionOutillage').style.display='flex';
     document.getElementById('navOutillage').classList.add('on');
@@ -1658,7 +1658,7 @@ function updateBadge() {
 
 function renderPanier() {
   var list=document.getElementById('panierList');
-  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:48px;margin-bottom:12px;"></div><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ton panier est vide</div><div style="font-size:11px;color:var(--mu);">Ajoute des pièces depuis le catalogue</div></div>'; return; }
+  if (!panier.length) { list.innerHTML='<div class="panier-empty"><div style="font-size:14px;font-weight:600;margin-bottom:4px;">Ton panier est vide</div><div style="font-size:11px;color:var(--mu);">Ajoute des pièces depuis le catalogue</div></div>'; return; }
   var h='';
   for (var i=0;i<panier.length;i++) {
     var p=panier[i];
@@ -1728,7 +1728,6 @@ function showConfirmAgent(ordre, nbArts, totalQty) {
   var el=document.getElementById('confirmAgent');
   if (!el) { el=document.createElement('div'); el.id='confirmAgent'; el.style.cssText='position:fixed;inset:0;background:rgba(15,17,23,0.92);display:flex;align-items:center;justify-content:center;z-index:800;padding:24px;'; document.body.appendChild(el); }
   el.innerHTML='<div style="background:#1a1d27;border:2px solid #2ecc71;border-radius:16px;padding:28px 24px;max-width:340px;width:100%;text-align:center;">'
-    +'<div style="font-size:48px;margin-bottom:12px;"></div>'
     +'<div style="font-size:20px;font-weight:700;color:#2ecc71;margin-bottom:8px;">Commande envoyée !</div>'
     +'<div style="font-size:14px;color:#e8eaf0;margin-bottom:6px;">Le magasin a bien reçu ta demande.</div>'
     +'<div style="font-size:13px;color:#7a8099;margin-bottom:20px;">Ordre <strong style="color:#f0a500;">'+esc(ordre)+'</strong> · '+nbArts+' article(s) · '+totalQty+' pièce(s)</div>'
@@ -1751,7 +1750,7 @@ function filterCommandes(query) {
   var info = document.getElementById('cmdSearchInfo');
   if (clr) clr.style.display = _cmdSearch ? 'block' : 'none';
   if (info) {
-    if (_cmdSearch) { info.style.display = 'block'; info.textContent = ' Filtre actif sur "' + (query.trim()) + '"'; }
+    if (_cmdSearch) { info.style.display = 'block'; info.textContent = 'Filtre actif sur "' + (query.trim()) + '"'; }
     else { info.style.display = 'none'; }
   }
   loadHistorique();
@@ -1834,9 +1833,9 @@ async function loadHistorique() {
       var sapDone=b.sap_effectue||false;
       var prepStatut = b.preparation_statut || 'en_prep';
       var statutCfg = {
-        'en_attente': {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
-        'en_prep':    {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
-        'pret':       {label:' Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
+        'en_attente': {label:'En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
+        'en_prep':    {label:'En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db', color:'#3498db'},
+        'pret':       {label:'Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71', color:'#2ecc71'},
       };
       var sc = statutCfg[prepStatut] || statutCfg['en_prep'];
 
@@ -1905,11 +1904,11 @@ async function loadHistorique() {
               +'<div class="histo-num">N° '+esc(b.numero_ordre)+'</div>'
               +'<div style="color:var(--mu);font-size:13px;">'+(isOpen?'▲':'▼')+'</div>'
             +'</div>'
-            +'<div class="histo-date"> '+dateStr+'</div>'
+            +'<div class="histo-date">'+dateStr+'</div>'
             +'<div class="histo-meta-row">'
-              +(b.login?'<span class="histo-chip histo-chip-agent"> '+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · '+esc(b.numero_agent):'')+'</span>':'')
-              +(busMatch?'<span class="histo-chip histo-chip-bus"> '+esc(busMatch[1])+'</span>':'')
-              +'<span class="histo-chip histo-chip-count"> '+arts.length+' article'+(arts.length>1?'s':'')+'</span>'
+              +(b.login?'<span class="histo-chip histo-chip-agent">'+esc(b.login)+(b.numero_agent&&b.numero_agent!==b.login?' · '+esc(b.numero_agent):'')+'</span>':'')
+              +(busMatch?'<span class="histo-chip histo-chip-bus">'+esc(busMatch[1])+'</span>':'')
+              +'<span class="histo-chip histo-chip-count">'+arts.length+' article'+(arts.length>1?'s':'')+'</span>'
               +(prisNoms.length?'<span class="histo-chip histo-chip-pris"> '+esc(prisNoms.join(', '))+'</span>':'')
             +'</div>'
             +(msgRest?'<div class="histo-msg"> '+esc(msgRest)+'</div>':'')
@@ -1948,7 +1947,7 @@ async function loadHistorique() {
           }())
         )
         +'<div class="bon-detail" style="display:'+(isOpen?'block':'none')+';">'
-          +'<div class="bon-detail-title"> Articles à préparer</div>'
+          +'<div class="bon-detail-title">Articles à préparer</div>'
           +detailRows
         +'</div>'
       +'</div>';
@@ -1965,9 +1964,9 @@ async function loadHistorique() {
         var item = this.closest('.histo-item');
         var allBtns = item.querySelectorAll('.btn-statut');
         var cfgMap = {
-          'en_attente':{label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
-          'en_prep':   {label:' En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
-          'pret':      {label:' Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
+          'en_attente':{label:'En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
+          'en_prep':   {label:'En préparation', bg:'rgba(52,152,219,0.1)',  border:'#3498db',color:'#3498db'},
+          'pret':      {label:'Prête !',         bg:'rgba(46,204,113,0.1)', border:'#2ecc71',color:'#2ecc71'},
         };
         var sc = cfgMap[statut]||cfgMap['en_attente'];
         // Reset tous les boutons du bon
@@ -1998,9 +1997,9 @@ async function loadHistorique() {
         try {
           await rpcw('magasin_patch_bon', {user_hash: currentUser.token, p_id: String(id), p_patch: {preparation_statut:statut}},
             function(){ return supa('PATCH','bons_commande?id=eq.'+id,{preparation_statut:statut}); });
-          if (statut==='pret') showToast(' Commande marquée prête !','success');
-          else if (statut==='en_prep') showToast(' En préparation','success');
-          else showToast(' En préparation','success');
+          if (statut==='pret') showToast('Commande marquée prête !','success');
+          else if (statut==='en_prep') showToast('En préparation','success');
+          else showToast('En préparation','success');
           updateBadgeAttente();
         } catch(e2) { showToast('Erreur','err'); }
       });
@@ -3146,7 +3145,7 @@ function onBonUpdated(newRec, oldRec) {
   }
   // Statut préparation passé à "prêt"
   else if (newRec.preparation_statut === 'pret' && oldRec.preparation_statut !== 'pret') {
-    showToast(' Bon ' + ordre + ' marqué Prêt','success');
+    showToast('Bon ' + ordre + ' marqué Prêt','success');
   }
   // Nouveau magasinier qui prend le bon (marqueur [PRIS:...])
   else {
@@ -3156,7 +3155,7 @@ function onBonUpdated(newRec, oldRec) {
     var newNoms = newPris ? newPris[1].split(',').map(function(s){return s.trim();}) : [];
     var ajoutes = newNoms.filter(function(n){return oldNoms.indexOf(n)<0 && n !== moi;});
     if (ajoutes.length > 0) {
-      showToast(' ' + ajoutes.join(', ') + ' prend le bon ' + ordre,'success');
+      showToast('' + ajoutes.join(', ') + ' prend le bon ' + ordre,'success');
     }
   }
 }
@@ -3234,7 +3233,7 @@ function doOutilSearch() {
   var enPret=outillage.filter(function(o){return o.agent_pret;}).length;
   if (count) count.textContent=fil.length+' outil(s)'+(enPret?' ·  '+enPret+' en prêt':'');
   var res=document.getElementById('outilRes'); if (!res) return;
-  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;grid-column:1/-1;"><div style="font-size:36px;margin-bottom:10px;"></div>Aucun outil trouvé</div>'; return; }
+  if (!fil.length) { res.innerHTML='<div style="text-align:center;color:var(--mu);padding:40px 20px;grid-column:1/-1;">Aucun outil trouvé</div>'; return; }
 
   res.innerHTML=fil.map(function(o) {
     var isPret=!!o.agent_pret;
@@ -3321,7 +3320,7 @@ function doOutilSearch() {
         +'<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px;">'
           +'<div class="card-name" style="margin-bottom:0;">'+esc(o.nom)+'</div>'
         +'</div>'
-        +(o.location&&currentUser.role!=='agent'?'<div class="card-loc"> '+esc(o.location)+'</div>':'')
+        +(o.location&&currentUser.role!=='agent'?'<div class="card-loc">'+esc(o.location)+'</div>':'')
         +(o.tags?'<div style="font-size:10px;color:var(--mu);margin-bottom:6px;">'+esc(o.tags)+'</div>':'')
         +pretBadge
         +demandeBadge
@@ -3385,7 +3384,7 @@ async function demanderPret(id) {
     await rpcw('magasin_outil_pret', {user_hash: currentUser.token, p_id: String(id), p_action: 'demande', p_agent: myLogin},
       function(){ return supa('PATCH', 'outillage?id=eq.'+id, {demande_par: myLogin, demande_date: new Date().toISOString()}); });
     logAction('Demande prêt outillage: '+(o?o.nom:id), 'Par: '+myLogin);
-    showToast(' Demande envoyée — En attente du magasinier','success');
+    showToast('Demande envoyée — En attente du magasinier','success');
     await loadOutillage();
   } catch(e) { showToast('Erreur demande','err'); }
 }
@@ -3700,7 +3699,7 @@ function renderRetourResult(arts, ordre, newId) {
   if (!res) return;
   var lines = arts.map(function(a){ return a.num+'\t'+a.qty+'\t\t2K\t\tRET-'+ordre+'\t10'; }).join('\n');
   var html = '<div style="margin-top:18px;background:rgba(46,204,113,0.08);border:1px solid rgba(46,204,113,0.4);border-radius:14px;padding:18px;">'
-    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div style="font-size:24px;"></div><div><div style="font-size:14px;font-weight:800;color:var(--gn);">Bon retour créé</div><div style="font-size:11px;color:var(--mu);">Ordre original: '+esc(ordre)+' · '+arts.length+' article(s)</div></div></div>'
+    +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;"><div><div style="font-size:14px;font-weight:800;color:var(--gn);">Bon retour créé</div><div style="font-size:11px;color:var(--mu);">Ordre original: '+esc(ordre)+' · '+arts.length+' article(s)</div></div></div>'
     +'<div style="font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:6px;">Format SAP retour</div>'
     +'<pre style="background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:12px;font-family:monospace;font-size:11px;color:var(--tx);overflow-x:auto;white-space:pre;margin-bottom:12px;">'+esc(lines)+'</pre>'
     +'<div style="display:flex;gap:8px;">'
