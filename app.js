@@ -2,7 +2,6 @@ var SURL = 'https://gyflqtysqpywikxgzxci.supabase.co';
 var SKEY = 'sb_publishable_F0Gcdx4mHDbvAAcuXwYbhA_QSlPD8aC';
 // Cache mémoire des hashs validés au cours de la session (vide au démarrage)
 // Plus de tokens en dur — toute auth doit passer par la DB
-var ATOKENS = [];
 var currentUser = {login:'',prenom:'',role:'user',token:''};
 var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
@@ -116,7 +115,7 @@ var SESSION_TIMEOUT_MS = 4 * 3600 * 1000;
 function updateLastActivity() {
   if (!currentUser || !currentUser.login) return;
   if (currentUser.role === 'borne') return; // borne ne se déconnecte jamais
-  try { localStorage.setItem('lastActivity', String(Date.now())); } catch(e) {}
+  try { localStorage.setItem('lastActivity', String(Date.now())); } catch(e) { console.error(e); }
 }
 
 function isSessionExpired() {
@@ -158,7 +157,7 @@ async function checkAuth() {
     }
     var role = dbUser.login === 'borne' ? 'borne' : dbUser.role;
     currentUser = {login:dbUser.login, prenom:dbUser.prenom, role:role, token:stored, peut_modifier:dbUser.peut_modifier!==false};
-    if (ATOKENS.indexOf(stored) < 0) ATOKENS.push(stored);
+
     localStorage.setItem('currentUser', JSON.stringify(currentUser));
     updateLastActivity();
     document.getElementById('loginOverlay').classList.add('hidden');
@@ -185,7 +184,7 @@ document.getElementById('loginBtn').addEventListener('click', async function() {
       if (!dbUser.actif) { err.textContent='Compte désactivé.'; return; }
       var role = dbUser.login === 'borne' ? 'borne' : dbUser.role;
       currentUser = {login:dbUser.login,prenom:dbUser.prenom,role:role,token:h,peut_modifier:dbUser.peut_modifier!==false};
-      if (ATOKENS.indexOf(h)<0) ATOKENS.push(h);
+
       localStorage.setItem(SKEY2,h); localStorage.setItem('currentUser',JSON.stringify(currentUser));
       updateLastActivity();
       document.getElementById('loginOverlay').classList.add('hidden');
@@ -402,7 +401,7 @@ function autoFixOrdreAZERTY(input) {
   if (fixed !== input.value) {
     var pos = input.selectionStart;
     input.value = fixed;
-    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) {}
+    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) { console.error(e); }
   }
 }
 
@@ -422,7 +421,7 @@ function autoFixSearchAZERTY(input) {
   var fixed = smartAzertyConvert(input.value);
   if (fixed !== input.value) {
     input.value = fixed;
-    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) {}
+    try { input.setSelectionRange(fixed.length, fixed.length); } catch(e) { console.error(e); }
   }
 }
 
@@ -1281,14 +1280,14 @@ function refreshDashboard() {
   try {
     var nb = document.getElementById('dashCountArticles');
     if (nb && articles && articles.length) nb.textContent = articles.length;
-  } catch(e) {}
+  } catch(e) { console.error(e); }
   try {
     var no = document.getElementById('dashCountOutil');
     if (no && typeof outillage !== 'undefined') {
       var enPret = outillage.filter(function(o){return o.agent_pret;}).length;
       no.textContent = enPret;
     }
-  } catch(e) {}
+  } catch(e) { console.error(e); }
   // Commandes en attente : bons valides non sap
   supa('GET','bons_commande?statut=eq.valide&sap_effectue=eq.false&select=id')
     .then(function(data){
@@ -1386,7 +1385,7 @@ function switchSection(section) {
   // Mise à jour URL (hash routing — bouton retour navigateur fonctionnel)
   try {
     if (location.hash !== '#'+section) location.hash = section;
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 
   if (section==='dashboard') {
     document.getElementById('sectionDashboard').style.display='flex';
@@ -1769,7 +1768,7 @@ async function autoArchiverBons() {
     var limite = new Date(Date.now() - 7*86400000).toISOString();
     await rpcw('magasin_archive_bons', {user_hash: currentUser.token},
       function(){ return supa('PATCH', 'bons_commande?sap_effectue=eq.true&statut=eq.valide&date_creation=lt.'+limite, {statut:'archive'}); });
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 }
 
 async function loadHistorique() {
@@ -2067,6 +2066,15 @@ function closeCardMenus() {
 }
 document.addEventListener('click', closeCardMenus);
 
+// Toggle du menu ⋮ des cards Outillage (handlers inline)
+function toggleOutilMenu(e, btn) {
+  e.stopPropagation();
+  var menu = btn.parentElement.querySelector('.card-menu');
+  var wasOpen = menu && menu.classList.contains('open');
+  closeCardMenus();
+  if (menu && !wasOpen) menu.classList.add('open');
+}
+
 // Mémorise les bons ouverts pour qu'un re-render (realtime/polling) ne les referme pas
 var _openBons = window._openBons || (window._openBons = new Set());
 function toggleBon(el) {
@@ -2300,7 +2308,7 @@ function setSwitch(toggleId, inputId, value) {
 var _soundEnabled=true;
 var _audioCtx=null;
 document.addEventListener('click', function() {
-  if (!_audioCtx) { try { _audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e) {} }
+  if (!_audioCtx) { try { _audioCtx=new (window.AudioContext||window.webkitAudioContext)(); } catch(e) { console.error(e); } }
   if (_audioCtx&&_audioCtx.state==='suspended') _audioCtx.resume().catch(function(){});
 }, {once:false});
 
@@ -2313,7 +2321,7 @@ function playDing() {
     o.frequency.setValueAtTime(880,_audioCtx.currentTime); o.frequency.setValueAtTime(1100,_audioCtx.currentTime+0.1);
     g.gain.setValueAtTime(0.3,_audioCtx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,_audioCtx.currentTime+0.6);
     o.start(_audioCtx.currentTime); o.stop(_audioCtx.currentTime+0.6);
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 }
 
 function toggleSound() {
@@ -2380,7 +2388,7 @@ async function updateBadgeAttente() {
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP) bnSAP.className='bn-dot hidden';
         if (badgeCmd) badgeCmd.classList.add('hidden');
       }
-    } catch(e) {}
+    } catch(e) { console.error(e); }
   }
 
   // Agent / brigadier — commande prête à retirer
@@ -2396,7 +2404,7 @@ async function updateBadgeAttente() {
         badgeSAP.classList.add('hidden');
         var bnSAP=document.getElementById('bnDotSAP'); if(bnSAP) bnSAP.className='bn-dot hidden';
       }
-    } catch(e) {}
+    } catch(e) { console.error(e); }
   }
 }
 
@@ -2467,7 +2475,114 @@ function switchAdminTab(tab) {
     else if (tab === 'bons') { loadAdminHistoBons(); }
     else if (tab === 'modifs') { loadAdminModifArticles(); }
     else if (tab === 'actions') { loadHistoriqueActions(); }
+    else if (tab === 'corbeille') { loadCorbeille(); }
+    else if (tab === 'stats') { loadStats(); }
   }
+  // Corbeille et Stats : recharger à chaque visite (données vivantes)
+  if (tab === 'corbeille' && _adminTabLoaded[tab]) loadCorbeille();
+  if (tab === 'stats' && _adminTabLoaded[tab]) loadStats();
+}
+
+// ── CORBEILLE (articles soft-deleted) ──
+async function loadCorbeille() {
+  var el = document.getElementById('corbeilleList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--mu);text-align:center;padding:20px;">Chargement...</div>';
+  try {
+    var data = await supa('GET','articles?select=*&supprime=eq.true&order=nom.asc&limit=200');
+    if (!data || !data.length) {
+      el.innerHTML = '<div style="color:var(--mu);text-align:center;padding:30px;">Corbeille vide — aucun article supprimé</div>';
+      return;
+    }
+    var h = '';
+    for (var i=0;i<data.length;i++) {
+      var a = data[i];
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--br);border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,0.02);">'
+        +'<div style="flex:1;min-width:0;">'
+          +'<div style="font-size:12px;font-weight:700;color:var(--ac);font-family:monospace;">'+esc(a.num)+'</div>'
+          +'<div style="font-size:12px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.nom)+'</div>'
+        +'</div>'
+        +'<div onclick="restaurerArticle(\''+esc(a.num)+'\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Restaurer</div>'
+      +'</div>';
+    }
+    el.innerHTML = h;
+  } catch(e) { console.error(e); el.innerHTML = '<div style="color:var(--rd);text-align:center;padding:20px;">Erreur de chargement</div>'; }
+}
+
+async function restaurerArticle(num) {
+  try {
+    var data = await supa('GET','articles?num=eq.'+encodeURIComponent(num)+'&select=*');
+    if (!data || !data.length) { showToast('Article introuvable','err'); return; }
+    var art = data[0];
+    delete art.supprime;
+    // magasin_save_article réinsère la fiche complète → supprime repasse à false (défaut)
+    await rpcw('magasin_save_article', {user_hash: currentUser.token, p_old_num: null, p_data: art},
+      function(){ return supa('PATCH','articles?num=eq.'+encodeURIComponent(num), {supprime:false}); });
+    articles.push(art);
+    logAction('Restauration article: '+num, art.nom||'');
+    showToast('Article restauré : '+num,'success');
+    buildSidebar(); doSearch(); loadCorbeille();
+  } catch(e) { console.error(e); showToast('Erreur restauration','err'); }
+}
+
+// ── STATS D'USAGE (30 derniers jours) ──
+async function loadStats() {
+  var el = document.getElementById('statsContent');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--mu);text-align:center;padding:20px;">Calcul en cours...</div>';
+  try {
+    var limite = new Date(Date.now() - 30*86400000).toISOString();
+    var bons = await supa('GET','bons_commande?select=articles,date_creation,login&date_creation=gte.'+limite+'&order=date_creation.asc&limit=1000');
+    bons = (bons||[]);
+    // Total et par jour
+    var parJour = {};
+    var topArticles = {};
+    var totalPieces = 0;
+    bons.forEach(function(b){
+      var jour = supaDate(b.date_creation);
+      var key = jour.getFullYear()+'-'+String(jour.getMonth()+1).padStart(2,'0')+'-'+String(jour.getDate()).padStart(2,'0');
+      parJour[key] = (parJour[key]||0) + 1;
+      (b.articles||[]).forEach(function(a){
+        var q = a.qty||1;
+        totalPieces += q;
+        if (!topArticles[a.num]) topArticles[a.num] = {num:a.num, nom:a.nom||a.num, qty:0};
+        topArticles[a.num].qty += q;
+      });
+    });
+    var jours = Object.keys(parJour).sort();
+    var maxJour = 1; jours.forEach(function(j){ if (parJour[j]>maxJour) maxJour=parJour[j]; });
+    var top = Object.keys(topArticles).map(function(k){return topArticles[k];})
+      .sort(function(a,b){return b.qty-a.qty;}).slice(0,10);
+    var maxTop = top.length ? top[0].qty : 1;
+
+    var h = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px;">'
+      +'<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--ac);">'+bons.length+'</div><div style="font-size:11px;color:var(--mu);">Bons (30 j)</div></div>'
+      +'<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:var(--gn);">'+totalPieces+'</div><div style="font-size:11px;color:var(--mu);">Pièces sorties</div></div>'
+      +'<div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:14px;text-align:center;"><div style="font-size:24px;font-weight:800;color:#6495ed;">'+(jours.length?Math.round(bons.length/jours.length*10)/10:0)+'</div><div style="font-size:11px;color:var(--mu);">Bons / jour actif</div></div>'
+      +'</div>';
+
+    h += '<div style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:8px;">Bons par jour</div>';
+    h += '<div style="display:flex;align-items:flex-end;gap:2px;height:70px;margin-bottom:20px;overflow-x:auto;padding-bottom:4px;">';
+    jours.forEach(function(j){
+      var pct = Math.max(8, Math.round(parJour[j]/maxJour*100));
+      h += '<div title="'+j+' : '+parJour[j]+' bon(s)" style="flex:1;min-width:8px;height:'+pct+'%;background:rgba(240,165,0,0.55);border-radius:3px 3px 0 0;"></div>';
+    });
+    h += '</div>';
+
+    h += '<div style="font-size:12px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;margin-bottom:8px;">Top 10 articles sortis</div>';
+    if (!top.length) h += '<div style="color:var(--mu);font-size:12px;">Aucune donnée</div>';
+    top.forEach(function(t){
+      var pct = Math.max(4, Math.round(t.qty/maxTop*100));
+      h += '<div style="margin-bottom:7px;">'
+        +'<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">'
+          +'<span style="color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:75%;"><b style="color:var(--ac);font-family:monospace;">'+esc(t.num)+'</b> '+esc(t.nom)+'</span>'
+          +'<span style="color:var(--gn);font-weight:700;">'+t.qty+'</span>'
+        +'</div>'
+        +'<div style="height:6px;background:rgba(255,255,255,0.05);border-radius:3px;"><div style="width:'+pct+'%;height:100%;background:rgba(46,204,113,0.6);border-radius:3px;"></div></div>'
+      +'</div>';
+    });
+    el.innerHTML = h;
+  } catch(e) { console.error(e); el.innerHTML = '<div style="color:var(--rd);text-align:center;padding:20px;">Erreur de chargement</div>'; }
 }
 
 async function loadAdminPage() {
@@ -2841,7 +2956,7 @@ async function validerResetPwd() {
   try {
     await rpc('magasin_reset_password',{admin_hash: currentUser.token, p_login: login, p_new_hash: hash});
     await supa('PATCH','demandes_reset?id=eq.'+id,{traitee:true});
-    ATOKENS.push(hash); document.getElementById('resetPwdModal').classList.add('hidden');
+    document.getElementById('resetPwdModal').classList.add('hidden');
     showToast('Mot de passe réinitialisé !','success'); logAction('Reset MDP: '+login); loadDemandes(); loadUtilisateurs();
   } catch(e) { err.textContent='Erreur, réessaie.'; }
 }
@@ -2875,7 +2990,7 @@ async function createUser() {
   var hash=await hashStr(login+':'+pwd);
   try {
     await rpc('magasin_create_user',{admin_hash: currentUser.token, p_login: login, p_prenom: prenom, p_hash: hash, p_role: role, p_peut_modifier: peutModifier});
-    ATOKENS.push(hash); document.getElementById('newPrenom').value=''; document.getElementById('newLogin').value=''; document.getElementById('newPwd').value='';
+    document.getElementById('newPrenom').value=''; document.getElementById('newLogin').value=''; document.getElementById('newPwd').value='';
     showToast('Utilisateur créé !','success'); loadUtilisateurs(); logAction('Créé utilisateur: '+login);
   } catch(e) { showToast('Erreur création','err'); }
 }
@@ -2910,7 +3025,6 @@ async function saveEditUser() {
   var newHash = pwd ? await hashStr(login+':'+pwd) : null;
   try {
     await rpc('magasin_update_user',{admin_hash: currentUser.token, p_id: parseInt(id,10), p_prenom: prenom, p_login: login, p_role: role, p_actif: actif, p_peut_modifier: peutModifier, p_new_hash: newHash});
-    if (newHash) ATOKENS.push(newHash);
     document.getElementById('editUserModal').classList.add('hidden'); showToast('Modifié !','success'); logAction('Modifié utilisateur: '+login); loadUtilisateurs();
   } catch(e) { showToast('Erreur','err'); }
 }
@@ -2934,7 +3048,7 @@ async function loadHistoriqueActions() {
 
 async function logAction(action, details) {
   if (!currentUser.login) return;
-  try { await supa('POST','historique_actions',[{login:currentUser.login,prenom:currentUser.prenom,action:action,details:details||''}]); } catch(e) {}
+  try { await supa('POST','historique_actions',[{login:currentUser.login,prenom:currentUser.prenom,action:action,details:details||''}]); } catch(e) { console.error(e); }
 }
 
 // ── REALTIME ──
@@ -2978,7 +3092,7 @@ function initRealtime() {
     };
     ws.onclose=function() { setTimeout(initRealtime,3000); };
     ws.onerror=function() { ws.close(); };
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 
   if (_pollingInterval) clearInterval(_pollingInterval);
   _pollingInterval=setInterval(async function() {
@@ -2998,7 +3112,7 @@ function initRealtime() {
       updateBadgeAttente();
       if (_currentSection==='commandes') loadHistorique();
       else if (_currentSection==='dashboard') refreshDashboard();
-    } catch(e) {}
+    } catch(e) { console.error(e); }
   }, 5000); // 5 secondes = vraie sensation de live
 }
 
@@ -3055,7 +3169,7 @@ async function loadArticlesSilent() {
       if (!data||!data.length) break; all=all.concat(data); if (data.length<1000) break; page++;
     }
     if (all.length>0) { articles=all.filter(function(a){ return !a.supprime; }); buildSidebar(); doSearch(); }
-  } catch(e) {}
+  } catch(e) { console.error(e); }
 }
 
 // ── OUTILLAGE ──
@@ -3076,7 +3190,7 @@ async function loadOutillage() {
         });
         outillage.forEach(function(o) { o.nb_prets = counts[o.nom] || 0; });
       }
-    } catch(e) {}
+    } catch(e) { console.error(e); }
     doOutilSearch(); updateBadgePretsOutillage();
     var fab=document.getElementById('outilFab');
     if (fab) fab.style.display=window._canEdit?'flex':'none';
@@ -3192,8 +3306,13 @@ function doOutilSearch() {
     var editBtns=window._canEdit
       ?'<div class="card-edit-btns" onclick="event.stopPropagation()">'
           +'<div onclick="'+pretBtnAction+'" style="'+pretBtnStyle+'color:'+(isPret?'#e74c3c':'#2ecc71')+';border-radius:6px;padding:6px;font-size:11px;font-weight:700;text-align:center;cursor:pointer;flex:1;">'+(isPret?'🔒 Prêt':'🔓 Prêt')+'</div>'
-          +'<div onclick="event.stopPropagation();openOutilEdit(\''+o.id+'\')" style="background:rgba(240,165,0,0.08);border:1px solid rgba(240,165,0,0.25);color:var(--ac);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">✏️ Modifier</div>'
-          +'<div onclick="event.stopPropagation();deleteOutil(\''+o.id+'\')" style="background:rgba(231,76,60,0.08);border:1px solid rgba(231,76,60,0.25);color:var(--rd);border-radius:6px;padding:6px;font-size:10px;font-weight:700;text-align:center;cursor:pointer;flex:1;">🗑️ Suppr.</div>'
+          +'<div class="card-menu-wrap">'
+            +'<div class="btn-menu-card" onclick="toggleOutilMenu(event, this)" title="Options">⋮</div>'
+            +'<div class="card-menu">'
+              +'<div class="card-menu-item" onclick="event.stopPropagation();closeCardMenus();openOutilEdit(\''+o.id+'\')">Modifier</div>'
+              +'<div class="card-menu-item card-menu-del" onclick="event.stopPropagation();closeCardMenus();deleteOutil(\''+o.id+'\')">Supprimer</div>'
+            +'</div>'
+          +'</div>'
         +'</div>'
       :'';
     return '<div class="piece-card" style="border-left:3px solid '+(isPret?'#e74c3c':'var(--br)')+';cursor:default;">'

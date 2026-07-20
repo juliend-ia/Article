@@ -834,6 +834,8 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
             <div class="admin-tab" data-tab="modifs" onclick="switchAdminTab('modifs')"> Modifications</div>
             <div class="admin-tab" data-tab="actions" onclick="switchAdminTab('actions')"> Actions</div>
             <div class="admin-tab" data-tab="photos" onclick="switchAdminTab('photos')">📷 Photos</div>
+            <div class="admin-tab" data-tab="stats" onclick="switchAdminTab('stats')">Stats</div>
+            <div class="admin-tab" data-tab="corbeille" onclick="switchAdminTab('corbeille')">Corbeille</div>
           </div>
 
           <!-- Contenu onglet Tableau de bord -->
@@ -885,6 +887,23 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
           <!-- Contenu onglet Actions -->
           <div class="admin-tab-content hidden" id="adminTab-actions">
             <div class="admin-section"><h2> Historique des actions</h2><div id="actionsList"></div></div>
+          </div>
+
+          <!-- Contenu onglet Stats -->
+          <div class="admin-tab-content hidden" id="adminTab-stats">
+            <div class="admin-section">
+              <h2>Statistiques d'usage — 30 derniers jours</h2>
+              <div id="statsContent"></div>
+            </div>
+          </div>
+
+          <!-- Contenu onglet Corbeille -->
+          <div class="admin-tab-content hidden" id="adminTab-corbeille">
+            <div class="admin-section">
+              <h2>Corbeille — articles supprimés</h2>
+              <p style="font-size:12px;color:var(--mu);margin-bottom:14px;">Les articles supprimés sont conservés ici. Clique sur Restaurer pour les remettre dans le catalogue.</p>
+              <div id="corbeilleList"></div>
+            </div>
           </div>
 
           <!-- Contenu onglet Photos (mode photo rapide intégré) -->
@@ -1210,6 +1229,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=73"></script>
+<script src="app.js?v=74"></script>
 </body>
 </html>
