@@ -4011,12 +4011,18 @@ document.addEventListener('keydown', function(e) {
     return;
   }
 
-  // 3) Panier : Enter dans le champ N° d'ordre valide le bon
-  if (e.key === 'Enter' && t && t.id === 'numeroOrdre') {
-    e.preventDefault();
-    t.blur();
-    var vb = document.getElementById('validerBtn'); if (vb) vb.click();
-    return;
+  // 3) Panier : Enter valide le bon.
+  //    Fonctionne même si le champ N° d'ordre a perdu le focus
+  //    (le garde-fou anti-scan le blur automatiquement à 8 chiffres).
+  if (e.key === 'Enter') {
+    var onPanier = (typeof _currentSection !== 'undefined' && _currentSection === 'panier');
+    var isOtherInput = t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT') && t.id !== 'numeroOrdre';
+    if (onPanier && !isOtherInput) {
+      e.preventDefault();
+      var ord = document.getElementById('numeroOrdre'); if (ord) ord.blur();
+      var vb = document.getElementById('validerBtn'); if (vb) vb.click();
+      return;
+    }
   }
 });
 
