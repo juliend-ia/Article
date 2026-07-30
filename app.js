@@ -3884,6 +3884,15 @@ document.addEventListener('keydown', function(e) {
       // Champs de recherche : leur handler propre gère Enter
       if (t.id === 'si' || t.id === 'adminPhotoNum') return;
 
+      // Champ N° d'ordre en saisie MANUELLE (pas un scan) : Enter valide le panier
+      if (!wasScan && t.id === 'numeroOrdre') {
+        e.preventDefault();
+        t.blur();
+        var vbtn = document.getElementById('validerBtn');
+        if (vbtn) vbtn.click();
+        return;
+      }
+
       // Autre champ + scan rapide : on prend la main
       if (wasScan) {
         e.preventDefault();
