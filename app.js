@@ -220,9 +220,8 @@ document.getElementById('resetBtn').addEventListener('click', async function() {
   try {
     var exists = await rpc('magasin_check_login_exists',{p_login: login});
     if (!exists) { err.textContent='Login inconnu ou compte désactivé.'; return; }
-    var existing = await supa('GET','demandes_reset?login=eq.'+encodeURIComponent(login)+'&traitee=eq.false&select=id');
-    if (existing&&existing.length) { err.textContent='Demande déjà envoyée.'; return; }
-    await supa('POST','demandes_reset',[{login:login,traitee:false}]);
+    var rr = await rpc('magasin_demande_reset',{p_login: login});
+    if (rr === 'exists') { err.textContent='Demande déjà envoyée.'; return; }
     err.style.color='#2ecc71'; err.textContent='Demande envoyée !';
     setTimeout(function() { err.textContent=''; err.style.color='#e74c3c'; document.getElementById('resetPanel').style.display='none'; },3000);
   } catch(e) { err.textContent='Erreur, réessaie.'; }
@@ -247,10 +246,9 @@ if (createBtn) createBtn.addEventListener('click', async function() {
   try {
     var existing = await rpc('magasin_check_login_exists',{p_login: matricule});
     if (existing) { err.textContent='Ce matricule existe déjà.'; return; }
-    var existDemande = await supa('GET','demandes_compte?matricule=eq.'+encodeURIComponent(matricule)+'&statut=eq.en_attente&select=id');
-    if (existDemande&&existDemande.length) { err.textContent='Demande déjà envoyée.'; return; }
     var hash = await hashStr(matricule+':'+pwd);
-    await supa('POST','demandes_compte',[{matricule:matricule,prenom:prenom,password_hash:hash}]);
+    var dc = await rpc('magasin_demande_compte',{p_matricule: matricule, p_prenom: prenom, p_hash: hash});
+    if (dc === 'exists') { err.textContent='Demande déjà envoyée.'; return; }
     err.style.color='#2ecc71'; err.textContent='✓ Demande envoyée !';
     document.getElementById('newMatricule').value=''; document.getElementById('newPrenomCompte').value=''; document.getElementById('newPwdCompte').value='';
   } catch(e) { err.textContent='Erreur, réessaie.'; console.error(e); }
@@ -2654,7 +2652,7 @@ async function loadAdminModifArticles() {
   el.innerHTML = '<div style="color:var(--mu);font-size:12px;">Chargement...</div>';
   try {
     // Récupérer les actions liées aux articles (ajout photo, modification, catégorisation)
-    var data = await supa('GET','historique_actions?select=*&order=created_at.desc&limit=200');
+    var data = await rpc('magasin_list_actions',{admin_hash: currentUser.token, p_limit: 200});
     if (!data||!data.length) { el.innerHTML='<div style="color:var(--mu);padding:16px;text-align:center;">Aucune modification</div>'; return; }
 
     // Filtrer uniquement les actions liées aux articles
@@ -2937,7 +2935,7 @@ async function loadAdminHistoOutillage() {
 
 async function loadDemandesCompte() {
   try {
-    var data=await supa('GET','demandes_compte?statut=eq.en_attente&order=created_at.asc&select=*');
+    var data=await rpc('magasin_list_demandes_compte',{admin_hash: currentUser.token});
     var section=document.getElementById('demandesCompteSection'), badge=document.getElementById('badgeDemandesCompte'), list=document.getElementById('demandesCompteList');
     if (!section||!list) return;
     if (!data||!data.length) { if(section) section.style.display='none'; return; }
@@ -2955,18 +2953,17 @@ async function loadDemandesCompte() {
           +'<select id="role-'+d.id+'" style="background:var(--sf);border:1px solid var(--br);border-radius:6px;padding:7px 10px;font-size:13px;color:var(--tx);">'
             +'<option value="agent">Agent</option><option value="magasinier">Magasinier</option><option value="brigadier">Brigadier</option>'
           +'</select>'
-          +'<div onclick="validerCompte(\''+esc(d.id)+'\',\''+esc(d.matricule)+'\',\''+esc(d.prenom)+'\',\''+esc(d.password_hash)+'\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">✓ Valider</div>'
+          +'<div onclick="validerCompte(\''+esc(d.id)+'\',\''+esc(d.prenom)+'\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:6px;padding:7px 14px;font-size:12px;cursor:pointer;font-weight:700;">✓ Valider</div>'
         +'</div></div>';
     }
     list.innerHTML=h;
   } catch(e) { console.error(e); }
 }
 
-async function validerCompte(id, matricule, prenom, pwdHash) {
+async function validerCompte(id, prenom) {
   var role=document.getElementById('role-'+id); var roleVal=role?role.value:'agent';
   try {
-    await rpc('magasin_create_user',{admin_hash: currentUser.token, p_login: matricule, p_prenom: prenom, p_hash: pwdHash, p_role: roleVal, p_peut_modifier: true});
-    await supa('PATCH','demandes_compte?id=eq.'+id,{statut:'valide'});
+    var matricule = await rpc('magasin_accept_demande',{admin_hash: currentUser.token, p_id: id, p_role: roleVal, p_peut_modifier: true});
     showToast('Compte créé pour '+prenom,'success'); logAction('Creation compte: '+prenom+' / '+matricule+' / '+roleVal);
     loadDemandesCompte(); loadUtilisateurs();
   } catch(e) { showToast('Erreur — login déjà existant ?','err'); }
@@ -2974,12 +2971,12 @@ async function validerCompte(id, matricule, prenom, pwdHash) {
 
 async function refuserCompte(id) {
   if (!(await confirmGlass('Refuser cette demande ?'))) return;
-  try { await supa('PATCH','demandes_compte?id=eq.'+id,{statut:'refuse'}); showToast('Demande refusée','success'); loadDemandesCompte(); } catch(e) { showToast('Erreur','err'); }
+  try { await rpc('magasin_refuse_demande',{admin_hash: currentUser.token, p_id: id}); showToast('Demande refusée','success'); loadDemandesCompte(); } catch(e) { showToast('Erreur','err'); }
 }
 
 async function loadDemandes() {
   try {
-    var data=await supa('GET','demandes_reset?traitee=eq.false&order=created_at.asc&select=*');
+    var data=await rpc('magasin_list_demandes_reset',{admin_hash: currentUser.token});
     var section=document.getElementById('resetDemandesSection'), badge=document.getElementById('badgeDemandes'), list=document.getElementById('demandesList');
     if (!data||!data.length) { if(section) section.style.display='none'; return; }
     if(section) section.style.display=''; if(badge){badge.style.display='inline-flex'; badge.textContent=data.length;}
@@ -3002,7 +2999,7 @@ function ouvrirResetModal(id, login) {
   document.getElementById('resetUserLoginLabel').textContent=login; document.getElementById('resetNouveauPwd').value='';
   document.getElementById('resetPwdErr').textContent=''; document.getElementById('resetPwdModal').classList.remove('hidden');
 }
-async function ignorerDemande(id) { try { await supa('PATCH','demandes_reset?id=eq.'+id,{traitee:true}); loadDemandes(); } catch(e) { showToast('Erreur','err'); } }
+async function ignorerDemande(id) { try { await rpc('magasin_treat_demande_reset',{admin_hash: currentUser.token, p_id: id}); loadDemandes(); } catch(e) { showToast('Erreur','err'); } }
 async function validerResetPwd() {
   var id=document.getElementById('resetUserId').value, login=document.getElementById('resetUserLogin').value;
   var pwd=document.getElementById('resetNouveauPwd').value.trim(), err=document.getElementById('resetPwdErr');
@@ -3010,7 +3007,7 @@ async function validerResetPwd() {
   var hash=await hashStr(login+':'+pwd);
   try {
     await rpc('magasin_reset_password',{admin_hash: currentUser.token, p_login: login, p_new_hash: hash});
-    await supa('PATCH','demandes_reset?id=eq.'+id,{traitee:true});
+    await rpc('magasin_treat_demande_reset',{admin_hash: currentUser.token, p_id: id});
     document.getElementById('resetPwdModal').classList.add('hidden');
     showToast('Mot de passe réinitialisé !','success'); logAction('Reset MDP: '+login); loadDemandes(); loadUtilisateurs();
   } catch(e) { err.textContent='Erreur, réessaie.'; }
@@ -3087,7 +3084,7 @@ function closeEditUser() { document.getElementById('editUserModal').classList.ad
 
 async function loadHistoriqueActions() {
   try {
-    var data=await supa('GET','historique_actions?select=*&order=created_at.desc&limit=50');
+    var data=await rpc('magasin_list_actions',{admin_hash: currentUser.token, p_limit: 50});
     var list=document.getElementById('actionsList');
     if (!data||!data.length) { list.innerHTML='<div style="color:var(--mu);padding:20px;text-align:center;">Aucune action</div>'; return; }
     var h='';
@@ -3103,7 +3100,7 @@ async function loadHistoriqueActions() {
 
 async function logAction(action, details) {
   if (!currentUser.login) return;
-  try { await supa('POST','historique_actions',[{login:currentUser.login,prenom:currentUser.prenom,action:action,details:details||''}]); } catch(e) { console.error(e); }
+  try { await rpc('magasin_log_action',{user_hash: currentUser.token, p_action: action, p_details: details||''}); } catch(e) { console.error(e); }
 }
 
 // ── REALTIME ──
@@ -3236,7 +3233,7 @@ async function loadOutillage() {
     outillage=data||[];
     // Compter les prêts depuis historique_actions
     try {
-      var histo = await supa('GET','historique_actions?action=like.Pret+outillage*&select=action');
+      var histo = await rpc('magasin_pret_counts',{user_hash: currentUser.token});
       if (histo && histo.length) {
         var counts = {};
         histo.forEach(function(h) {
