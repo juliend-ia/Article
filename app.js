@@ -3024,9 +3024,9 @@ async function loadUtilisateurs() {
       var u=data[i];
       h+='<div style="background:var(--sf);border:1px solid var(--br);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;">'
         +'<div><div style="font-size:14px;font-weight:600;">'+esc(u.prenom)+'</div><div style="font-size:11px;color:var(--mu);">'+esc(u.login)+' · '+(u.role==='admin'?'<span style="color:var(--ac);">Admin</span>':esc(u.role))+'</div>'+(u.actif?'':'<div style="font-size:10px;color:var(--rd);">Inactif</div>')+'</div>'
-        +'<div style="display:flex;gap:6px;">'
-          +'<div style="background:rgba(240,165,0,0.1);border:1px solid var(--ac);color:var(--ac);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="editUser(this)"></div>'
-          +(u.login!=='Djulien'?'<div style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:6px;padding:6px 10px;font-size:12px;cursor:pointer;" data-id="'+u.id+'" onclick="deleteUser(this)"></div>':'')
+        +'<div style="display:flex;gap:8px;flex-shrink:0;">'
+          +'<div style="background:rgba(240,165,0,0.12);border:1px solid var(--ac);color:var(--ac);border-radius:8px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;" data-id="'+u.id+'" onclick="editUser(this)">✏️ Modifier</div>'
+          +(u.login!=='Djulien'?'<div style="background:rgba(231,76,60,0.12);border:1px solid var(--rd);color:var(--rd);border-radius:8px;padding:11px 18px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;" data-id="'+u.id+'" onclick="deleteUser(this)">🗑️ Supprimer</div>':'')
         +'</div></div>';
     }
     list.innerHTML=h;
