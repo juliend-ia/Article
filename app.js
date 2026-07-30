@@ -5,6 +5,11 @@ var SKEY = 'sb_publishable_F0Gcdx4mHDbvAAcuXwYbhA_QSlPD8aC';
 var currentUser = {login:'',prenom:'',role:'user',token:''};
 var SKEY2 = 'bus-auth-v1';
 var articles = [], selectedCat = 'TOUT', editingNum = null, filtered = [], displayCount = 30, panier = [], _busFilter = '';
+// Parc bus actif : 'citaro' (défaut) ou 'iveco'. Une pièce de parc 'commun' apparaît dans les deux.
+var _parc = localStorage.getItem('parc_actif') || 'citaro';
+function articleParc(a){ return (a && a.parc) ? a.parc : 'citaro'; }
+function inParc(a){ var p = articleParc(a); return p === _parc || p === 'commun'; }
+var PARC_LABEL = {citaro:'Citaro', iveco:'Iveco', commun:'Commun'};
 var _editPhoto = null, _editPhotos = [], _sortiesCount = {};
 var _borneAgentNum = ''; // numéro agent saisi sur la borne
 var _serviceVisible = true; // état du décompte service sur le dashboard (par user)
@@ -256,6 +261,9 @@ function initUI() {
   var role = currentUser.role;
   var peutModifier = currentUser.peut_modifier !== false;
   window._canEdit = (role==='admin') || ((role==='magasinier'||role==='brigadier') && peutModifier);
+
+  // Sélecteur de parc bus (Citaro / Iveco)
+  syncParcSwitch();
 
   // Afficher onglet Ajouter
   var navAjouter = document.getElementById('navAjouter');
@@ -534,6 +542,14 @@ function handleArticleScan(val) {
     showToast('Article inconnu : ' + candidates[0], 'err');
     return;
   }
+  // La pièce existe mais appartient à l'autre parc → on ne mélange pas
+  if (!inParc(art)) {
+    var pl = PARC_LABEL[articleParc(art)] || articleParc(art);
+    if (status) status.textContent = 'Pièce du parc ' + pl;
+    if (result) { result.textContent = art.num + ' — parc ' + pl; result.style.color = '#f0a500'; }
+    showToast('Cette pièce est dans le parc ' + pl + ' — bascule en haut', 'err');
+    return;
+  }
   ajouterPanier(art.num);
   if (status) status.textContent = '✓ Ajouté au panier !';
   if (result) { result.textContent = art.num + ' — ' + art.nom; result.style.color = '#2ecc71'; result.style.fontSize = '14px'; }
@@ -809,15 +825,16 @@ async function loadSorties() {
 // ── SIDEBAR CATÉGORIES ──
 function getCats() {
   var c={};
-  for (var i=0;i<articles.length;i++) { var x=articles[i].categorie||''; if (x) c[x]=true; }
+  for (var i=0;i<articles.length;i++) { if (!inParc(articles[i])) continue; var x=articles[i].categorie||''; if (x) c[x]=true; }
   return Object.keys(c).sort();
 }
 
 function buildSidebar() {
   var mobile = window.innerWidth <= 700;
+  var parcArticles = articles.filter(inParc);
   var cats = ['TOUT'].concat(getCats());
-  var counts = {TOUT: articles.length};
-  for (var i=0;i<articles.length;i++) { var cat=articles[i].categorie||''; if (cat) counts[cat]=(counts[cat]||0)+1; }
+  var counts = {TOUT: parcArticles.length};
+  for (var i=0;i<parcArticles.length;i++) { var cat=parcArticles[i].categorie||''; if (cat) counts[cat]=(counts[cat]||0)+1; }
 
   if (mobile) {
     // ── MODE MOBILE : sidebar cachée, barre horizontale dans main-content ──
@@ -1011,6 +1028,36 @@ function toggleBusFilter(f) {
   doSearch();
 }
 
+// Bascule le parc de bus actif (Citaro / Iveco) — filtre tout le catalogue
+function setParc(p) {
+  _parc = p;
+  try { localStorage.setItem('parc_actif', p); } catch(e) {}
+  syncParcSwitch();
+  // Repartir d'un catalogue propre pour le nouveau parc
+  selectedCat = 'TOUT'; _busFilter = ''; displayCount = 30;
+  var si = document.getElementById('si'); if (si) si.value = '';
+  var clr = document.getElementById('clearSearch'); if (clr) clr.style.display = 'none';
+  if (typeof buildSidebar === 'function') buildSidebar();
+  if (typeof doSearch === 'function') doSearch();
+}
+
+// Met à jour l'état visuel du sélecteur de parc
+function syncParcSwitch() {
+  document.querySelectorAll('.parc-opt').forEach(function(el){
+    el.classList.toggle('on', el.getAttribute('data-parc') === _parc);
+  });
+}
+
+// Sélection du parc dans les modales Ajouter/Modifier ('add' ou 'edit')
+function pickParc(which, parc) {
+  var hidden = document.getElementById(which + 'Parc');
+  if (hidden) hidden.value = parc;
+  var pick = document.getElementById(which + 'ParcPick');
+  if (pick) pick.querySelectorAll('.parc-pick-opt').forEach(function(el){
+    el.classList.toggle('on', el.getAttribute('data-parc') === parc);
+  });
+}
+
 function doSearch() {
   var rawQ = normalize(document.getElementById('si').value.trim());
   var words = rawQ ? rawQ.split(/\s+/).filter(Boolean) : [];
@@ -1019,6 +1066,7 @@ function doSearch() {
 
   for (var i=0;i<articles.length;i++) {
     var a=articles[i];
+    if (!inParc(a)) continue;
     if (selectedCat!=='TOUT' && a.categorie!==selectedCat) continue;
     if (_busFilter==='std' && !a.bus_std) continue;
     if (_busFilter==='art' && !a.bus_art) continue;
@@ -1046,7 +1094,8 @@ function doSearch() {
     filtered.sort(function(a,b) { return (_sortiesCount[b.num]||0)-(_sortiesCount[a.num]||0); });
   }
   var hasFilter = rawQ || selectedCat!=='TOUT' || _busFilter;
-  document.getElementById('rc').textContent = hasFilter ? (filtered.length+' résultat(s)') : (articles.length+' articles au total');
+  var totalParc = articles.filter(inParc).length;
+  document.getElementById('rc').textContent = hasFilter ? (filtered.length+' résultat(s)') : (totalParc+' articles au total');
   // Mettre à jour l'état visuel des boutons filtres bus
   ['std','art'].forEach(function(f) {
     var btn=document.getElementById('busFilter-'+f);
@@ -1081,6 +1130,7 @@ function renderGrid(q) {
     var a = filtered[i];
     // Tags (overlay sur photo)
     var tags = '';
+    if (articleParc(a)==='commun') tags += '<span class="tag tag-commun">COMMUN</span>';
     if (a.bus_std) tags += '<span class="tag tag-std">STD</span>';
     if (a.bus_art) tags += '<span class="tag tag-art">ART</span>';
     if (a.chimique) tags += '<span class="tag tag-chim">CHIM.</span>';
@@ -1459,6 +1509,7 @@ function showPiecesTab(tab) {
     if (filtered.length>displayCount) lmEl.classList.remove('hidden');
   } else if (tab==='add') {
     p2.classList.remove('hidden'); sb.style.display='none'; sidebar.style.display='none';
+    pickParc('add', _parc); // pré-sélectionne le parc actif pour le nouvel article
   } else if (tab==='admin') {
     p4.classList.remove('hidden'); sb.style.display='none'; sidebar.style.display='none';
   }
@@ -1484,6 +1535,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     chimique:document.getElementById('addChimique').checked,
     reparable:document.getElementById('addReparable').checked,
     entretien:document.getElementById('addEntretien').checked,
+    parc:(document.getElementById('addParc')||{}).value||'citaro',
     interne:false, stock_securite:0
   };
   try {
@@ -1494,6 +1546,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     setBusBtn('addBusStd','addBusStdBtn',false); setBusBtn('addBusArt','addBusArtBtn',false);
     setBusBtn('addChimique','addChimiqueBtn',false); setBusBtn('addReparable','addReparableBtn',false);
     setBusBtn('addEntretien','addEntretienBtn',false);
+    pickParc('add', _parc);
     logAction('Ajout article: '+num, 'Nom: '+nom+(a.categorie?' | Cat: '+a.categorie:''));
     showToast('Article enregistré !','success'); buildSidebar(); switchSection('pieces'); doSearch();
   } catch(e) { showToast('Erreur sauvegarde','err'); console.error(e); }
@@ -1516,6 +1569,7 @@ function openEdit(num) {
   for (var i=0;i<articles.length;i++) {
     if (articles[i].num===num) {
       var a=articles[i]; editingNum=num;
+      pickParc('edit', articleParc(a));
       document.getElementById('editNum').value=a.num;
       document.getElementById('editNom').value=a.nom;
       document.getElementById('editCat').value=a.categorie||'';
@@ -1559,6 +1613,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     chimique:document.getElementById('editChimique').checked,
     reparable:document.getElementById('editReparable').checked,
     entretien:document.getElementById('editEntretien')?document.getElementById('editEntretien').checked:false,
+    parc:(document.getElementById('editParc')||{}).value||'citaro',
     interne:false, stock_securite:0
   };
   try {
@@ -1711,7 +1766,7 @@ document.getElementById('validerBtn').addEventListener('click', async function()
     var bus = busInput ? busInput.value.trim().toUpperCase() : '';
     var fullMsg = bus ? '[BUS:'+bus+']'+(msg?' '+msg:'') : (msg||null);
     var agentNum = currentUser.role==='borne' ? _borneAgentNum : currentUser.login;
-    var bonObj = {numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:fullMsg,preparation_statut:'en_prep'};
+    var bonObj = {numero_ordre:num,statut:'valide',articles:panier,login:currentUser.login||'',numero_agent:agentNum||null,message:fullMsg,preparation_statut:'en_prep',parc:_parc};
     await rpcw('magasin_create_bon', {user_hash: currentUser.token, p_bon: bonObj},
       function(){ return supa('POST','bons_commande',[bonObj]); });
     if (msgInput) msgInput.value = '';
@@ -2411,7 +2466,7 @@ async function updateBadgeAttente() {
 function exportArticlesExcel() {
   var BOM = '﻿';
   var headers = [
-    'N° SAP','Désignation','Catégorie','Emplacement',
+    'N° SAP','Désignation','Parc','Catégorie','Emplacement',
     'NPF','Fournisseur',
     'Bus STD','Bus ART','Chimique','Réparable','Entretien',
     'Min','Max',
@@ -2421,6 +2476,7 @@ function exportArticlesExcel() {
     return [
       a.num||'',
       a.nom||'',
+      PARC_LABEL[articleParc(a)]||articleParc(a),
       a.categorie||'',
       a.location||'',
       a.npf||'',
