@@ -3884,15 +3884,6 @@ document.addEventListener('keydown', function(e) {
       // Champs de recherche : leur handler propre gère Enter
       if (t.id === 'si' || t.id === 'adminPhotoNum') return;
 
-      // Champ N° d'ordre en saisie MANUELLE (pas un scan) : Enter valide le panier
-      if (!wasScan && t.id === 'numeroOrdre') {
-        e.preventDefault();
-        t.blur();
-        var vbtn = document.getElementById('validerBtn');
-        if (vbtn) vbtn.click();
-        return;
-      }
-
       // Autre champ + scan rapide : on prend la main
       if (wasScan) {
         e.preventDefault();
@@ -3922,6 +3913,54 @@ document.addEventListener('keydown', function(e) {
         (t.id === 'numeroOrdre' || t.id === 'retourOrdreInput')) {
       e.preventDefault();
     }
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+// CLAVIER GLOBAL — Enter = confirmer, Échap = annuler / fermer
+// S'exécute APRÈS le capteur USB : si un scan a déjà été traité
+// (e.preventDefault appelé), on ne fait rien de plus.
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  if (e.key !== 'Enter' && e.key !== 'Escape') return;
+  if (e.defaultPrevented) return; // déjà géré (ex: scan USB)
+
+  // Le scanner caméra et le dialogue de confirmation gèrent leur propre clavier
+  var scan = document.getElementById('scannerOverlay');
+  if (scan && !scan.classList.contains('hidden')) return;
+  var cg = document.getElementById('confirmGlassOverlay');
+  if (cg && !cg.classList.contains('hidden')) return;
+
+  var t = e.target;
+  var inTextarea = t && t.tagName === 'TEXTAREA';
+
+  // 1) Modale ouverte → Enter enregistre, Échap annule
+  var modals = document.querySelectorAll('.modal-overlay:not(.hidden)');
+  if (modals.length) {
+    var m = modals[modals.length - 1];
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      var c = m.querySelector('.btn-modal-cancel'); if (c) c.click();
+    } else if (!inTextarea) {
+      e.preventDefault();
+      var s = m.querySelector('.btn-modal-save'); if (s) s.click();
+    }
+    return;
+  }
+
+  // 2) Photo plein écran → Échap ferme
+  var photo = document.getElementById('photoOverlay');
+  if (photo && !photo.classList.contains('hidden')) {
+    if (e.key === 'Escape') { e.preventDefault(); if (typeof closePhoto === 'function') closePhoto(); }
+    return;
+  }
+
+  // 3) Panier : Enter dans le champ N° d'ordre valide le bon
+  if (e.key === 'Enter' && t && t.id === 'numeroOrdre') {
+    e.preventDefault();
+    t.blur();
+    var vb = document.getElementById('validerBtn'); if (vb) vb.click();
+    return;
   }
 });
 
