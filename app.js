@@ -1135,19 +1135,21 @@ function renderGrid(q) {
     if (a.reparable) tags += '<span class="tag tag-rep"> RÉP.</span>';
     if (a.interne) tags += '<span class="tag tag-int">INTERNE</span>';
     var badgeHtml = tags ? '<div class="card-photo-badge">'+tags+'</div>' : '';
+    // Pastille ⚠️ si un message popup est présent
+    var popupBadge = (a.popup && String(a.popup).trim()) ? '<div class="card-popup-badge" title="'+esc(String(a.popup).trim())+'">⚠️</div>' : '';
     // Zone image 170px — photo si dispo, placeholder sinon
     var photoHtml = '';
     if (a.photo) {
       var firstPhoto = a.photo.split(',')[0].trim();
       photoHtml = '<div class="card-photo-wrap">'
         +'<img src="'+esc(firstPhoto)+'" data-num="'+esc(a.num)+'" alt="" loading="lazy"/>'
-        +badgeHtml
+        +badgeHtml+popupBadge
         +'</div>';
     } else {
       photoHtml = '<div class="card-photo-placeholder">'
         +'<div style="font-size:36px;opacity:0.12;">'+getCatIcon(a.categorie)+'</div>'
         +'<div style="font-size:8px;color:var(--mu);text-transform:uppercase;letter-spacing:2px;font-weight:700;opacity:0.5;">'+esc(a.categorie||'')+'</div>'
-        +badgeHtml
+        +badgeHtml+popupBadge
         +'</div>';
     }
     var extra = '';
@@ -1534,6 +1536,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     reparable:document.getElementById('addReparable').checked,
     entretien:document.getElementById('addEntretien').checked,
     parc:(document.getElementById('addParc')||{}).value||'citaro',
+    popup:(document.getElementById('addPopup')||{}).value.trim()||null,
     interne:false, stock_securite:0
   };
   try {
@@ -1544,6 +1547,7 @@ document.getElementById('addBtn').addEventListener('click', async function() {
     setBusBtn('addBusStd','addBusStdBtn',false); setBusBtn('addBusArt','addBusArtBtn',false);
     setBusBtn('addChimique','addChimiqueBtn',false); setBusBtn('addReparable','addReparableBtn',false);
     setBusBtn('addEntretien','addEntretienBtn',false);
+    var ap=document.getElementById('addPopup'); if (ap) ap.value='';
     pickParc('add', _parc);
     logAction('Ajout article: '+num, 'Nom: '+nom+(a.categorie?' | Cat: '+a.categorie:''));
     showToast('Article enregistré !','success'); buildSidebar(); switchSection('pieces'); doSearch();
@@ -1578,6 +1582,7 @@ function openEdit(num) {
       document.getElementById('editMax').value=a.max||0;
       if (document.getElementById('editNpf')) document.getElementById('editNpf').value=a.npf||'';
       if (document.getElementById('editFournisseur')) document.getElementById('editFournisseur').value=a.fournisseur||'';
+      if (document.getElementById('editPopup')) document.getElementById('editPopup').value=a.popup||'';
       setBusBtn('editBusStd','editBusStdBtn',a.bus_std||false);
       setBusBtn('editBusArt','editBusArtBtn',a.bus_art||false);
       setBusBtn('editChimique','editChimiqueBtn',a.chimique||false);
@@ -1612,6 +1617,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     reparable:document.getElementById('editReparable').checked,
     entretien:document.getElementById('editEntretien')?document.getElementById('editEntretien').checked:false,
     parc:(document.getElementById('editParc')||{}).value||'citaro',
+    popup:(document.getElementById('editPopup')||{}).value.trim()||null,
     interne:false, stock_securite:0
   };
   try {
@@ -1696,6 +1702,25 @@ function ajouterPanier(num) {
   updateBadge();
   // Si on est déjà sur la page Panier, rafraîchir l'affichage en live
   if (_currentSection === 'panier' && typeof renderPanier === 'function') renderPanier();
+  // Popup d'alerte éventuel sur l'article
+  if (a.popup && String(a.popup).trim()) showArticlePopup(a);
+}
+
+// Popup d'alerte affiché quand une pièce marquée est ajoutée au panier
+function showArticlePopup(a) {
+  var ov = document.getElementById('articlePopupOverlay');
+  if (!ov) return;
+  var t = document.getElementById('articlePopupTitle');
+  var m = document.getElementById('articlePopupMsg');
+  if (t) t.textContent = (a.num?a.num+' — ':'') + (a.nom||'');
+  if (m) m.textContent = String(a.popup).trim();
+  ov.classList.remove('hidden');
+  var ok = document.getElementById('articlePopupOk');
+  function close(){ ov.classList.add('hidden'); document.removeEventListener('keydown', onKey); }
+  function onKey(e){ if (e.key==='Enter'||e.key==='Escape'){ e.preventDefault(); close(); } }
+  if (ok) ok.onclick = close;
+  ov.onclick = function(e){ if (e.target===ov) close(); };
+  document.addEventListener('keydown', onKey);
 }
 
 function updateBadge() {

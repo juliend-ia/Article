@@ -103,6 +103,7 @@ body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSyst
 .card-photo-wrap img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
 .card-photo-placeholder{width:100%;height:170px;border-radius:10px 10px 0 0;flex-shrink:0;background:linear-gradient(135deg,#0f1220 0%,#141828 100%);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;border-bottom:1px solid var(--br);position:relative;}
 .card-photo-badge{position:absolute;top:8px;right:8px;display:flex;gap:4px;z-index:1;}
+.card-popup-badge{position:absolute;top:6px;left:8px;font-size:20px;z-index:2;filter:drop-shadow(0 1px 3px rgba(0,0,0,0.6));cursor:help;}
 .card-photo-badge .tag{backdrop-filter:blur(8px);font-size:10px;font-weight:900;padding:3px 9px;letter-spacing:0.5px;box-shadow:0 2px 6px rgba(0,0,0,0.4);text-shadow:0 1px 2px rgba(0,0,0,0.5);}
 @media(max-width:700px){
   .card-photo-wrap{height:200px;}
@@ -827,6 +828,7 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
             <div class="field"><label>Désignation</label><input type="text" id="addNom"/></div>
             <div class="field"><label>Catégorie</label><div class="cat-wrap"><input type="text" id="addCat" placeholder="Tapez..."/><div class="cat-sugg" id="addCatSugg"></div></div></div>
             <div class="field"><label>Mots-clés mécanicien <span style="color:var(--mu);font-weight:400;font-size:11px;">(ex: plaquette, disque, filtre...)</span></label><input type="text" id="addTags" placeholder="séparés par des virgules"/></div>
+            <div class="field"><label>⚠️ Message popup <span style="color:var(--mu);font-weight:400;font-size:11px;">(s'affiche à l'ajout au panier — laisser vide si aucun)</span></label><textarea id="addPopup" rows="2" placeholder="ex: Vérifier la compatibilité bus avant de sortir" style="width:100%;resize:vertical;"></textarea></div>
             <div class="field"><label>NPF</label><input type="text" id="addNpf" placeholder="ex: A6284103906"/></div>
             <div class="field"><label>Fournisseur</label><input type="text" id="addFournisseur" placeholder="ex: EVOBUS"/></div>
             <div class="field"><label>Emplacement</label><input type="text" id="addLoc"/></div>
@@ -1069,6 +1071,7 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
     <div class="field"><label>Désignation</label><input type="text" id="editNom"/></div>
     <div class="field"><label>Catégorie</label><div class="cat-wrap"><input type="text" id="editCat" placeholder="Tapez..."/><div class="cat-sugg" id="editCatSugg"></div></div></div>
     <div class="field"><label>Mots-clés mécanicien <span style="color:var(--mu);font-weight:400;font-size:11px;">(ex: plaquette, disque, filtre...)</span></label><input type="text" id="editTags" placeholder="séparés par des virgules"/></div>
+    <div class="field"><label>⚠️ Message popup <span style="color:var(--mu);font-weight:400;font-size:11px;">(s'affiche à l'ajout au panier — laisser vide si aucun)</span></label><textarea id="editPopup" rows="2" placeholder="ex: Vérifier la compatibilité bus avant de sortir" style="width:100%;resize:vertical;"></textarea></div>
     <div class="field"><label>NPF</label><input type="text" id="editNpf"/></div>
     <div class="field"><label>Fournisseur</label><input type="text" id="editFournisseur"/></div>
     <div class="field"><label>Emplacement</label><input type="text" id="editLoc"/></div>
@@ -1217,6 +1220,16 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 </div>
 
 <!-- ─── MODAL DE CONFIRMATION (remplace confirm() natif) ─── -->
+<!-- POPUP ALERTE ARTICLE -->
+<div id="articlePopupOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.72);z-index:3200;display:flex;align-items:center;justify-content:center;padding:24px;">
+  <div style="width:100%;max-width:420px;background:rgba(24,20,14,0.98);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:2px solid var(--ac);border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,0.6);text-align:center;">
+    <div style="font-size:40px;margin-bottom:10px;">⚠️</div>
+    <div id="articlePopupTitle" style="font-size:15px;font-weight:800;color:var(--ac);margin-bottom:10px;"></div>
+    <div id="articlePopupMsg" style="font-size:15px;color:var(--tx);line-height:1.55;white-space:pre-line;margin-bottom:22px;"></div>
+    <button id="articlePopupOk" style="width:100%;background:var(--ac);border:none;color:#111;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;">J'ai compris</button>
+  </div>
+</div>
+
 <div id="confirmGlassOverlay" class="hidden" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;padding:24px;">
   <div style="width:100%;max-width:380px;background:rgba(20,22,40,0.97);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,0.14);border-radius:18px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,0.55);">
     <div id="confirmGlassMsg" style="font-size:14px;color:var(--tx);line-height:1.5;white-space:pre-line;margin-bottom:20px;"></div>
@@ -1262,6 +1275,6 @@ body::after{content:'';position:fixed;bottom:-200px;left:-200px;width:600px;heig
 
 <!-- Librairie ZXing-JS : décodage code-barre compatible iOS Safari -->
 <script src="https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js"></script>
-<script src="app.js?v=83"></script>
+<script src="app.js?v=84"></script>
 </body>
 </html>
