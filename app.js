@@ -1757,7 +1757,7 @@ function renderPanier() {
       +'</div>'
       +'<div class="qty-wrap">'
         +'<div class="qty-btn" data-i="'+i+'" data-d="-1">−</div>'
-        +'<div class="qty-val">'+p.qty+'</div>'
+        +'<input class="qty-val" type="number" inputmode="numeric" min="1" data-i="'+i+'" value="'+p.qty+'"/>'
         +'<div class="qty-btn" data-i="'+i+'" data-d="1">+</div>'
       +'</div>'
       +'<div class="panier-remove" data-i="'+i+'">✕</div>'
@@ -1770,6 +1770,16 @@ function renderPanier() {
       panier[i].qty+=d; if (panier[i].qty<=0) panier.splice(i,1);
       updateBadge(); renderPanier();
     });
+  });
+  // Saisie directe de la quantité (utile pour les grosses quantités)
+  list.querySelectorAll('.qty-val').forEach(function(el) {
+    el.addEventListener('focus', function(){ this.select(); });
+    el.addEventListener('change', function() {
+      var i=parseInt(this.getAttribute('data-i')), v=parseInt(this.value,10);
+      if (isNaN(v)||v<=0) { panier.splice(i,1); } else { panier[i].qty=v; }
+      updateBadge(); renderPanier();
+    });
+    el.addEventListener('keydown', function(e){ if (e.key==='Enter'){ e.preventDefault(); this.blur(); } });
   });
   list.querySelectorAll('.panier-remove').forEach(function(el) {
     el.addEventListener('click', function() { panier.splice(parseInt(this.getAttribute('data-i')),1); updateBadge(); renderPanier(); });
@@ -4046,6 +4056,19 @@ document.addEventListener('keydown', function(e) {
       return;
     }
   }
+});
+
+// Raccourci « / » : saute directement dans la recherche Pièces (confort PC)
+document.addEventListener('keydown', function(e) {
+  if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+  var t = e.target;
+  if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+  if (document.querySelector('.modal-overlay:not(.hidden)')) return;
+  var si = document.getElementById('si');
+  if (!si) return;
+  e.preventDefault();
+  if (typeof _currentSection !== 'undefined' && _currentSection !== 'pieces') switchSection('pieces');
+  setTimeout(function(){ si.focus(); si.select(); }, 60);
 });
 
 // Garde-fou multi-couches sur le champ Numéro d'ordre.
