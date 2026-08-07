@@ -95,6 +95,29 @@ async function rpcw(name, params, fallback) {
   }
 }
 
+// Supprime un fichier photo du Storage Supabase (économie de quota gratuit)
+// + purge le cache local du Service Worker pour ce fichier.
+async function deleteStorageUrl(url) {
+  var marker = '/storage/v1/object/public/';
+  var i = String(url || '').indexOf(marker);
+  if (i < 0) return;
+  var rest = url.substring(i + marker.length); // <bucket>/<chemin>
+  try {
+    await fetch(SURL + '/storage/v1/object/' + rest, {
+      method: 'DELETE', headers: {'apikey': SKEY, 'Authorization': 'Bearer ' + SKEY}
+    });
+    if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({type: 'evict-image', url: url});
+    }
+  } catch(e) { console.error('delete storage', e); }
+}
+// Supprime toutes les photos d'une chaîne "url1,url2,..."
+async function deletePhotosStr(photoStr) {
+  if (!photoStr) return;
+  var urls = String(photoStr).split(',').map(function(u){return u.trim();}).filter(Boolean);
+  for (var i=0;i<urls.length;i++) await deleteStorageUrl(urls[i]);
+}
+
 async function hashStr(s) {
   var enc = new TextEncoder().encode(s);
   var buf = await crypto.subtle.digest('SHA-256', enc);
@@ -1636,6 +1659,11 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     popup:(document.getElementById('editPopup')||{}).value.trim()||null,
     interne:false, stock_securite:0
   };
+  // Photos retirées → à supprimer du bucket après sauvegarde (économie de quota)
+  var oldArt = articles.filter(function(x){return x.num===editingNum;})[0];
+  var oldPhotos = (oldArt && oldArt.photo) ? oldArt.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+  var newPhotos = _editPhoto ? String(_editPhoto).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+  var removed = oldPhotos.filter(function(u){ return newPhotos.indexOf(u) < 0; });
   try {
     await rpcw('magasin_save_article', {user_hash: currentUser.token, p_old_num: editingNum, p_data: updated},
       async function(){
@@ -1646,6 +1674,7 @@ document.getElementById('saveEditBtn').addEventListener('click', async function(
     logAction('Modification article: '+newNum, 'Nom: '+nom+(updated.categorie?' | Cat: '+updated.categorie:'')+(newNum!==editingNum?' | Ancien N°: '+editingNum:''));
     document.getElementById('mo').classList.add('hidden'); editingNum=null;
     buildSidebar(); doSearch(); showToast('Modifié !','success');
+    for (var k=0;k<removed.length;k++) deleteStorageUrl(removed[k]); // nettoyage bucket (non bloquant)
   } catch(e) { showToast('Erreur','err'); console.error(e); }
 });
 
@@ -1761,7 +1790,7 @@ function renderPanier() {
     var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
     var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
     var photoHtml = photoUrl
-      ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/\'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'])" style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+      ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/\'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'])" style="width:64px;height:64px;border-radius:10px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" /></div>'
       : '<div style="width:64px;height:64px;border-radius:10px;background:linear-gradient(135deg,rgba(15,21,37,0.6) 0%,rgba(20,29,53,0.4) 100%);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
     h+='<div class="panier-item">'
       +photoHtml
@@ -1973,7 +2002,7 @@ async function loadHistorique() {
         var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
         var photosAll = artData && artData.photo ? artData.photo.split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
         var photoBtn = photoUrl
-          ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+          ? '<div onclick="event.stopPropagation();openPhoto(\''+photoUrl.replace(/'/g,"\\'")+'\',[\''+photosAll.join("','")+'\'  ])" style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;cursor:pointer;border:1px solid var(--br);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" /></div>'
           : '<div style="width:48px;height:48px;border-radius:8px;background:var(--sf);border:1px solid var(--br);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
         detailRows+='<div class="bon-detail-row">'
           +photoBtn
@@ -3568,6 +3597,7 @@ async function deleteOutil(id) {
     await rpcw('magasin_delete_outil', {user_hash: currentUser.token, p_id: String(id)},
       function(){ return supa('DELETE','outillage?id=eq.'+id); });
     logAction('Suppression outillage: '+(o?o.nom:id));
+    if (o && o.photo) deleteStorageUrl(o.photo); // nettoyage bucket (suppression définitive)
     showToast('Outil supprimé','success'); loadOutillage();
   } catch(e) { showToast('Erreur','err'); }
 }
@@ -3634,10 +3664,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var id=document.getElementById('outilEditId').value, nom=(document.getElementById('outilEditNom').value||'').trim();
     if (!nom) { showToast('Désignation obligatoire','err'); return; }
     var obj={nom:nom,location:(document.getElementById('outilEditLoc').value||'').trim(),tags:(document.getElementById('outilEditTags').value||'').trim(),photo:_outilEditPhoto};
+    var oldOutil = outillage.filter(function(x){return String(x.id)===String(id);})[0];
+    var oldPhoto = oldOutil ? oldOutil.photo : null;
     try {
       await rpcw('magasin_save_outil', {user_hash: currentUser.token, p_id: String(id), p_data: obj},
         function(){ return supa('PATCH','outillage?id=eq.'+id,obj); });
       logAction('Modification outillage: '+nom, obj.location?'Emplacement: '+obj.location:'');
+      if (oldPhoto && oldPhoto !== _outilEditPhoto) deleteStorageUrl(oldPhoto); // ancienne photo remplacée
       showToast('Outil modifié !','success'); closeOutilEdit(); loadOutillage();
     } catch(e) { showToast('Erreur','err'); }
   });
@@ -3702,7 +3735,7 @@ function renderRetourBons() {
       var artData = articles.filter(function(x){return x.num===a.num;})[0];
       var photoUrl = artData && artData.photo ? artData.photo.split(',')[0].trim() : null;
       var photoHtml = photoUrl
-        ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" /></div>'
+        ? '<div style="width:48px;height:48px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid rgba(255,255,255,0.1);background:#0d0f18;"><img src="'+esc(photoUrl)+'" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy" /></div>'
         : '<div style="width:48px;height:48px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;color:var(--mu);opacity:0.5;"></div>';
       var sel = _retourSelected[a.num] || 0;
       var maxQty = a.qty;
