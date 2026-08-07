@@ -107,6 +107,19 @@ function showLoading(show, msg) {
   if (msg) document.getElementById('loadingText').textContent = msg;
 }
 
+// Skeleton screens : cartes en filigrane pendant le chargement du catalogue
+function renderSkeleton(n) {
+  var grid = document.getElementById('p1');
+  if (!grid) return;
+  n = n || (window.innerWidth <= 700 ? 4 : 9);
+  var one = '<div class="skeleton-card"><div class="sk sk-photo"></div>'
+    + '<div class="sk sk-line w60"></div><div class="sk sk-line w80"></div>'
+    + '<div class="sk sk-line w40"></div><div class="sk sk-btn"></div></div>';
+  var h = ''; for (var i=0;i<n;i++) h += one;
+  grid.innerHTML = h;
+  var lm = document.getElementById('lm'); if (lm) lm.classList.add('hidden');
+}
+
 function showToast(msg, type) {
   var t = document.getElementById('toast');
   t.textContent = msg; t.className = 'toast '+type+' show';
@@ -782,7 +795,7 @@ function confirmBorneAgent() {
 
 // ── CHARGEMENT ARTICLES ──
 async function loadArticles() {
-  showLoading(true,'Chargement...');
+  renderSkeleton(); // filigrane à la place du spinner plein écran
   try {
     var all = [], page = 0;
     while (true) {
@@ -795,10 +808,13 @@ async function loadArticles() {
     articles = all.filter(function(a){ return !a.supprime; }); // exclure la corbeille (soft delete)
     await loadSorties();
     buildSidebar();
-    doSearch();
+    doSearch(); // remplace le skeleton par la vraie grille
     updateBadgeAttente();
-  } catch(e) { console.error(e); showToast('Erreur connexion','err'); }
-  finally { showLoading(false); }
+  } catch(e) {
+    console.error(e); showToast('Erreur connexion','err');
+    var grid = document.getElementById('p1');
+    if (grid) grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--mu);padding:60px 20px;font-size:14px;">Erreur de connexion — vérifie le réseau et réessaie.</div>';
+  }
 }
 
 async function loadSorties() {
