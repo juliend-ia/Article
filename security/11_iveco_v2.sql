@@ -1,8 +1,9 @@
--- ═══ MAGASIN 2K — Remplacement complet du catalogue Iveco ═══
--- Supprime les anciennes pièces Iveco puis importe la nouvelle liste (min/max/secu).
+-- ═══ MAGASIN 2K — Remplacement catalogue Iveco (v2, gestion pièces communes) ═══
+-- DELETE des anciennes Iveco + INSERT des 49 pièces.
+-- Une pièce déjà présente en Citaro (num unique) devient 'commun' (visible dans les 2).
+-- Re-jouable sans erreur.
 
 DELETE FROM articles WHERE parc = 'iveco';
-
 INSERT INTO articles
   (num, nom, categorie, tags, location, min, max, photo, npf, fournisseur,
    bus_std, bus_art, chimique, reparable, entretien, interne, stock_securite, parc)
@@ -55,4 +56,5 @@ VALUES
   ('14001523','ECLAIRAGE INTERIEUR','','','',1,2,NULL,'','',false,false,false,false,false,false,0,'iveco'),
   ('14001636','MIRROIR RETRO. INTERNE','','','',1,2,NULL,'','',false,false,false,false,false,false,0,'iveco'),
   ('14002407','ECROU GACHE PORTE','','','',1,1,NULL,'','',false,false,false,false,false,false,0,'iveco'),
-  ('14002437','BOUCHON CLAPET ADBLUE','','','',1,1,NULL,'','',false,false,false,false,false,false,0,'iveco');
+  ('14002437','BOUCHON CLAPET ADBLUE','','','',1,1,NULL,'','',false,false,false,false,false,false,0,'iveco')
+ON CONFLICT (num) DO UPDATE SET parc = 'commun';
