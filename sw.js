@@ -1,4 +1,4 @@
-var CACHE = 'magasin2k-v87';
+var CACHE = 'magasin2k-v88';
 var IMG_CACHE = 'magasin2k-img-v1';   // cache des photos — PERSISTANT à travers les versions
 var ASSETS = [
   '/Article/',

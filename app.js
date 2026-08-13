@@ -1276,7 +1276,10 @@ function renderGrid(q) {
     });
   }
 
-  if (filtered.length>displayCount) {
+  // « Afficher plus » : uniquement quand la grille Pièces est réellement visible
+  // (pas sur les onglets Ajouter / Admin où p1 est masqué)
+  var gridVisible = grid.style.display !== 'none';
+  if (gridVisible && filtered.length>displayCount) {
     lm.classList.remove('hidden');
     lm.textContent='Afficher plus ('+(filtered.length-displayCount)+' restants)';
   } else lm.classList.add('hidden');
@@ -2630,16 +2633,31 @@ async function loadCorbeille() {
     var h = '';
     for (var i=0;i<data.length;i++) {
       var a = data[i];
-      h += '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--br);border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,0.02);">'
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--br);border-radius:10px;margin-bottom:8px;background:rgba(255,255,255,0.02);">'
         +'<div style="flex:1;min-width:0;">'
-          +'<div style="font-size:12px;font-weight:700;color:var(--ac);font-family:monospace;">'+esc(a.num)+'</div>'
+          +'<div style="font-size:12px;font-weight:700;color:var(--ac);font-family:var(--font-mono);">'+esc(a.num)+'</div>'
           +'<div style="font-size:12px;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+esc(a.nom)+'</div>'
         +'</div>'
         +'<div onclick="restaurerArticle(\''+esc(a.num)+'\')" style="background:rgba(46,204,113,0.1);border:1px solid var(--gn);color:var(--gn);border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Restaurer</div>'
+        +'<div onclick="purgeArticle(\''+esc(a.num)+'\')" style="background:rgba(231,76,60,0.1);border:1px solid var(--rd);color:var(--rd);border-radius:7px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;">Supprimer</div>'
       +'</div>';
     }
     el.innerHTML = h;
   } catch(e) { console.error(e); el.innerHTML = '<div style="color:var(--rd);text-align:center;padding:20px;">Erreur de chargement</div>'; }
+}
+
+// Suppression DÉFINITIVE depuis la corbeille (irréversible) + nettoyage des photos
+async function purgeArticle(num) {
+  if (!(await confirmGlass('Supprimer DÉFINITIVEMENT cet article ?\nCette action est irréversible.'))) return;
+  try {
+    var data = await supa('GET','articles?num=eq.'+encodeURIComponent(num)+'&select=photo');
+    var photo = (data && data[0]) ? data[0].photo : null;
+    await rpc('magasin_purge_article', {admin_hash: currentUser.token, p_num: num});
+    if (photo) deletePhotosStr(photo); // libère le quota storage
+    logAction('Suppression définitive article: '+num);
+    showToast('Article supprimé définitivement','success');
+    loadCorbeille();
+  } catch(e) { console.error(e); showToast('Erreur suppression','err'); }
 }
 
 async function restaurerArticle(num) {
