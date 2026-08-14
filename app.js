@@ -1695,9 +1695,13 @@ document.getElementById('editPhotoInput').addEventListener('change', async funct
     var url=SURL+'/storage/v1/object/public/photos-articles/'+path;
     if (!_editPhotos) _editPhotos=[];
     _editPhotos.push(url); _editPhoto=_editPhotos.join(',');
+    // Enregistrement IMMÉDIAT en base (ne dépend plus du clic ENREGISTRER)
+    await rpcw('magasin_set_article_photo', {user_hash: currentUser.token, p_num: editingNum, p_photo: _editPhoto},
+      function(){ return supa('PATCH','articles?num=eq.'+encodeURIComponent(editingNum), {photo:_editPhoto}); });
+    for (var _i=0;_i<articles.length;_i++){ if(articles[_i].num===editingNum){ articles[_i].photo=_editPhoto; break; } }
     logAction('Ajout photo article: '+editingNum);
-    renderEditPhotos(); showToast('Photo ajoutée !','success');
-  } catch(e) { showToast('Erreur upload photo','err'); }
+    renderEditPhotos(); showToast('Photo ajoutée et enregistrée !','success');
+  } catch(e) { console.error(e); showToast('Erreur enregistrement photo','err'); }
   document.getElementById('editPhotoInput').value='';
 });
 document.getElementById('editPhotoRemove').addEventListener('click', function() {
