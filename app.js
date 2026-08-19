@@ -1172,7 +1172,6 @@ function renderGrid(q) {
     if (a.bus_art) tags += '<span class="tag tag-art">ART</span>';
     if (a.chimique) tags += '<span class="tag tag-chim">CHIM.</span>';
     if (a.reparable) tags += '<span class="tag tag-rep"> RÉP.</span>';
-    if (a.interne) tags += '<span class="tag tag-int">INTERNE</span>';
     var badgeHtml = tags ? '<div class="card-photo-badge">'+tags+'</div>' : '';
     // Pastille ⚠️ si un message popup est présent
     var popupBadge = (a.popup && String(a.popup).trim()) ? '<div class="card-popup-badge" title="'+esc(String(a.popup).trim())+'">⚠️</div>' : '';
@@ -2254,7 +2253,7 @@ async function copySAP(id) {
     if (!data||!data.length) return;
     var bon=data[0], arts=bon.articles||[];
     var lines=[];
-    for (var i=0;i<arts.length;i++) { var a=arts[i]; if (a.interne) continue; lines.push(a.num+'\t'+a.qty+'\t\t2K\t\t'+bon.numero_ordre+'\t10'); }
+    for (var i=0;i<arts.length;i++) { var a=arts[i]; lines.push(a.num+'\t'+a.qty+'\t\t2K\t\t'+bon.numero_ordre+'\t10'); }
     var txt=lines.join('\n');
     if (navigator.clipboard&&navigator.clipboard.writeText) { await navigator.clipboard.writeText(txt); showToast('Copié ! Colle dans SAP','success'); }
     else { var ta=document.createElement('textarea'); ta.value=txt; ta.style.position='fixed'; ta.style.left='-9999px'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('Copié ! Colle dans SAP','success'); }
