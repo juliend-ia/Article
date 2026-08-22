@@ -1,4 +1,4 @@
--- MAGASIN 2K — Emplacements Iveco/commun (export SAP 20260822)
+-- MAGASIN 2K — Emplacements Iveco/commun (export SAP 20260822) — commun = 2 emplacements
 UPDATE articles a SET location = v.loc
 FROM (VALUES
   ('14000017','NOUVART'),
@@ -24,7 +24,7 @@ FROM (VALUES
   ('14000639','NOUVART'),
   ('14000641','NOUVART'),
   ('14000642','NOUVART'),
-  ('14000643','D1050405'),
+  ('14000643','Citaro: VANAS / Iveco: D1050405'),
   ('14000644','NOUVART'),
   ('14000818','D1050304'),
   ('14000873','D105010503'),
